@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Квиз</title>
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="screen-setup" class="screen active">
+  <div class="setup-container">
+    <h1 class="logo">🎯 КВИЗ</h1>
+
+    <section class="setup-section">
+      <h2>Раунды</h2>
+      <div id="rounds-list"></div>
+      <button class="btn btn-secondary" id="add-round-btn">+ Добавить раунд</button>
+      <a href="/editor" class="btn btn-ghost" target="_blank">Редактор паков</a>
+    </section>
+
+    <section class="setup-section">
+      <h2>Команды</h2>
+      <div id="teams-list"></div>
+      <button class="btn btn-secondary" id="add-team-btn">+ Добавить команду</button>
+    </section>
+
+    <button class="btn btn-primary btn-large" id="start-game-btn">Начать игру</button>
+  </div>
+</div>
+
+<!-- BOARD SCREEN -->
+<div id="screen-board" class="screen">
+  <header class="board-header">
+    <div id="scores-bar"></div>
+    <div class="board-controls">
+      <span id="round-label" class="round-label"></span>
+      <button class="btn btn-ghost btn-sm" id="adjust-scores-btn">± Баллы</button>
+      <button class="btn btn-ghost btn-sm" id="next-round-btn" style="display:none">Следующий раунд →</button>
+      <button class="btn btn-ghost btn-sm" id="back-setup-btn">Настройки</button>
+    </div>
+  </header>
+  <div id="board-grid" class="board-grid"></div>
+</div>
+
+<!-- QUESTION SCREEN -->
+<div id="screen-question" class="screen">
+  <div class="question-layout">
+    <div class="question-top">
+      <span class="question-value" id="q-value"></span>
+      <button class="btn btn-ghost btn-sm" id="q-back-btn">← Поле</button>
+    </div>
+
+    <div class="question-body" id="q-body">
+      <p id="q-text" class="q-text"></p>
+      <img id="q-image" class="q-media" style="display:none">
+      <audio id="q-audio" controls style="display:none"></audio>
+      <div id="q-video-wrap" style="display:none">
+        <video id="q-video" controls class="q-media"></video>
+      </div>
+    </div>
+
+    <div class="buzz-display" id="buzz-display" style="display:none">
+      <div class="buzz-team" id="buzz-team-name"></div>
+    </div>
+
+    <div class="timer-row">
+      <div class="timer-circle" id="timer-circle">
+        <svg viewBox="0 0 120 120">
+          <circle class="timer-bg" cx="60" cy="60" r="54"/>
+          <circle class="timer-arc" id="timer-arc" cx="60" cy="60" r="54"
+            stroke-dasharray="339.3" stroke-dashoffset="0"/>
+        </svg>
+        <span class="timer-text" id="timer-text">60</span>
+      </div>
+    </div>
+
+    <div class="question-controls">
+      <button class="btn btn-success btn-large" id="q-correct-btn" style="display:none">✓ Верно</button>
+      <button class="btn btn-danger btn-large" id="q-wrong-btn" style="display:none">✗ Неверно</button>
+      <button class="btn btn-secondary" id="q-start-btn">▶ Запустить (Пробел)</button>
+      <button class="btn btn-ghost" id="q-annul-btn">Аннулировать</button>
+    </div>
+  </div>
+
+  <!-- Answer reveal overlay -->
+  <div id="answer-overlay" class="answer-overlay" style="display:none">
+    <div class="answer-box">
+      <h2>Ответ</h2>
+      <p id="ans-text" class="ans-text"></p>
+      <img id="ans-image" class="q-media" style="display:none">
+      <audio id="ans-audio" controls style="display:none"></audio>
+      <video id="ans-video" controls class="q-media" style="display:none"></video>
+      <button class="btn btn-primary btn-large" id="ans-close-btn">← К полю</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCORE ADJUST MODAL -->
+<div id="modal-scores" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h2>Промежуточные итоги</h2>
+    <div id="modal-scores-list"></div>
+    <button class="btn btn-primary" id="modal-scores-close">Закрыть</button>
+  </div>
+</div>
+
+<script src="/static/js/game.js"></script>
+</body>
+</html>
