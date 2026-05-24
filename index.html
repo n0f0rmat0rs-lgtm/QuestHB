@@ -182,6 +182,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 .credit-row.first-place { padding: 2.5rem 3rem; border-top-color: #333; }
 .credits-restart { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 2; }
 #fireworks-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.hint-row { display:flex; flex-wrap:wrap; gap:.4rem; justify-content:center; padding:.5rem .5rem 0; }
 </style>
 </head>
 <body>
@@ -301,6 +302,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
       <button class="btn btn-secondary btn-sm" id="q-start">▶ Старт</button>
       <button class="btn btn-ghost    btn-sm" id="q-annul">Аннулировать</button>
     </div>
+    <div id="hint-row" class="hint-row" style="display:none"></div>
   </div>
   <div id="ans-overlay" class="ans-overlay" style="display:none">
     <div class="ans-box">
@@ -414,7 +416,7 @@ function showPopup(pts, name) {
 }
 
 /* ═══ STATE ═══ */
-const S = { rounds: [], ri: 0, teams: [], used: {}, curQ: null, tRun: false, tSec: 60, tInt: null, buzzed: null, wrongTeams: new Set() };
+const S = { rounds: [], ri: 0, teams: [], used: {}, curQ: null, tRun: false, tSec: 60, tTot: 60, tInt: null, buzzed: null, wrongTeams: new Set(), hintsUsed: {}, hintTeam: null, hintSec: 0, hintInt: null };
 const TARC_VAL = 490.09;
 
 /* ═══ CHOOSER ═══ */
@@ -701,6 +703,7 @@ document.getElementById('start-game-btn').onclick = () => {
    CATEGORY INTRO
 ═══════════════════════════════════════ */
 function startRound(idx) {
+  S.hintsUsed = {};
   S.ri = idx;
   const pack = S.rounds[idx].pack;
   document.getElementById('intro-round-label').textContent = `Раунд ${idx+1} — ${pack.name}`;
@@ -809,10 +812,11 @@ document.getElementById('flappy-return-btn').onclick = () => {
 function openQ(ci, qi) {
   const k = `${S.ri}-${ci}-${qi}`; if (S.used[k]) return;
   const cat = S.rounds[S.ri].pack.categories[ci], q = cat.questions[qi];
-  S.curQ = {ci, qi, k, q, catName: cat.name, buzzMode: cat.buzz_mode || 'unlimited'};
+  S.curQ = {ci, qi, k, q, catName: cat.name, buzzMode: cat.buzz_mode || 'unlimited', currentValue: q.value, hintBuzzed: false};
   S.buzzed = null; S.wrongTeams = new Set();
   if (q.type === 'bag') { openBagModal(q); return; }
   resetTimer(); fillQ(q, cat);
+  fillHintButtons();
   document.getElementById('buzz-pill').style.display = 'none';
   showJudge(false);
   document.getElementById('ans-overlay').style.display = 'none';
@@ -837,8 +841,10 @@ function openBagModal(q) {
 document.getElementById('bag-confirm-btn').onclick = () => {
   S.curQ.bagTeam = _bagTeamIdx;
   S.curQ.bagValue = parseInt(document.getElementById('bag-value-input').value) || 100;
+  S.curQ.currentValue = S.curQ.bagValue;
   document.getElementById('modal-bag').style.display = 'none';
   resetTimer(); fillQ(S.curQ.q, S.rounds[S.ri].pack.categories[S.curQ.ci]);
+  fillHintButtons();
   document.getElementById('buzz-pill').style.display = 'none';
   showJudge(false);
   document.getElementById('ans-overlay').style.display = 'none';
@@ -905,9 +911,11 @@ function setMedia(imgId, audId, vidId, vidWId, src) {
    TIMER
 ═══════════════════════════════════════ */
 function resetTimer() {
-  clearInterval(S.tInt); S.tRun = false; S.tSec = 60;
+  const tot = (S.curQ?.q?.timer) || 60;
+  S.tTot = tot;
+  clearInterval(S.tInt); S.tRun = false; S.tSec = tot;
   const arc = document.getElementById('t-arc'); arc.style.strokeDashoffset = '0'; arc.style.stroke = '';
-  const num = document.getElementById('t-num'); num.textContent = '60'; num.style.color = '#fff';
+  const num = document.getElementById('t-num'); num.textContent = tot; num.style.color = '#fff';
   const wrap = document.getElementById('timer-wrap'); wrap.classList.remove('active','flash-start');
 }
 function startTimer() {
@@ -920,7 +928,7 @@ function startTimer() {
   requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('flash-start')));
   setTimeout(() => { wrap.classList.remove('flash-start'); arc.style.stroke = ''; arc.style.transition = ''; }, 1500);
   S.tInt = setInterval(() => {
-    S.tSec--; updTimer(S.tSec, 60);
+    S.tSec--; updTimer(S.tSec, S.tTot);
     if (S.tSec <= 5 && S.tSec > 0) SFX.tick();
     if (S.tSec <= 0) { clearInterval(S.tInt); S.tRun = false; onTimerEnd(); }
   }, 1000);
@@ -954,16 +962,19 @@ function onTimerEnd() {
 ═══════════════════════════════════════ */
 function onBuzz(idx) {
   if (!S.teams[idx]) return;
-  if (!S.tRun && S.tSec === 60) return;
+  if (!S.tRun && S.hintTeam === null && S.tSec === S.tTot) return;
   if (S.curQ.q.type === 'auction') return;
   if (S.curQ.q.type === 'bag' && idx !== S.curQ.bagTeam) return;
+  if (S.hintTeam !== null && idx !== S.hintTeam) return;
   if (S.buzzed !== null) return;
   if (S.curQ.buzzMode === 'one_chance' && S.wrongTeams.has(idx)) return;
+  if (S.hintTeam !== null) { clearInterval(S.hintInt); S.hintInt = null; S.hintTeam = null; S.curQ.hintBuzzed = true; }
   pauseTimer(); S.buzzed = idx; SFX.buzz();
   const pill = document.getElementById('buzz-pill');
   pill.textContent = S.teams[idx].name; pill.style.display = 'inline-block';
   showJudge(true);
   document.getElementById('q-start').style.display = 'none';
+  updAllHintBtns();
 }
 function showJudge(v) {
   document.getElementById('q-correct').style.display = v ? 'inline-flex' : 'none';
@@ -972,7 +983,7 @@ function showJudge(v) {
 
 document.getElementById('q-correct').onclick = () => {
   const q = S.curQ.q, t = S.teams[S.buzzed];
-  const pts = q.type === 'bag' ? S.curQ.bagValue : q.value;
+  const pts = q.type === 'bag' ? S.curQ.bagValue : S.curQ.currentValue;
   t.score += pts; updScores(); SFX.correct(); flash('rgba(46,204,113,.45)');
   const rev = q.answer_reveal;
   if (!rev || (!rev.text && !rev.image && !rev.audio && !rev.video)) showPopup(pts, t.name);
@@ -982,15 +993,17 @@ document.getElementById('q-wrong').onclick = () => {
   const q = S.curQ.q, t = S.teams[S.buzzed];
   let pen = 0;
   if (q.type === 'bag') pen = S.curQ.bagValue;
-  else if (q.penalty === 'half') pen = Math.floor(q.value / 2);
-  else if (q.penalty === 'full') pen = q.value;
+  else if (q.penalty === 'half') pen = Math.floor(S.curQ.currentValue / 2);
+  else if (q.penalty === 'full') pen = S.curQ.currentValue;
   const rev = q.answer_reveal, hasReveal = rev && (rev.text || rev.image || rev.audio || rev.video);
   if (pen) { t.score -= pen; if (!hasReveal) showPopup(-pen, t.name); }
   updScores(); SFX.wrong(); flash('rgba(231,76,60,.45)');
   if (q.type === 'bag') { closeQ(); return; }
+  if (S.curQ.hintBuzzed) { closeQ(); return; }
   S.wrongTeams.add(S.buzzed); S.buzzed = null;
   document.getElementById('buzz-pill').style.display = 'none';
   showJudge(false); document.getElementById('q-start').style.display = 'inline-flex';
+  updAllHintBtns();
   if (S.curQ.buzzMode === 'one_chance' && S.teams.every((_, i) => S.wrongTeams.has(i))) { closeQ(); return; }
   resumeTimer();
 };
@@ -1005,8 +1018,69 @@ document.getElementById('ans-close').onclick = () => {
   S.used[S.curQ.k] = true; buildBoard(); checkDone(); showScreen('screen-board'); nextChooser();
 };
 
+function startHintTimer(teamIdx) {
+  S.hintSec = 10;
+  const pill = document.getElementById('buzz-pill');
+  pill.textContent = `💡 ${S.teams[teamIdx].name} — отвечает!`;
+  pill.style.display = 'inline-block';
+  updHintTimer(); updAllHintBtns();
+  S.hintInt = setInterval(() => {
+    S.hintSec--;
+    updHintTimer();
+    if (S.hintSec <= 0) {
+      clearInterval(S.hintInt); S.hintInt = null; S.hintTeam = null;
+      document.getElementById('buzz-pill').style.display = 'none';
+      closeQ();
+    }
+  }, 1000);
+}
+function clearHintTimer() {
+  clearInterval(S.hintInt); S.hintInt = null; S.hintTeam = null; S.hintSec = 0;
+}
+function updHintTimer() {
+  const num = document.getElementById('t-num'), arc = document.getElementById('t-arc');
+  const wrap = document.getElementById('timer-wrap');
+  wrap.classList.add('active');
+  num.textContent = S.hintSec;
+  arc.style.strokeDashoffset = TARC_VAL * (1 - S.hintSec / 10);
+  arc.style.stroke = '#4f8ef7'; num.style.color = '#4f8ef7';
+}
+function fillHintButtons() {
+  const row = document.getElementById('hint-row');
+  if (!row) return;
+  if (S.curQ.q.type !== 'normal') { row.style.display = 'none'; row.innerHTML = ''; return; }
+  row.style.display = 'flex';
+  row.innerHTML = S.teams.map((t, i) =>
+    `<button class="btn btn-ghost btn-sm hint-btn" id="hint-btn-${i}">💡 Подсказка: ${t.name}</button>`
+  ).join('');
+  S.teams.forEach((_, i) => {
+    document.getElementById(`hint-btn-${i}`).onclick = () => useHint(i);
+    updHintBtn(i);
+  });
+}
+function updHintBtn(i) {
+  const btn = document.getElementById(`hint-btn-${i}`);
+  if (!btn) return;
+  const disabled = S.hintsUsed[i] || S.hintTeam !== null || S.buzzed !== null;
+  btn.disabled = disabled; btn.style.opacity = disabled ? '0.3' : '1';
+}
+function updAllHintBtns() { S.teams.forEach((_, i) => updHintBtn(i)); }
+function useHint(teamIdx) {
+  if (S.hintsUsed[teamIdx] || S.hintTeam !== null || S.buzzed !== null) return;
+  if (!S.tRun && S.tSec === S.tTot) return;
+  S.hintsUsed[teamIdx] = true;
+  S.hintTeam = teamIdx;
+  pauseTimer();
+  S.curQ.currentValue = Math.floor(S.curQ.q.value / 2);
+  document.getElementById('q-val').textContent = S.curQ.currentValue + ' баллов (½ подсказка)';
+  document.getElementById('q-start').style.display = 'none';
+  showJudge(false);
+  startHintTimer(teamIdx);
+}
+
 function closeQ() {
   pauseTimer();
+  clearHintTimer();
   const rev = S.curQ.q.answer_reveal;
   if (rev && (rev.text || rev.image || rev.audio || rev.video)) {
     SFX.reveal();

@@ -207,7 +207,7 @@ function buildCategoryBlock(cat, ci, container) {
     pack.categories.splice(ci, 1); renderCategories(container);
   };
   block.querySelector(".aq-btn").onclick = () => {
-    cat.questions.push({value:100,question:"",type:"normal",penalty:"none",image:null,audio:null,video:null,answer_reveal:null});
+    cat.questions.push({value:100,timer:60,question:"",type:"normal",penalty:"none",image:null,audio:null,video:null,answer_reveal:null});
     renderCategories(container);
   };
   const body = block.querySelector(`#cb-${ci}`);
@@ -225,6 +225,8 @@ function buildQuestionCard(q, ci, qi, container) {
   top.innerHTML = `
     <label>Стоимость</label>
     <input type="number" value="${q.value||100}" min="0" step="50" style="width:85px">
+    <label>Таймер&nbsp;(сек)</label>
+    <input type="number" value="${q.timer||60}" min="10" max="300" step="5" style="width:75px">
     <label>Штраф</label>
     <div class="penalty-toggle">
       <button class="penalty-btn ${(q.penalty||"none")==="none"?"active":""}" data-p="none">Нет</button>
@@ -240,6 +242,7 @@ function buildQuestionCard(q, ci, qi, container) {
     <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-left:auto">✕</button>
   `;
   top.querySelector("input[type=number]").oninput = e => { q.value=parseInt(e.target.value)||0; };
+  top.querySelectorAll("input[type=number]")[1].oninput = e => { q.timer=parseInt(e.target.value)||60; };
   top.querySelectorAll(".penalty-btn").forEach(b => {
     b.onclick = () => { q.penalty=b.dataset.p; top.querySelectorAll(".penalty-btn").forEach(x=>x.classList.toggle("active",x===b)); };
   });
@@ -356,9 +359,14 @@ function buildMediaSection(obj, fields) {
 
 function downloadPack() {
   if (!pack) return;
-  const name=(pack.name||"pack").replace(/[^\wа-яёА-ЯЁ\s\-]/gi,"_");
-  const blob=new Blob([JSON.stringify(pack,null,2)],{type:"application/json"});
-  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name+".json"; a.click();
+  const name = (pack.name||'pack').replace(/[^\wа-яёА-ЯЁ\s\-]/gi,'_');
+  const blob = new Blob([JSON.stringify(pack,null,2)],{type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name+'.json'; a.click();
+  try {
+    localStorage.setItem('qhb_pack_'+name, JSON.stringify(pack));
+    const names = JSON.parse(localStorage.getItem('qhb_pack_names')||'[]');
+    if (!names.includes(name)) { names.push(name); localStorage.setItem('qhb_pack_names', JSON.stringify(names)); }
+  } catch {}
 }
 
 function esc(s){ return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
