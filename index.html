@@ -89,11 +89,11 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 .chip-score { font-size: 1.3rem; font-weight: 700; }
 .board-ctrl { display: flex; gap: .4rem; align-items: center; flex-shrink: 0; }
 .round-lbl { color: var(--text-muted); font-size: .82rem; }
-.board-grid { flex: 1; display: grid; overflow: auto; padding: .75rem 1.2rem 1.5rem; gap: 6px; align-content: start; }
-.cat-head { background: var(--surface2); border: 1px solid var(--border); color: #fff; border-radius: 6px; padding: .5rem; text-align: center; font-weight: 700; font-size: .9rem; text-transform: uppercase; letter-spacing: .04em; display: flex; align-items: center; justify-content: center; min-height: 52px; }
-.q-cell { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; color: #fff; cursor: pointer; transition: background .12s, transform .1s; min-height: 62px; }
-.q-cell:hover { background: var(--surface2); transform: scale(1.04); }
-.q-cell.used { background: #000; color: #1e1e1e; cursor: default; pointer-events: none; border-color: #111; }
+.board-grid { flex: 1; display: grid; overflow: auto; padding: .75rem 1.2rem 1.5rem; gap: 3px; align-content: start; }
+.cat-head { background: #000; border: 3px solid #fff; border-radius: 0; color: #fff; padding: .7rem 1.1rem; font-weight: 900; font-size: 1rem; text-transform: uppercase; letter-spacing: .05em; display: flex; align-items: center; justify-content: flex-start; min-height: 72px; }
+.q-cell { background: #000; border: 3px solid #fff; border-radius: 0; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 900; color: #fff; cursor: pointer; transition: background .1s; min-height: 72px; }
+.q-cell:hover { background: #1a1a1a; }
+.q-cell.used { background: #000; color: #111; cursor: default; pointer-events: none; border-color: #1c1c1c; }
 
 /* ── QUESTION ── */
 #screen-question { background: #000; overflow: hidden; }
@@ -700,12 +700,10 @@ function buildBoard() {
   const cats = pack.categories || [];
   if (!cats.length) { grid.innerHTML = '<p>Нет категорий.</p>'; return; }
   const maxQ = Math.max(...cats.map(c => c.questions.length));
-  grid.style.gridTemplateColumns = `repeat(${cats.length},1fr)`; grid.innerHTML = '';
-  cats.forEach(cat => {
+  grid.style.gridTemplateColumns = `minmax(160px, 24%) repeat(${maxQ}, 1fr)`; grid.innerHTML = '';
+  cats.forEach((cat, ci) => {
     const h = document.createElement('div'); h.className = 'cat-head'; h.textContent = cat.name; grid.appendChild(h);
-  });
-  for (let qi = 0; qi < maxQ; qi++) {
-    cats.forEach((cat, ci) => {
+    for (let qi = 0; qi < maxQ; qi++) {
       const q = cat.questions[qi], cell = document.createElement('div');
       const k = `${S.ri}-${ci}-${qi}`;
       if (!q) { cell.className = 'q-cell used'; }
@@ -715,8 +713,8 @@ function buildBoard() {
         cell.onclick = () => openQ(ci, qi);
       }
       grid.appendChild(cell);
-    });
-  }
+    }
+  });
 }
 function renderScores() {
   document.getElementById('scores-bar').innerHTML = S.teams.map((t, i) =>
