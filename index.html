@@ -1066,7 +1066,10 @@ function onBuzz(idx) {
   if (S.curQ.q.type === 'bag' && idx !== S.curQ.bagTeam) return;
   if (S.buzzed !== null) return;
   if (S.curQ.buzzMode === 'one_chance' && S.wrongTeams.has(idx)) return;
-  pauseTimer(); S.buzzed = idx; SFX.buzz();
+  const bq = S.curQ.q;
+  const timerPauses = !(bq.type === 'blitz' || bq.type === 'last') || !!bq.buzz_pauses_timer;
+  if (timerPauses) pauseTimer();
+  S.buzzed = idx; SFX.buzz();
   const pill = document.getElementById('buzz-pill');
   pill.textContent = S.teams[idx].name; pill.style.display = 'inline-block';
   showJudge(true);
@@ -1090,7 +1093,7 @@ document.getElementById('q-correct').onclick = () => {
     S.wrongTeams = new Set(); S.buzzed = null;
     document.getElementById('buzz-pill').style.display = 'none';
     showJudge(false); fillBlitzSub();
-    document.getElementById('q-start').style.display = 'inline-flex';
+    if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
     return;
   }
   if (q.type === 'last') {
@@ -1130,19 +1133,19 @@ document.getElementById('q-wrong').onclick = () => {
       S.wrongTeams = new Set(); S.buzzed = null;
       document.getElementById('buzz-pill').style.display = 'none';
       showJudge(false); fillBlitzSub();
-      document.getElementById('q-start').style.display = 'inline-flex';
+      if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
     } else {
       S.wrongTeams.add(S.buzzed); S.buzzed = null;
       document.getElementById('buzz-pill').style.display = 'none';
       showJudge(false);
-      document.getElementById('q-start').style.display = 'inline-flex';
+      if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
       resumeTimer();
     }
     return;
   }
   S.wrongTeams.add(S.buzzed); S.buzzed = null;
   document.getElementById('buzz-pill').style.display = 'none';
-  showJudge(false); document.getElementById('q-start').style.display = 'inline-flex';
+  showJudge(false); if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
   updAllHintBtns();
   if (S.curQ.buzzMode === 'one_chance' && S.teams.every((_, i) => S.wrongTeams.has(i))) { closeQ(); return; }
   resumeTimer();
@@ -1163,7 +1166,7 @@ document.getElementById('q-blitz-skip').onclick = () => {
   if (S.curQ.subIdx >= S.curQ.subs.length) { closeQ(); return; }
   S.wrongTeams = new Set();
   fillBlitzSub();
-  document.getElementById('q-start').style.display = 'inline-flex';
+  if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
 };
 document.getElementById('q-back').onclick = () => { pauseTimer(); showScreen('screen-board'); };
 document.getElementById('q-start').onclick = () => { if (!S.tRun) startTimer(); };

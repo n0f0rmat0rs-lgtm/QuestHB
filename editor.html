@@ -268,7 +268,7 @@ function buildQuestionCard(q, ci, qi, container) {
   top.querySelectorAll(".penalty-btn").forEach(b => {
     b.onclick = () => { q.penalty=b.dataset.p; top.querySelectorAll(".penalty-btn").forEach(x=>x.classList.toggle("active",x===b)); };
   });
-  let blitzSection;
+  let blitzSection, timerSection;
   top.querySelectorAll(".type-btn").forEach(b => {
     b.onclick = () => {
       q.type=b.dataset.t;
@@ -276,6 +276,7 @@ function buildQuestionCard(q, ci, qi, container) {
       top.querySelectorAll(".type-btn").forEach(x=>{ x.className="type-btn"; });
       b.classList.add(b.dataset.t==="bag"?"active-bag":b.dataset.t==="auction"?"active-auction":b.dataset.t==="last"?"active-last":b.dataset.t==="blitz"?"active-blitz":"active-normal");
       if (blitzSection) blitzSection.style.display = q.type === 'blitz' ? '' : 'none';
+      if (timerSection) timerSection.style.display = (q.type === 'blitz' || q.type === 'last') ? '' : 'none';
     };
   });
   top.querySelector(".btn-ghost[style*=red]").onclick = () => { pack.categories[ci].questions.splice(qi,1); renderCategories(container); };
@@ -291,6 +292,20 @@ function buildQuestionCard(q, ci, qi, container) {
   blitzSection = buildBlitzSection(q);
   blitzSection.style.display = q.type === 'blitz' ? '' : 'none';
   card.appendChild(blitzSection);
+
+  // Timer-on-buzz section (blitz + last)
+  timerSection = document.createElement('div');
+  timerSection.className = 'blitz-section';
+  timerSection.style.display = (q.type === 'blitz' || q.type === 'last') ? '' : 'none';
+  const timerLabel = document.createElement('label');
+  timerLabel.style.cssText = 'display:flex;align-items:center;gap:.4rem;cursor:pointer;font-size:.82rem';
+  const timerCb = document.createElement('input');
+  timerCb.type = 'checkbox'; timerCb.checked = !!q.buzz_pauses_timer;
+  timerCb.onchange = () => { q.buzz_pauses_timer = timerCb.checked; };
+  timerLabel.appendChild(timerCb);
+  timerLabel.appendChild(document.createTextNode('Таймер останавливается при ответе команды'));
+  timerSection.appendChild(timerLabel);
+  card.appendChild(timerSection);
 
   // Media fields
   card.appendChild(buildMediaSection(q, ["image","audio","video"]));
