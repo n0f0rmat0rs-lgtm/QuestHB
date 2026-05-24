@@ -184,6 +184,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 #fireworks-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
 .hint-row { display:flex; flex-wrap:wrap; gap:.4rem; justify-content:center; padding:.5rem .5rem 0; }
 .last-banner { text-align:center; font-size:1.6rem; font-weight:900; text-transform:uppercase; letter-spacing:.04em; color:#2ecc71; margin-top:1.2rem; padding:.6rem 1.2rem; border:2px solid #2ecc71; border-radius:8px; }
+.btn-hint { background: #e67e22; color: #fff; }
 </style>
 </head>
 <body>
@@ -305,6 +306,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
     <div class="q-controls">
       <button class="btn btn-success btn-sm" id="q-correct" style="display:none">✓ Верно [Пробел]</button>
       <button class="btn btn-danger  btn-sm" id="q-wrong"   style="display:none">✗ Неверно [Z]</button>
+      <button class="btn btn-hint    btn-sm" id="q-hint"    style="display:none">💡 Подсказка (½)</button>
       <button class="btn btn-secondary btn-sm" id="q-start">▶ Старт</button>
       <button class="btn btn-secondary btn-sm" id="q-last-end" style="display:none">Больше правильных ответов нет</button>
       <button class="btn btn-ghost    btn-sm" id="q-annul">Аннулировать</button>
@@ -871,7 +873,6 @@ function openQ(ci, qi) {
   S.buzzed = null; S.wrongTeams = new Set();
   if (q.type === 'bag') { openBagModal(q); return; }
   resetTimer(); fillQ(q, cat);
-  fillHintButtons();
   document.getElementById('buzz-pill').style.display = 'none';
   showJudge(false);
   document.getElementById('ans-overlay').style.display = 'none';
@@ -899,7 +900,6 @@ document.getElementById('bag-confirm-btn').onclick = () => {
   S.curQ.currentValue = S.curQ.bagValue;
   document.getElementById('modal-bag').style.display = 'none';
   resetTimer(); fillQ(S.curQ.q, S.rounds[S.ri].pack.categories[S.curQ.ci]);
-  fillHintButtons();
   document.getElementById('buzz-pill').style.display = 'none';
   showJudge(false);
   document.getElementById('ans-overlay').style.display = 'none';
@@ -1033,23 +1033,22 @@ document.getElementById('q-last-end').onclick = () => {
 ═══════════════════════════════════════ */
 function onBuzz(idx) {
   if (!S.teams[idx]) return;
-  if (!S.tRun && S.hintTeam === null && S.tSec === S.tTot) return;
+  if (!S.tRun && S.tSec === S.tTot) return;
   if (S.curQ.q.type === 'auction') return;
   if (S.curQ.q.type === 'bag' && idx !== S.curQ.bagTeam) return;
-  if (S.hintTeam !== null && idx !== S.hintTeam) return;
   if (S.buzzed !== null) return;
   if (S.curQ.buzzMode === 'one_chance' && S.wrongTeams.has(idx)) return;
-  if (S.hintTeam !== null) { clearInterval(S.hintInt); S.hintInt = null; S.hintTeam = null; S.curQ.hintBuzzed = true; }
   pauseTimer(); S.buzzed = idx; SFX.buzz();
   const pill = document.getElementById('buzz-pill');
   pill.textContent = S.teams[idx].name; pill.style.display = 'inline-block';
   showJudge(true);
   document.getElementById('q-start').style.display = 'none';
-  updAllHintBtns();
 }
 function showJudge(v) {
   document.getElementById('q-correct').style.display = v ? 'inline-flex' : 'none';
   document.getElementById('q-wrong').style.display   = v ? 'inline-flex' : 'none';
+  const canHint = v && S.curQ && S.curQ.q.type === 'normal' && S.buzzed !== null && !S.hintsUsed[S.buzzed] && !S.curQ.hintBuzzed;
+  document.getElementById('q-hint').style.display = canHint ? 'inline-flex' : 'none';
 }
 
 document.getElementById('q-correct').onclick = () => {
@@ -1083,7 +1082,7 @@ document.getElementById('q-wrong').onclick = () => {
   if (pen) { t.score -= pen; if (!hasReveal) showPopup(-pen, t.name); }
   updScores(); SFX.wrong(); flash('rgba(231,76,60,.45)');
   if (q.type === 'bag') { closeQ(); return; }
-  if (S.curQ.hintBuzzed) { afterHintFail(); return; }
+  if (S.curQ.hintBuzzed) { clearHintTimer(); afterHintFail(); return; }
   S.wrongTeams.add(S.buzzed); S.buzzed = null;
   document.getElementById('buzz-pill').style.display = 'none';
   showJudge(false); document.getElementById('q-start').style.display = 'inline-flex';
@@ -1102,18 +1101,16 @@ document.getElementById('ans-close').onclick = () => {
   S.used[S.curQ.k] = true; buildBoard(); checkDone(); showScreen('screen-board'); nextChooser();
 };
 
-function startHintTimer(teamIdx) {
+function startHintTimer() {
   S.hintSec = 10;
   const pill = document.getElementById('buzz-pill');
-  pill.textContent = `💡 ${S.teams[teamIdx].name} — отвечает!`;
-  pill.style.display = 'inline-block';
-  updHintTimer(); updAllHintBtns();
+  pill.textContent = `💡 ${S.teams[S.buzzed].name} — подсказка!`;
+  updHintTimer();
   S.hintInt = setInterval(() => {
     S.hintSec--;
     updHintTimer();
     if (S.hintSec <= 0) {
-      clearInterval(S.hintInt); S.hintInt = null; S.hintTeam = null;
-      document.getElementById('buzz-pill').style.display = 'none';
+      clearInterval(S.hintInt); S.hintInt = null;
       afterHintFail();
     }
   }, 1000);
@@ -1129,7 +1126,6 @@ function afterHintFail() {
   const num = document.getElementById('t-num'); num.textContent = S.tTot; num.style.color = '#fff';
   document.getElementById('timer-wrap').classList.remove('active', 'flash-start');
   document.getElementById('q-start').style.display = 'inline-flex';
-  updAllHintBtns();
 }
 function clearHintTimer() {
   clearInterval(S.hintInt); S.hintInt = null; S.hintTeam = null; S.hintSec = 0;
@@ -1162,18 +1158,16 @@ function updHintBtn(i) {
   btn.disabled = disabled; btn.style.opacity = disabled ? '0.3' : '1';
 }
 function updAllHintBtns() { S.teams.forEach((_, i) => updHintBtn(i)); }
-function useHint(teamIdx) {
-  if (S.hintsUsed[teamIdx] || S.hintTeam !== null || S.buzzed !== null) return;
-  if (!S.tRun && S.tSec === S.tTot) return;
-  S.hintsUsed[teamIdx] = true;
-  S.hintTeam = teamIdx;
-  pauseTimer();
+function useHint() {
+  if (S.buzzed === null || S.curQ.hintBuzzed || S.hintsUsed[S.buzzed]) return;
+  S.hintsUsed[S.buzzed] = true;
+  S.curQ.hintBuzzed = true;
   S.curQ.currentValue = Math.floor(S.curQ.q.value / 2);
   document.getElementById('q-val').textContent = S.curQ.currentValue + ' баллов (½ подсказка)';
-  document.getElementById('q-start').style.display = 'none';
-  showJudge(false);
-  startHintTimer(teamIdx);
+  showJudge(true); // re-renders buttons; hint button hidden since hintBuzzed=true
+  startHintTimer();
 }
+document.getElementById('q-hint').onclick = useHint;
 
 function closeQ() {
   pauseTimer();
