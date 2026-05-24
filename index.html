@@ -870,6 +870,12 @@ function openQ(ci, qi) {
   const k = `${S.ri}-${ci}-${qi}`; if (S.used[k]) return;
   const cat = S.rounds[S.ri].pack.categories[ci], q = cat.questions[qi];
   S.curQ = {ci, qi, k, q, catName: cat.name, buzzMode: cat.buzz_mode || 'unlimited', currentValue: q.value, hintBuzzed: false, lastCorrectTeam: null};
+  if (q.type === 'blitz') {
+    S.curQ.subs = q.sub_questions || [];
+    S.curQ.subIdx = 0;
+    S.curQ.subPts = S.curQ.subs.length > 0 ? Math.floor(q.value / S.curQ.subs.length) : q.value;
+    S.curQ.currentValue = S.curQ.subPts;
+  }
   S.buzzed = null; S.wrongTeams = new Set();
   if (q.type === 'bag') { openBagModal(q); return; }
   resetTimer(); fillQ(q, cat);
@@ -943,17 +949,34 @@ document.getElementById('auction-annul-btn').onclick = () => {
 
 function fillQ(q, cat) {
   const isBag = S.curQ.q.type === 'bag';
-  document.getElementById('q-val').textContent = (isBag ? S.curQ.bagValue : q.value) + ' баллов';
-  document.getElementById('q-cat').textContent = isBag ? `Играет: ${S.teams[S.curQ.bagTeam].name}` : cat.name;
-  const txt = q.question || '';
-  const el = document.getElementById('q-text'); el.textContent = txt;
-  const len = txt.length;
-  el.style.fontSize = len < 60 ? '5rem' : len < 120 ? '3.5rem' : len < 250 ? '2.5rem' : '1.8rem';
-  setMedia('q-img','q-aud','q-vid','q-vwrap', q);
+  const isBlitz = q.type === 'blitz';
+  if (isBlitz) {
+    document.getElementById('q-cat').textContent = `⚡ Блиц — ${cat.name}`;
+    setMedia('q-img','q-aud','q-vid','q-vwrap', {});
+  } else {
+    document.getElementById('q-val').textContent = (isBag ? S.curQ.bagValue : q.value) + ' баллов';
+    document.getElementById('q-cat').textContent = isBag ? `Играет: ${S.teams[S.curQ.bagTeam].name}` : cat.name;
+    const txt = q.question || '';
+    const el = document.getElementById('q-text'); el.textContent = txt;
+    const len = txt.length;
+    el.style.fontSize = len < 60 ? '5rem' : len < 120 ? '3.5rem' : len < 250 ? '2.5rem' : '1.8rem';
+    setMedia('q-img','q-aud','q-vid','q-vwrap', q);
+  }
+  if (isBlitz) fillBlitzSub();
   document.getElementById('last-banner').style.display = 'none';
   document.getElementById('q-last-end').style.display = q.type === 'last' ? 'inline-flex' : 'none';
   document.getElementById('q-start').style.display = 'inline-flex';
   document.getElementById('q-annul').style.display = 'inline-flex';
+}
+function fillBlitzSub() {
+  const sub = S.curQ.subs[S.curQ.subIdx];
+  const el = document.getElementById('q-text');
+  const txt = sub ? (sub.question || '') : '';
+  el.textContent = txt;
+  const len = txt.length;
+  el.style.fontSize = len < 60 ? '5rem' : len < 120 ? '3.5rem' : len < 250 ? '2.5rem' : '1.8rem';
+  document.getElementById('q-val').textContent =
+    `${S.curQ.subPts} баллов (${S.curQ.subIdx + 1}/${S.curQ.subs.length})`;
 }
 function setMedia(imgId, audId, vidId, vidWId, src) {
   const img = document.getElementById(imgId);
@@ -1053,6 +1076,18 @@ function showJudge(v) {
 
 document.getElementById('q-correct').onclick = () => {
   const q = S.curQ.q, t = S.teams[S.buzzed];
+  if (q.type === 'blitz') {
+    const pts = S.curQ.subPts;
+    t.score += pts; updScores(); SFX.correct(); flash('rgba(46,204,113,.45)');
+    showPopup(pts, t.name);
+    S.curQ.subIdx++;
+    if (S.curQ.subIdx >= S.curQ.subs.length) { closeQ(); return; }
+    S.wrongTeams = new Set(); S.buzzed = null;
+    document.getElementById('buzz-pill').style.display = 'none';
+    showJudge(false); fillBlitzSub();
+    document.getElementById('q-start').style.display = 'inline-flex';
+    return;
+  }
   if (q.type === 'last') {
     S.curQ.lastCorrectTeam = S.buzzed;
     SFX.correct(); flash('rgba(46,204,113,.22)');

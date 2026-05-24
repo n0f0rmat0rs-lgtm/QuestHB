@@ -55,6 +55,13 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); bo
 .type-btn.active-bag     { background: #9b59b6; color: #fff; border-color: #9b59b6; }
 .type-btn.active-auction { background: var(--gold); color: #000; border-color: var(--gold); }
 .type-btn.active-last    { background: #2ecc71; color: #000; border-color: #2ecc71; }
+.type-btn.active-blitz   { background: #f39c12; color: #000; border-color: #f39c12; }
+.blitz-section { border-top:1px solid var(--border); padding-top:.75rem; margin-top:.25rem; display:flex; flex-direction:column; gap:.4rem; }
+.blitz-list { display:flex; flex-direction:column; gap:.5rem; }
+.blitz-sub-row { display:flex; align-items:flex-start; gap:.4rem; }
+.blitz-sub-num { font-size:.85rem; color:var(--text-muted); font-weight:700; min-width:1.5rem; padding-top:.55rem; flex-shrink:0; }
+.blitz-sub-q { flex:2; min-width:0; font-family:inherit; }
+.blitz-sub-a { flex:1; min-width:0; }
 
 /* Media picker */
 .media-picker { display: flex; flex-direction: column; gap: .4rem; }
@@ -148,7 +155,7 @@ function renderEditor() {
 
   const banner = document.createElement("div");
   banner.className = "info-banner";
-  banner.innerHTML = `<strong>Типы вопросов:</strong> обычный | <span style="color:#9b59b6">🎁 Кот в мешке</span> — категория скрыта до ответа | <span style="color:var(--gold)">🔨 Аукцион</span> — ставки командами | <span style="color:#2ecc71">🏁 Назови последним</span> — можно отвечать много раз, баллы получает последний верный ответ<br><strong>Баззер:</strong> <span style="color:#27ae60">∞ спам</span> — команды жмут сколько угодно раз | <span style="color:#e67e22">1 шанс</span> — каждая команда может ответить только один раз`;
+  banner.innerHTML = `<strong>Типы вопросов:</strong> обычный | <span style="color:#9b59b6">🎁 Кот в мешке</span> — категория скрыта | <span style="color:var(--gold)">🔨 Аукцион</span> — ставки | <span style="color:#2ecc71">🏁 Назови последним</span> — баллы у последнего верного | <span style="color:#f39c12">⚡ Блиц</span> — серия подвопросов, баллы = стоимость ÷ кол-во<br><strong>Баззер:</strong> <span style="color:#27ae60">∞ спам</span> — команды жмут сколько угодно | <span style="color:#e67e22">1 шанс</span> — каждая один раз`;
   main.appendChild(banner);
 
   const header = document.createElement("div");
@@ -240,6 +247,7 @@ function buildQuestionCard(q, ci, qi, container) {
       <button class="type-btn ${q.type==="bag"?"active-bag":""}" data-t="bag">🎁 Кот в мешке</button>
       <button class="type-btn ${q.type==="auction"?"active-auction":""}" data-t="auction">🔨 Аукцион</button>
       <button class="type-btn ${q.type==="last"?"active-last":""}" data-t="last">🏁 Назови последним</button>
+      <button class="type-btn ${q.type==="blitz"?"active-blitz":""}" data-t="blitz">⚡ Блиц</button>
     </div>
     <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-left:auto">✕</button>
   `;
@@ -248,11 +256,14 @@ function buildQuestionCard(q, ci, qi, container) {
   top.querySelectorAll(".penalty-btn").forEach(b => {
     b.onclick = () => { q.penalty=b.dataset.p; top.querySelectorAll(".penalty-btn").forEach(x=>x.classList.toggle("active",x===b)); };
   });
+  let blitzSection;
   top.querySelectorAll(".type-btn").forEach(b => {
     b.onclick = () => {
       q.type=b.dataset.t;
+      if (q.type === 'blitz' && !q.sub_questions) q.sub_questions = [];
       top.querySelectorAll(".type-btn").forEach(x=>{ x.className="type-btn"; });
-      b.classList.add(b.dataset.t==="bag"?"active-bag":b.dataset.t==="auction"?"active-auction":b.dataset.t==="last"?"active-last":"active-normal");
+      b.classList.add(b.dataset.t==="bag"?"active-bag":b.dataset.t==="auction"?"active-auction":b.dataset.t==="last"?"active-last":b.dataset.t==="blitz"?"active-blitz":"active-normal");
+      if (blitzSection) blitzSection.style.display = q.type === 'blitz' ? '' : 'none';
     };
   });
   top.querySelector(".btn-ghost[style*=red]").onclick = () => { pack.categories[ci].questions.splice(qi,1); renderCategories(container); };
@@ -260,9 +271,14 @@ function buildQuestionCard(q, ci, qi, container) {
 
   // Question text
   const ta = document.createElement("textarea");
-  ta.rows=3; ta.placeholder="Текст вопроса"; ta.textContent=q.question||"";
+  ta.rows=3; ta.placeholder="Текст вопроса (заголовок блица или текст обычного вопроса)"; ta.textContent=q.question||"";
   ta.oninput = e => { q.question=e.target.value; };
   card.appendChild(ta);
+
+  // Blitz sub-questions section
+  blitzSection = buildBlitzSection(q);
+  blitzSection.style.display = q.type === 'blitz' ? '' : 'none';
+  card.appendChild(blitzSection);
 
   // Media fields
   card.appendChild(buildMediaSection(q, ["image","audio","video"]));
@@ -356,6 +372,46 @@ function buildMediaSection(obj, fields) {
       if(previewEl){ previewEl.remove(); previewEl=null; }
     };
   });
+  return wrap;
+}
+
+function buildBlitzSection(q) {
+  if (!q.sub_questions) q.sub_questions = [];
+  const wrap = document.createElement('div');
+  wrap.className = 'blitz-section';
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'font-size:.82rem;color:var(--text-muted);font-weight:600';
+  hdr.textContent = '⚡ Подвопросы блица:';
+  wrap.appendChild(hdr);
+  const list = document.createElement('div');
+  list.className = 'blitz-list';
+  wrap.appendChild(list);
+  function renderSubs() {
+    list.innerHTML = '';
+    q.sub_questions.forEach((sub, si) => {
+      const row = document.createElement('div');
+      row.className = 'blitz-sub-row';
+      const num = document.createElement('span');
+      num.className = 'blitz-sub-num'; num.textContent = (si+1)+'.';
+      const qta = document.createElement('textarea');
+      qta.className = 'blitz-sub-q'; qta.rows=2; qta.placeholder='Текст подвопроса';
+      qta.value = sub.question||''; qta.oninput = e => { sub.question=e.target.value; };
+      const ans = document.createElement('input');
+      ans.type='text'; ans.className='blitz-sub-a'; ans.placeholder='Ответ (для ведущего)';
+      ans.value=sub.answer||''; ans.oninput=e=>{ sub.answer=e.target.value; };
+      const del = document.createElement('button');
+      del.className='media-clear'; del.textContent='✕'; del.title='Удалить';
+      del.onclick=()=>{ q.sub_questions.splice(si,1); renderSubs(); };
+      row.appendChild(num); row.appendChild(qta); row.appendChild(ans); row.appendChild(del);
+      list.appendChild(row);
+    });
+  }
+  renderSubs();
+  const addBtn = document.createElement('button');
+  addBtn.className='btn btn-ghost btn-sm'; addBtn.style.marginTop='.3rem';
+  addBtn.textContent='+ Подвопрос';
+  addBtn.onclick=()=>{ q.sub_questions.push({question:'',answer:''}); renderSubs(); };
+  wrap.appendChild(addBtn);
   return wrap;
 }
 
