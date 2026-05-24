@@ -169,18 +169,19 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 .auc-res-btn.wrong   { background: var(--red);   border-color: var(--red);   color: #fff; }
 
 /* ── CREDITS ── */
-#screen-credits { background: #000; align-items: center; justify-content: center; overflow: hidden; }
-.credits-inner { width: 100%; max-width: 700px; display: flex; flex-direction: column; align-items: stretch; }
-.credits-title { font-size: 1rem; letter-spacing: .3em; text-transform: uppercase; color: var(--text-muted); text-align: center; margin-bottom: 1.5rem; }
-.credit-row { display: flex; align-items: center; gap: 1.5rem; padding: 1rem 2rem; border-top: 1px solid #1a1a1a; transform: translateX(-40px); opacity: 0; transition: transform .9s cubic-bezier(.22,1,.36,1), opacity .7s; }
+#screen-credits { background: #000; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+.credits-inner { position: relative; z-index: 1; width: 100%; padding: 0 6%; display: flex; flex-direction: column; align-items: stretch; }
+.credits-title { font-size: 1.8rem; letter-spacing: .3em; text-transform: uppercase; color: var(--text-muted); text-align: center; margin-bottom: 3rem; }
+.credit-row { display: flex; align-items: center; gap: 2rem; padding: 1.8rem 3rem; border-top: 2px solid #1a1a1a; transform: translateX(-60px); opacity: 0; transition: transform .9s cubic-bezier(.22,1,.36,1), opacity .7s; }
 .credit-row.entered { transform: translateX(0); opacity: 1; }
-.credit-place { font-size: 1.1rem; color: var(--text-muted); font-weight: 700; min-width: 2rem; text-align: center; }
-.credit-name  { flex: 1; font-size: 1.6rem; font-weight: 700; }
-.credit-score { font-size: 1.6rem; font-weight: 900; }
+.credit-place { font-size: 2rem; color: var(--text-muted); font-weight: 700; min-width: 3rem; text-align: center; }
+.credit-name  { flex: 1; font-size: 3.2rem; font-weight: 700; }
+.credit-score { font-size: 3.2rem; font-weight: 900; }
 .credit-row.first-place .credit-name,
-.credit-row.first-place .credit-score { font-size: 2.2rem; }
-.credit-row.first-place { padding: 1.4rem 2rem; border-top-color: #333; }
-.credits-restart { position: fixed; bottom: 1.5rem; right: 1.5rem; }
+.credit-row.first-place .credit-score { font-size: 5rem; }
+.credit-row.first-place { padding: 2.5rem 3rem; border-top-color: #333; }
+.credits-restart { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 2; }
+#fireworks-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
 </style>
 </head>
 <body>
@@ -315,6 +316,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 
 <!-- ══ CREDITS ══ -->
 <div id="screen-credits" class="screen">
+  <canvas id="fireworks-canvas"></canvas>
   <div class="credits-inner" id="credits-inner">
     <div class="credits-title">— итоги —</div>
   </div>
@@ -885,7 +887,7 @@ function fillQ(q, cat) {
   const txt = q.question || '';
   const el = document.getElementById('q-text'); el.textContent = txt;
   const len = txt.length;
-  el.style.fontSize = len < 60 ? '3.5rem' : len < 120 ? '2.5rem' : len < 250 ? '1.9rem' : '1.4rem';
+  el.style.fontSize = len < 60 ? '5rem' : len < 120 ? '3.5rem' : len < 250 ? '2.5rem' : '1.8rem';
   setMedia('q-img','q-aud','q-vid','q-vwrap', q);
   document.getElementById('q-start').style.display = 'inline-flex';
   document.getElementById('q-annul').style.display = 'inline-flex';
@@ -972,7 +974,9 @@ document.getElementById('q-correct').onclick = () => {
   const q = S.curQ.q, t = S.teams[S.buzzed];
   const pts = q.type === 'bag' ? S.curQ.bagValue : q.value;
   t.score += pts; updScores(); SFX.correct(); flash('rgba(46,204,113,.45)');
-  showPopup(pts, t.name); closeQ();
+  const rev = q.answer_reveal;
+  if (!rev || (!rev.text && !rev.image && !rev.audio && !rev.video)) showPopup(pts, t.name);
+  closeQ();
 };
 document.getElementById('q-wrong').onclick = () => {
   const q = S.curQ.q, t = S.teams[S.buzzed];
@@ -980,7 +984,8 @@ document.getElementById('q-wrong').onclick = () => {
   if (q.type === 'bag') pen = S.curQ.bagValue;
   else if (q.penalty === 'half') pen = Math.floor(q.value / 2);
   else if (q.penalty === 'full') pen = q.value;
-  if (pen) { t.score -= pen; showPopup(-pen, t.name); }
+  const rev = q.answer_reveal, hasReveal = rev && (rev.text || rev.image || rev.audio || rev.video);
+  if (pen) { t.score -= pen; if (!hasReveal) showPopup(-pen, t.name); }
   updScores(); SFX.wrong(); flash('rgba(231,76,60,.45)');
   if (q.type === 'bag') { closeQ(); return; }
   S.wrongTeams.add(S.buzzed); S.buzzed = null;
@@ -1018,6 +1023,73 @@ function closeQ() {
 /* ═══════════════════════════════════════
    CREDITS
 ═══════════════════════════════════════ */
+let _rickAudio = null;
+function stopRick() {
+  if (_rickAudio) { try { _rickAudio.pause(); _rickAudio.currentTime = 0; } catch {} _rickAudio = null; }
+}
+
+let _fwRunning = false;
+function startFireworks() {
+  if (_fwRunning) return;
+  const canvas = document.getElementById('fireworks-canvas');
+  canvas.width = canvas.offsetWidth || window.innerWidth;
+  canvas.height = canvas.offsetHeight || window.innerHeight;
+  const ctx = canvas.getContext('2d');
+  const particles = [];
+  _fwRunning = true;
+
+  const COLORS = ['#ff4455','#ff8c00','#ffee00','#44ff88','#44aaff','#dd44ff','#ffffff','#aaffee'];
+
+  function burst() {
+    if (!_fwRunning) return;
+    const x = canvas.width * (0.15 + Math.random() * 0.7);
+    const y = canvas.height * (0.1 + Math.random() * 0.55);
+    const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    const count = 80 + Math.floor(Math.random() * 50);
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 * i) / count + (Math.random() - .5) * 0.4;
+      const speed = 2.5 + Math.random() * 6;
+      particles.push({
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 1.5,
+        life: 1,
+        decay: 0.009 + Math.random() * 0.014,
+        size: 2 + Math.random() * 3.5,
+        color
+      });
+    }
+    setTimeout(burst, 350 + Math.random() * 800);
+  }
+
+  function tick() {
+    if (!_fwRunning) { ctx.clearRect(0, 0, canvas.width, canvas.height); return; }
+    ctx.fillStyle = 'rgba(0,0,0,0.16)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx; p.y += p.vy;
+      p.vy += 0.11; p.vx *= 0.97; p.vy *= 0.97;
+      p.life -= p.decay;
+      if (p.life <= 0) { particles.splice(i, 1); continue; }
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(tick);
+  }
+
+  burst();
+  setTimeout(burst, 180);
+  requestAnimationFrame(tick);
+}
+function stopFireworks() {
+  _fwRunning = false;
+}
+
 function showCredits() {
   const sorted = [...S.teams].sort((a, b) => b.score - a.score);
   const inner = document.getElementById('credits-inner');
@@ -1030,12 +1102,15 @@ function showCredits() {
   });
   playSound('slide_on');
   showScreen('screen-credits');
+  startFireworks();
   const rows = inner.querySelectorAll('.credit-row');
   const n = rows.length;
   rows.forEach((row, i) => setTimeout(() => row.classList.add('entered'), 500 + (n - 1 - i) * 1000));
-  setTimeout(() => SFX.rick(), 500 + (n - 1) * 1000 + 200);
+  setTimeout(() => {
+    try { _rickAudio = new Audio('sounds/rick.mp3'); _rickAudio.play().catch(() => {}); } catch {}
+  }, 500 + (n - 1) * 1000 + 200);
 }
-document.getElementById('credits-back').onclick = () => { stopFlappy(); showScreen('screen-setup'); };
+document.getElementById('credits-back').onclick = () => { stopRick(); stopFireworks(); stopFlappy(); showScreen('screen-setup'); };
 
 /* ═══════════════════════════════════════
    KEYBOARD
