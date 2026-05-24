@@ -69,6 +69,11 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); bo
 .reveal-toggle { background: none; border: 1px dashed var(--border); color: var(--text-muted); border-radius: 6px; padding: .3em .8em; cursor: pointer; font-size: .82rem; font-family: inherit; width: fit-content; }
 .reveal-toggle:hover { border-color: var(--accent); color: var(--accent); }
 
+.buzz-toggle { display: flex; gap: .3rem; margin-left: auto; }
+.buzz-btn { padding: .25em .6em; border-radius: 6px; font-size: .78rem; font-weight: 600; border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted); cursor: pointer; font-family: inherit; }
+.buzz-btn.active-unlimited { background: #27ae60; color: #fff; border-color: #27ae60; }
+.buzz-btn.active-one_chance { background: #e67e22; color: #fff; border-color: #e67e22; }
+
 .info-banner { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: .85rem 1rem; margin-bottom: 1.5rem; font-size: .85rem; color: var(--text-muted); line-height: 1.6; }
 .info-banner strong { color: var(--text); }
 </style>
@@ -142,7 +147,7 @@ function renderEditor() {
 
   const banner = document.createElement("div");
   banner.className = "info-banner";
-  banner.innerHTML = `<strong>Типы вопросов:</strong> обычный | <span style="color:#9b59b6">🎁 Кот в мешке</span> — категория скрыта до ответа | <span style="color:var(--gold)">🔨 Аукцион</span> — помечается на поле`;
+  banner.innerHTML = `<strong>Типы вопросов:</strong> обычный | <span style="color:#9b59b6">🎁 Кот в мешке</span> — категория скрыта до ответа | <span style="color:var(--gold)">🔨 Аукцион</span> — помечается на поле<br><strong>Баззер:</strong> <span style="color:#27ae60">∞ спам</span> — команды жмут сколько угодно раз | <span style="color:#e67e22">1 шанс</span> — каждая команда может ответить только один раз`;
   main.appendChild(banner);
 
   const header = document.createElement("div");
@@ -163,7 +168,7 @@ function renderEditor() {
   const addBtn = document.createElement("button");
   addBtn.className = "btn btn-secondary";
   addBtn.textContent = "+ Добавить категорию";
-  addBtn.onclick = () => { pack.categories.push({name:"Новая категория",questions:[]}); renderCategories(catContainer); };
+  addBtn.onclick = () => { pack.categories.push({name:"Новая категория",buzz_mode:"unlimited",questions:[]}); renderCategories(catContainer); };
   main.appendChild(addBtn);
 }
 
@@ -175,15 +180,28 @@ function renderCategories(container) {
 function buildCategoryBlock(cat, ci, container) {
   const block = document.createElement("div");
   block.className = "category-block";
+  const bm = cat.buzz_mode || "unlimited";
   block.innerHTML = `
     <div class="cat-header">
       <input type="text" value="${esc(cat.name)}" placeholder="Название категории" style="flex:1">
+      <div class="buzz-toggle" title="Режим баззера для этой категории">
+        <button class="buzz-btn ${bm==="unlimited"?"active-unlimited":""}" data-bm="unlimited">∞ спам</button>
+        <button class="buzz-btn ${bm==="one_chance"?"active-one_chance":""}" data-bm="one_chance">1 шанс</button>
+      </div>
       <button class="btn btn-ghost btn-sm" style="color:var(--red)">✕</button>
     </div>
     <div class="cat-body" id="cb-${ci}"></div>
     <div class="cat-footer"><button class="btn btn-secondary btn-sm aq-btn">+ Вопрос</button></div>
   `;
   block.querySelector(".cat-header input").oninput = e => { cat.name = e.target.value; };
+  block.querySelectorAll(".buzz-btn").forEach(b => {
+    b.onclick = () => {
+      cat.buzz_mode = b.dataset.bm;
+      block.querySelectorAll(".buzz-btn").forEach(x => {
+        x.className = "buzz-btn" + (x === b ? " active-" + b.dataset.bm : "");
+      });
+    };
+  });
   block.querySelector(".cat-header .btn-ghost").onclick = () => {
     if (!confirm("Удалить категорию со всеми вопросами?")) return;
     pack.categories.splice(ci, 1); renderCategories(container);
