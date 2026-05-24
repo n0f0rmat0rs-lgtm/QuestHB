@@ -223,7 +223,10 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
   <div id="flappy-columns"></div>
   <div id="flappy-bar">
     <span id="flappy-bar-left">Каждая команда нажимает свою кнопку — птица летит!</span>
-    <button class="btn btn-primary" id="flappy-to-names">Перейти к названию команд →</button>
+    <div style="display:flex;gap:.5rem">
+      <button class="btn btn-ghost btn-sm" id="flappy-return-btn" style="display:none">← Вернуться к игре</button>
+      <button class="btn btn-primary" id="flappy-to-names">Перейти к названию команд →</button>
+    </div>
   </div>
 </div>
 
@@ -254,6 +257,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
     <div id="scores-bar"></div>
     <div class="board-ctrl">
       <span class="round-lbl" id="round-lbl"></span>
+      <button class="btn btn-ghost btn-sm" id="pause-btn">⏸ Пауза</button>
       <button class="btn btn-ghost btn-sm" id="adj-btn">± Баллы</button>
       <button class="btn btn-ghost btn-sm" id="next-round-btn" style="display:none">Следующий раунд →</button>
       <button class="btn btn-ghost btn-sm" id="end-btn" style="display:none">🏆 Итоги</button>
@@ -372,8 +376,8 @@ const SFX = {
   tick()    { playSound('click'); },
   slide()   { playSound('slide_on'); },
   intro()   { playSound('slide_on'); },
-  catShow() { playSound('slide_on'); },
-  reveal()  { playSound('slide_on'); },
+  catShow() { },
+  reveal()  { },
   rick()    { playSound('rick'); },
 };
 let _hoverLast = 0;
@@ -448,6 +452,8 @@ document.getElementById('team-plus').onclick  = () => { if (sTeamCount < 6) { sT
 
 document.getElementById('start-btn').onclick = () => {
   if (!sRounds.length) { alert('Добавь хотя бы один раунд.'); return; }
+  document.getElementById('flappy-to-names').style.display = 'inline-flex';
+  document.getElementById('flappy-return-btn').style.display = 'none';
   showScreen('screen-flappy');
   launchFlappy(sTeamCount);
   document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(() => {});
@@ -481,24 +487,24 @@ class FlappyGame {
   flap() {
     if (this.state === 'waiting') {
       this.state = 'running';
-      this.bird.vy = -8.5;
+      this.bird.vy = -7.2;
     } else if (this.state === 'running') {
-      this.bird.vy = -8.5;
+      this.bird.vy = -7.2;
     } else if (this.state === 'dead') {
       this.best = Math.max(this.best, this.score);
       this._init();
       this.bird.y = this.h / 2;
       this.state = 'running';
-      this.bird.vy = -8.5;
+      this.bird.vy = -7.2;
     }
   }
   update() {
     if (this.state !== 'running') return;
-    const G=0.38, BX=55, BR=14, PW=46, PG=150, PS=2.6;
+    const G=0.28, BX=55, BR=14, PW=40, PG=210, PS=1.8;
     this.bird.vy += G;
     this.bird.y  += this.bird.vy;
     this.pipeTimer++;
-    if (this.pipeTimer >= 88) {
+    if (this.pipeTimer >= 115) {
       this.pipeTimer = 0;
       const gapY = 55 + Math.random() * (this.h - PG - 110);
       this.pipes.push({ x: this.w, gapY, pass: false });
@@ -517,7 +523,7 @@ class FlappyGame {
   }
   draw() {
     const { ctx, w, h } = this;
-    const BX=55, BR=14, PW=46, PG=150;
+    const BX=55, BR=14, PW=40, PG=210;
     const fs = s => Math.max(s * .65, Math.min(s, w * (s / 300)));
 
     // Sky
@@ -618,7 +624,7 @@ function launchFlappy(n) {
     const col = document.createElement('div'); col.className = 'flappy-col';
     const canvas = document.createElement('canvas');
     const lbl = document.createElement('div'); lbl.className = 'flappy-col-label';
-    lbl.textContent = `кнопка ${i+1}`;
+    lbl.textContent = (S.teams && S.teams[i]) ? S.teams[i].name : `кнопка ${i+1}`;
     col.appendChild(canvas); col.appendChild(lbl);
     cont.appendChild(col);
     flappyGames.push(new FlappyGame(canvas, i));
@@ -654,7 +660,6 @@ document.getElementById('start-game-btn').onclick = () => {
   S.ri = 0; S.used = {};
   document.getElementById('modal-team-names').style.display = 'none';
   stopFlappy();
-  SFX.intro();
   startRound(0);
 };
 
@@ -751,6 +756,18 @@ function adjScore(idx, sign) {
 document.getElementById('next-round-btn').onclick = () => startRound(S.ri+1);
 document.getElementById('back-setup-btn').onclick = () => { stopFlappy(); showScreen('screen-setup'); };
 document.getElementById('end-btn').onclick = showCredits;
+document.getElementById('pause-btn').onclick = () => {
+  document.getElementById('flappy-to-names').style.display = 'none';
+  document.getElementById('flappy-return-btn').style.display = 'inline-flex';
+  launchFlappy(S.teams.length);
+  showScreen('screen-flappy');
+};
+document.getElementById('flappy-return-btn').onclick = () => {
+  stopFlappy();
+  document.getElementById('flappy-return-btn').style.display = 'none';
+  document.getElementById('flappy-to-names').style.display = 'inline-flex';
+  showScreen('screen-board');
+};
 
 /* ═══════════════════════════════════════
    QUESTION
