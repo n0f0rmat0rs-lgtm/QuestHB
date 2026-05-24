@@ -183,6 +183,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 .credits-restart { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 2; }
 #fireworks-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
 .hint-row { display:flex; flex-wrap:wrap; gap:.4rem; justify-content:center; padding:.5rem .5rem 0; }
+.last-banner { text-align:center; font-size:1.6rem; font-weight:900; text-transform:uppercase; letter-spacing:.04em; color:#2ecc71; margin-top:1.2rem; padding:.6rem 1.2rem; border:2px solid #2ecc71; border-radius:8px; }
 </style>
 </head>
 <body>
@@ -289,6 +290,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
       <img  id="q-img"  class="q-media" style="display:none">
       <audio id="q-aud" controls style="display:none"></audio>
       <div id="q-vwrap" style="display:none"><video id="q-vid" controls class="q-media"></video></div>
+      <div id="last-banner" class="last-banner" style="display:none"></div>
     </div>
     <div class="buzz-wrap">
       <div class="buzz-pill" id="buzz-pill" style="display:none"></div>
@@ -304,6 +306,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
       <button class="btn btn-success btn-sm" id="q-correct" style="display:none">✓ Верно [Пробел]</button>
       <button class="btn btn-danger  btn-sm" id="q-wrong"   style="display:none">✗ Неверно [Z]</button>
       <button class="btn btn-secondary btn-sm" id="q-start">▶ Старт</button>
+      <button class="btn btn-secondary btn-sm" id="q-last-end" style="display:none">Больше правильных ответов нет</button>
       <button class="btn btn-ghost    btn-sm" id="q-annul">Аннулировать</button>
     </div>
     <div id="hint-row" class="hint-row" style="display:none"></div>
@@ -591,7 +594,7 @@ class FlappyGame {
     this.bird.vy += G;
     this.bird.y  += this.bird.vy;
     this.pipeTimer++;
-    if (this.pipeTimer >= 115) {
+    if (this.pipeTimer >= 175) {
       this.pipeTimer = 0;
       const gapY = 55 + Math.random() * (this.h - PG - 110);
       this.pipes.push({ x: this.w, gapY, pass: false });
@@ -864,7 +867,7 @@ document.getElementById('flappy-return-btn').onclick = () => {
 function openQ(ci, qi) {
   const k = `${S.ri}-${ci}-${qi}`; if (S.used[k]) return;
   const cat = S.rounds[S.ri].pack.categories[ci], q = cat.questions[qi];
-  S.curQ = {ci, qi, k, q, catName: cat.name, buzzMode: cat.buzz_mode || 'unlimited', currentValue: q.value, hintBuzzed: false};
+  S.curQ = {ci, qi, k, q, catName: cat.name, buzzMode: cat.buzz_mode || 'unlimited', currentValue: q.value, hintBuzzed: false, lastCorrectTeam: null};
   S.buzzed = null; S.wrongTeams = new Set();
   if (q.type === 'bag') { openBagModal(q); return; }
   resetTimer(); fillQ(q, cat);
@@ -947,6 +950,8 @@ function fillQ(q, cat) {
   const len = txt.length;
   el.style.fontSize = len < 60 ? '5rem' : len < 120 ? '3.5rem' : len < 250 ? '2.5rem' : '1.8rem';
   setMedia('q-img','q-aud','q-vid','q-vwrap', q);
+  document.getElementById('last-banner').style.display = 'none';
+  document.getElementById('q-last-end').style.display = q.type === 'last' ? 'inline-flex' : 'none';
   document.getElementById('q-start').style.display = 'inline-flex';
   document.getElementById('q-annul').style.display = 'inline-flex';
 }
@@ -998,16 +1003,30 @@ function updTimer(s, tot) {
   }
 }
 function onTimerEnd() {
-  if (S.curQ && S.curQ.q.type === 'auction') { openAuctionModal(); }
-  else {
-    SFX.timerEnd();
-    flash('rgba(255,255,255,.5)');
-    S.buzzed = null;
-    document.getElementById('buzz-pill').style.display = 'none';
-    showJudge(false);
-    document.getElementById('q-start').style.display = 'none';
-  }
+  if (S.curQ && S.curQ.q.type === 'auction') { openAuctionModal(); return; }
+  if (S.curQ && S.curQ.q.type === 'last')    { awardLastCorrect(); return; }
+  SFX.timerEnd();
+  flash('rgba(255,255,255,.5)');
+  S.buzzed = null;
+  document.getElementById('buzz-pill').style.display = 'none';
+  showJudge(false);
+  document.getElementById('q-start').style.display = 'none';
 }
+function awardLastCorrect() {
+  pauseTimer();
+  if (S.curQ.lastCorrectTeam !== null) {
+    const t = S.teams[S.curQ.lastCorrectTeam];
+    const pts = S.curQ.currentValue;
+    t.score += pts; updScores(); SFX.correct(); flash('rgba(46,204,113,.45)');
+    showPopup(pts, t.name);
+  } else {
+    SFX.timerEnd(); flash('rgba(255,255,255,.4)');
+  }
+  closeQ();
+}
+document.getElementById('q-last-end').onclick = () => {
+  if (S.curQ && S.curQ.q.type === 'last') awardLastCorrect();
+};
 
 /* ═══════════════════════════════════════
    BUZZ & JUDGE
@@ -1035,6 +1054,19 @@ function showJudge(v) {
 
 document.getElementById('q-correct').onclick = () => {
   const q = S.curQ.q, t = S.teams[S.buzzed];
+  if (q.type === 'last') {
+    S.curQ.lastCorrectTeam = S.buzzed;
+    SFX.correct(); flash('rgba(46,204,113,.22)');
+    const banner = document.getElementById('last-banner');
+    banner.style.display = 'block';
+    banner.textContent = `Последний верный ответ: ${t.name}`;
+    S.wrongTeams = new Set();
+    S.buzzed = null;
+    document.getElementById('buzz-pill').style.display = 'none';
+    showJudge(false);
+    if (S.tSec > 0) startTimer();
+    return;
+  }
   const pts = q.type === 'bag' ? S.curQ.bagValue : S.curQ.currentValue;
   t.score += pts; updScores(); SFX.correct(); flash('rgba(46,204,113,.45)');
   const rev = q.answer_reveal;
@@ -1051,7 +1083,7 @@ document.getElementById('q-wrong').onclick = () => {
   if (pen) { t.score -= pen; if (!hasReveal) showPopup(-pen, t.name); }
   updScores(); SFX.wrong(); flash('rgba(231,76,60,.45)');
   if (q.type === 'bag') { closeQ(); return; }
-  if (S.curQ.hintBuzzed) { closeQ(); return; }
+  if (S.curQ.hintBuzzed) { afterHintFail(); return; }
   S.wrongTeams.add(S.buzzed); S.buzzed = null;
   document.getElementById('buzz-pill').style.display = 'none';
   showJudge(false); document.getElementById('q-start').style.display = 'inline-flex';
@@ -1082,9 +1114,22 @@ function startHintTimer(teamIdx) {
     if (S.hintSec <= 0) {
       clearInterval(S.hintInt); S.hintInt = null; S.hintTeam = null;
       document.getElementById('buzz-pill').style.display = 'none';
-      closeQ();
+      afterHintFail();
     }
   }, 1000);
+}
+function afterHintFail() {
+  S.curQ.hintBuzzed = false;
+  S.buzzed = null;
+  document.getElementById('buzz-pill').style.display = 'none';
+  showJudge(false);
+  S.wrongTeams = new Set();
+  clearInterval(S.tInt); S.tRun = false; S.tSec = S.tTot;
+  const arc = document.getElementById('t-arc'); arc.style.strokeDashoffset = '0'; arc.style.stroke = '';
+  const num = document.getElementById('t-num'); num.textContent = S.tTot; num.style.color = '#fff';
+  document.getElementById('timer-wrap').classList.remove('active', 'flash-start');
+  document.getElementById('q-start').style.display = 'inline-flex';
+  updAllHintBtns();
 }
 function clearHintTimer() {
   clearInterval(S.hintInt); S.hintInt = null; S.hintTeam = null; S.hintSec = 0;
@@ -1245,6 +1290,7 @@ document.addEventListener('keydown', e => {
   const sc = document.querySelector('.screen.active'); if (!sc) return;
 
   if (sc.id === 'screen-flappy') {
+    if (e.repeat) return;
     if (document.getElementById('modal-team-names').style.display !== 'none') return;
     const k = {'1':0,'2':1,'3':2,'4':3,'5':4,'6':5}[e.key];
     if (k !== undefined && flappyGames[k]) flappyGames[k].flap();

@@ -54,6 +54,7 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); bo
 .type-btn.active-normal  { background: var(--accent); color: #fff; border-color: var(--accent); }
 .type-btn.active-bag     { background: #9b59b6; color: #fff; border-color: #9b59b6; }
 .type-btn.active-auction { background: var(--gold); color: #000; border-color: var(--gold); }
+.type-btn.active-last    { background: #2ecc71; color: #000; border-color: #2ecc71; }
 
 /* Media picker */
 .media-picker { display: flex; flex-direction: column; gap: .4rem; }
@@ -147,7 +148,7 @@ function renderEditor() {
 
   const banner = document.createElement("div");
   banner.className = "info-banner";
-  banner.innerHTML = `<strong>Типы вопросов:</strong> обычный | <span style="color:#9b59b6">🎁 Кот в мешке</span> — категория скрыта до ответа | <span style="color:var(--gold)">🔨 Аукцион</span> — помечается на поле<br><strong>Баззер:</strong> <span style="color:#27ae60">∞ спам</span> — команды жмут сколько угодно раз | <span style="color:#e67e22">1 шанс</span> — каждая команда может ответить только один раз`;
+  banner.innerHTML = `<strong>Типы вопросов:</strong> обычный | <span style="color:#9b59b6">🎁 Кот в мешке</span> — категория скрыта до ответа | <span style="color:var(--gold)">🔨 Аукцион</span> — ставки командами | <span style="color:#2ecc71">🏁 Назови последним</span> — можно отвечать много раз, баллы получает последний верный ответ<br><strong>Баззер:</strong> <span style="color:#27ae60">∞ спам</span> — команды жмут сколько угодно раз | <span style="color:#e67e22">1 шанс</span> — каждая команда может ответить только один раз`;
   main.appendChild(banner);
 
   const header = document.createElement("div");
@@ -238,6 +239,7 @@ function buildQuestionCard(q, ci, qi, container) {
       <button class="type-btn ${!q.type||q.type==="normal"?"active-normal":""}" data-t="normal">Обычный</button>
       <button class="type-btn ${q.type==="bag"?"active-bag":""}" data-t="bag">🎁 Кот в мешке</button>
       <button class="type-btn ${q.type==="auction"?"active-auction":""}" data-t="auction">🔨 Аукцион</button>
+      <button class="type-btn ${q.type==="last"?"active-last":""}" data-t="last">🏁 Назови последним</button>
     </div>
     <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-left:auto">✕</button>
   `;
@@ -250,7 +252,7 @@ function buildQuestionCard(q, ci, qi, container) {
     b.onclick = () => {
       q.type=b.dataset.t;
       top.querySelectorAll(".type-btn").forEach(x=>{ x.className="type-btn"; });
-      b.classList.add(b.dataset.t==="bag"?"active-bag":b.dataset.t==="auction"?"active-auction":"active-normal");
+      b.classList.add(b.dataset.t==="bag"?"active-bag":b.dataset.t==="auction"?"active-auction":b.dataset.t==="last"?"active-last":"active-normal");
     };
   });
   top.querySelector(".btn-ghost[style*=red]").onclick = () => { pack.categories[ci].questions.splice(qi,1); renderCategories(container); };
