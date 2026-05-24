@@ -205,6 +205,10 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
         <a href="editor.html" class="btn btn-ghost btn-sm" target="_blank">Редактор паков →</a>
       </div>
       <p class="setup-hint">По одному JSON-файлу на каждый раунд</p>
+      <div id="saved-packs-section" style="display:none;margin-top:.75rem">
+        <p style="font-size:.78rem;color:var(--text-muted);margin-bottom:.4rem">Сохранённые паки:</p>
+        <div id="saved-packs-list" style="display:flex;gap:.4rem;flex-wrap:wrap"></div>
+      </div>
     </div>
     <div class="setup-card">
       <h2>Количество команд</h2>
@@ -472,6 +476,54 @@ function renderRounds() {
     el.appendChild(d);
   });
 }
+
+const EXAMPLE_PACK = {"name":"example","categories":[{"name":"История","buzz_mode":"unlimited","questions":[{"value":100,"timer":60,"question":"В каком году была основана Москва?","answer":"1147","type":"normal","penalty":"none","image":null,"audio":null,"video":null,"answer_reveal":{"text":"Москва основана в 1147 году князем Юрием Долгоруким.","image":null,"audio":null,"video":null}},{"value":200,"timer":60,"question":"Кто написал «Войну и мир»?","answer":"Лев Толстой","type":"normal","penalty":"half","image":null,"audio":null,"video":null,"answer_reveal":null},{"value":300,"timer":60,"question":"В каком году закончилась Вторая мировая война?","answer":"1945","type":"normal","penalty":"none","image":null,"audio":null,"video":null,"answer_reveal":null}]},{"name":"Наука","buzz_mode":"unlimited","questions":[{"value":100,"timer":60,"question":"Какой химический элемент обозначается символом O?","answer":"Кислород","type":"normal","penalty":"none","image":null,"audio":null,"video":null,"answer_reveal":null},{"value":200,"timer":60,"question":"Сколько планет в Солнечной системе?","answer":"8","type":"normal","penalty":"none","image":null,"audio":null,"video":null,"answer_reveal":{"text":"8 планет: Меркурий, Венера, Земля, Марс, Юпитер, Сатурн, Уран, Нептун. Плутон — карликовая планета.","image":null,"audio":null,"video":null}},{"value":300,"timer":60,"question":"Кто открыл пенициллин?","answer":"Александр Флеминг","type":"normal","penalty":"half","image":null,"audio":null,"video":null,"answer_reveal":null}]},{"name":"Кино","buzz_mode":"unlimited","questions":[{"value":100,"timer":60,"question":"В каком году вышел первый фильм о Гарри Поттере?","answer":"2001","type":"normal","penalty":"none","image":null,"audio":null,"video":null,"answer_reveal":null},{"value":200,"timer":60,"question":"Кто сыграл Тони Старка в киновселенной Marvel?","answer":"Роберт Дауни мл.","type":"normal","penalty":"none","image":null,"audio":null,"video":null,"answer_reveal":null},{"value":300,"timer":60,"question":"Назовите режиссёра фильма «Интерстеллар».","answer":"Кристофер Нолан","type":"normal","penalty":"full","image":null,"audio":null,"video":null,"answer_reveal":null}]}]};
+
+function renderSavedPacks() {
+  try {
+    const names = JSON.parse(localStorage.getItem('qhb_pack_names') || '[]');
+    const sec = document.getElementById('saved-packs-section');
+    const list = document.getElementById('saved-packs-list');
+    if (!names.length) { sec.style.display = 'none'; return; }
+    sec.style.display = '';
+    list.innerHTML = '';
+    names.forEach(name => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:.3rem;align-items:center';
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-secondary btn-sm';
+      btn.textContent = '+ ' + name;
+      btn.onclick = () => {
+        try {
+          const data = JSON.parse(localStorage.getItem('qhb_pack_' + name));
+          if (!data) return;
+          sRounds.push({packName: data.name || name, pack: data});
+          renderRounds(); SFX.slide();
+        } catch { alert('Ошибка чтения пака: ' + name); }
+      };
+      const del = document.createElement('button');
+      del.className = 'btn btn-ghost btn-sm'; del.textContent = '✕';
+      del.style.color = 'var(--red)'; del.title = 'Удалить из списка';
+      del.onclick = () => {
+        const ns = JSON.parse(localStorage.getItem('qhb_pack_names')||'[]').filter(n=>n!==name);
+        localStorage.setItem('qhb_pack_names', JSON.stringify(ns));
+        localStorage.removeItem('qhb_pack_' + name);
+        renderSavedPacks();
+      };
+      row.appendChild(btn); row.appendChild(del); list.appendChild(row);
+    });
+  } catch {}
+}
+// Seed example pack on first load
+try {
+  if (!localStorage.getItem('qhb_pack_example')) {
+    localStorage.setItem('qhb_pack_example', JSON.stringify(EXAMPLE_PACK));
+    const names = JSON.parse(localStorage.getItem('qhb_pack_names')||'[]');
+    if (!names.includes('example')) { names.push('example'); localStorage.setItem('qhb_pack_names', JSON.stringify(names)); }
+  }
+  renderSavedPacks();
+} catch {}
+
 document.getElementById('add-round-btn').onclick = () => {
   const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json';
   inp.onchange = async e => {
