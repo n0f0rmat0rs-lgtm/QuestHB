@@ -11,22 +11,18 @@
   --text: #e8e8f0; --text-muted: #888aaa; --gold: #f1c40f; --radius: 12px;
 }
 body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-.btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  padding: .55em 1.2em; border: none; border-radius: var(--radius);
-  cursor: pointer; font-size: 1rem; font-weight: 600; transition: opacity .15s;
-  text-decoration: none; white-space: nowrap; font-family: inherit;
-}
+.btn { display: inline-flex; align-items: center; justify-content: center; padding: .55em 1.2em; border: none; border-radius: var(--radius); cursor: pointer; font-size: 1rem; font-weight: 600; transition: opacity .15s; text-decoration: none; white-space: nowrap; font-family: inherit; }
 .btn:hover { opacity: .85; }
 .btn-primary  { background: var(--accent); color: #fff; }
 .btn-secondary{ background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
 .btn-ghost    { background: transparent; color: var(--text-muted); }
 .btn-sm       { font-size: .85rem; padding: .35em .8em; }
+.btn-danger   { background: var(--red); color: #fff; }
 
 .editor-layout { display: flex; min-height: 100vh; }
-.sidebar { width: 260px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 1rem; gap: .5rem; }
+.sidebar { width: 240px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 1rem; gap: .5rem; }
 .sidebar h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted); margin-bottom: .25rem; }
-.sidebar-hint { font-size: .75rem; color: var(--text-muted); line-height: 1.4; }
+.sidebar-hint { font-size: .75rem; color: var(--text-muted); line-height: 1.5; }
 .editor-main { flex: 1; padding: 1.5rem; overflow-y: auto; }
 .editor-main > p { color: var(--text-muted); margin-top: 3rem; text-align: center; }
 
@@ -34,10 +30,9 @@ input[type="text"], input[type="number"], textarea, select {
   background: var(--surface2); color: var(--text); border: 1px solid var(--border);
   border-radius: 8px; padding: .5em .8em; font-size: .95rem; width: 100%; font-family: inherit;
 }
-input:focus, textarea:focus { outline: 2px solid var(--accent); border-color: transparent; }
+input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); border-color: transparent; }
 
 .pack-header { display: flex; gap: .75rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
-.pack-header h1 { font-size: 1.2rem; margin-right: auto; }
 .pack-name-input { font-size: 1.1rem; flex: 1; min-width: 200px; }
 
 .category-block { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 1.5rem; overflow: hidden; }
@@ -47,110 +42,134 @@ input:focus, textarea:focus { outline: 2px solid var(--accent); border-color: tr
 .cat-footer { padding: .5rem 1rem 1rem; }
 
 .q-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; display: flex; flex-direction: column; gap: .75rem; }
-.q-card-top { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+.q-card-top { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
 .q-card-top label { font-size: .82rem; color: var(--text-muted); white-space: nowrap; }
-.q-card-top input[type="number"] { width: 90px; }
 
 .penalty-toggle { display: flex; gap: .4rem; }
-.penalty-btn { padding: .3em .7em; border-radius: 6px; font-size: .82rem; font-weight: 600; border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted); cursor: pointer; transition: all .15s; font-family: inherit; }
+.penalty-btn { padding: .3em .65em; border-radius: 6px; font-size: .8rem; font-weight: 600; border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted); cursor: pointer; font-family: inherit; }
 .penalty-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-.media-field { display: flex; gap: .5rem; align-items: center; }
-.media-field label { font-size: .8rem; color: var(--text-muted); min-width: 80px; }
-.media-field input { flex: 1; }
-.media-field .hint { font-size: .72rem; color: var(--text-muted); white-space: nowrap; }
+.type-toggle { display: flex; gap: .4rem; }
+.type-btn { padding: .3em .65em; border-radius: 6px; font-size: .8rem; font-weight: 600; border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted); cursor: pointer; font-family: inherit; }
+.type-btn.active-normal  { background: var(--accent); color: #fff; border-color: var(--accent); }
+.type-btn.active-bag     { background: #9b59b6; color: #fff; border-color: #9b59b6; }
+.type-btn.active-auction { background: var(--gold); color: #000; border-color: var(--gold); }
+
+/* Media picker */
+.media-picker { display: flex; flex-direction: column; gap: .4rem; }
+.media-picker-row { display: flex; align-items: center; gap: .5rem; }
+.media-picker-row label { font-size: .8rem; color: var(--text-muted); min-width: 60px; }
+.pick-btn { background: var(--surface2); border: 1px dashed var(--border); color: var(--text-muted); border-radius: 6px; padding: .3em .8em; cursor: pointer; font-size: .82rem; font-family: inherit; flex-shrink: 0; }
+.pick-btn:hover { border-color: var(--accent); color: var(--accent); }
+.media-filename { font-size: .78rem; color: var(--accent); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.media-clear { background: none; border: none; color: var(--red); cursor: pointer; font-size: 1rem; flex-shrink: 0; }
+.media-preview-img { max-height: 80px; border-radius: 4px; display: block; margin-top: .3rem; }
 
 .reveal-block { border-top: 1px solid var(--border); padding-top: .75rem; margin-top: .25rem; display: flex; flex-direction: column; gap: .75rem; }
 .reveal-toggle { background: none; border: 1px dashed var(--border); color: var(--text-muted); border-radius: 6px; padding: .3em .8em; cursor: pointer; font-size: .82rem; font-family: inherit; width: fit-content; }
 .reveal-toggle:hover { border-color: var(--accent); color: var(--accent); }
 
-.download-hint { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; font-size: .88rem; color: var(--text-muted); line-height: 1.6; }
-.download-hint strong { color: var(--text); }
+.info-banner { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: .85rem 1rem; margin-bottom: 1.5rem; font-size: .85rem; color: var(--text-muted); line-height: 1.6; }
+.info-banner strong { color: var(--text); }
 </style>
 </head>
 <body>
 <div class="editor-layout">
   <aside class="sidebar">
     <h2>Редактор паков</h2>
-    <button class="btn btn-secondary" id="new-pack-btn">+ Создать новый пак</button>
+    <button class="btn btn-secondary" id="new-pack-btn">+ Создать пак</button>
     <button class="btn btn-ghost" id="load-pack-btn">Открыть JSON…</button>
-    <hr style="border-color:var(--border);margin:.5rem 0">
-    <p class="sidebar-hint">Создай пак, заполни вопросы и нажми <strong>«Скачать JSON»</strong>. Положи скачанный файл в папку <strong>packs/</strong> рядом с index.html.</p>
-    <hr style="border-color:var(--border);margin:.5rem 0">
-    <a href="index.html" class="btn btn-ghost btn-sm">← Игра</a>
+    <hr style="border-color:var(--border);margin:.25rem 0">
+    <p class="sidebar-hint">Медиафайлы (фото, аудио, видео) встраиваются прямо в JSON — никаких отдельных папок не нужно.</p>
+    <p class="sidebar-hint" style="margin-top:.5rem">⚠️ Большие видеофайлы сильно увеличат размер JSON.</p>
+    <hr style="border-color:var(--border);margin:.25rem 0">
+    <a href="index.html" class="btn btn-ghost btn-sm">← Назад в игру</a>
   </aside>
-
   <main class="editor-main" id="editor-main">
     <p>Создай новый пак или открой существующий JSON</p>
   </main>
 </div>
 
 <script>
-let pack = null; // current pack in memory
+let pack = null;
 
-/* ===== SIDEBAR ===== */
 document.getElementById("new-pack-btn").onclick = () => {
   pack = { name: "Новый пак", categories: [] };
   renderEditor();
 };
 
 document.getElementById("load-pack-btn").onclick = () => {
-  const input = document.createElement("input");
-  input.type = "file"; input.accept = ".json";
-  input.onchange = async e => {
-    const file = e.target.files[0]; if (!file) return;
-    try {
-      pack = JSON.parse(await file.text());
-      renderEditor();
-    } catch { alert("Не удалось прочитать JSON-файл."); }
-  };
-  input.click();
+  pickFile(".json", async file => {
+    try { pack = JSON.parse(await file.text()); renderEditor(); }
+    catch { alert("Не удалось прочитать JSON."); }
+  });
 };
 
-/* ===== EDITOR ===== */
+/* ── File helpers ── */
+function pickFile(accept, cb) {
+  const inp = document.createElement("input");
+  inp.type = "file"; inp.accept = accept;
+  inp.onchange = e => { if (e.target.files[0]) cb(e.target.files[0]); };
+  inp.click();
+}
+
+function fileToDataURL(file) {
+  return new Promise(res => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.readAsDataURL(file);
+  });
+}
+
+function mimeToAccept(field) {
+  if (field === "image") return "image/*";
+  if (field === "audio") return "audio/*";
+  if (field === "video") return "video/*";
+  return "*";
+}
+
+function shortName(dataUrl, origName) {
+  if (!dataUrl) return "";
+  if (origName) return origName;
+  const m = dataUrl.match(/^data:([^;]+)/);
+  return m ? m[1] : "файл";
+}
+
+/* ── Editor render ── */
 function renderEditor() {
   const main = document.getElementById("editor-main");
   main.innerHTML = "";
 
-  // download hint
-  const hint = document.createElement("div");
-  hint.className = "download-hint";
-  hint.innerHTML = `<strong>Как добавить медиафайл:</strong> положи картинку/аудио/видео в папку <code>media/</code> рядом с <code>index.html</code>, затем в поле введи путь вроде <code>media/название_файла.jpg</code>`;
-  main.appendChild(hint);
+  const banner = document.createElement("div");
+  banner.className = "info-banner";
+  banner.innerHTML = `<strong>Типы вопросов:</strong> обычный | <span style="color:#9b59b6">🎁 Кот в мешке</span> — категория скрыта до ответа | <span style="color:var(--gold)">🔨 Аукцион</span> — помечается на поле`;
+  main.appendChild(banner);
 
-  // pack header
   const header = document.createElement("div");
   header.className = "pack-header";
   header.innerHTML = `
-    <h1>Пак вопросов</h1>
     <input class="pack-name-input" type="text" value="${esc(pack.name)}" placeholder="Название пака">
-    <button class="btn btn-primary" id="download-btn">⬇ Скачать JSON</button>
+    <button class="btn btn-primary" id="dl-btn">⬇ Скачать JSON</button>
   `;
   header.querySelector(".pack-name-input").oninput = e => { pack.name = e.target.value; };
-  header.querySelector("#download-btn").onclick = downloadPack;
+  header.querySelector("#dl-btn").onclick = downloadPack;
   main.appendChild(header);
 
-  // categories
   const catContainer = document.createElement("div");
   catContainer.id = "cat-container";
   main.appendChild(catContainer);
   renderCategories(catContainer);
 
-  const addCatBtn = document.createElement("button");
-  addCatBtn.className = "btn btn-secondary";
-  addCatBtn.textContent = "+ Добавить категорию";
-  addCatBtn.onclick = () => {
-    pack.categories.push({ name:"Новая категория", questions:[] });
-    renderCategories(catContainer);
-  };
-  main.appendChild(addCatBtn);
+  const addBtn = document.createElement("button");
+  addBtn.className = "btn btn-secondary";
+  addBtn.textContent = "+ Добавить категорию";
+  addBtn.onclick = () => { pack.categories.push({name:"Новая категория",questions:[]}); renderCategories(catContainer); };
+  main.appendChild(addBtn);
 }
 
 function renderCategories(container) {
   container.innerHTML = "";
-  pack.categories.forEach((cat, ci) => {
-    container.appendChild(buildCategoryBlock(cat, ci, container));
-  });
+  pack.categories.forEach((cat, ci) => container.appendChild(buildCategoryBlock(cat, ci, container)));
 }
 
 function buildCategoryBlock(cat, ci, container) {
@@ -159,99 +178,169 @@ function buildCategoryBlock(cat, ci, container) {
   block.innerHTML = `
     <div class="cat-header">
       <input type="text" value="${esc(cat.name)}" placeholder="Название категории" style="flex:1">
-      <button class="btn btn-ghost btn-sm" style="color:var(--red)">✕ Удалить категорию</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--red)">✕</button>
     </div>
-    <div class="cat-body" id="cat-body-${ci}"></div>
-    <div class="cat-footer">
-      <button class="btn btn-secondary btn-sm add-q-btn">+ Вопрос</button>
-    </div>
+    <div class="cat-body" id="cb-${ci}"></div>
+    <div class="cat-footer"><button class="btn btn-secondary btn-sm aq-btn">+ Вопрос</button></div>
   `;
   block.querySelector(".cat-header input").oninput = e => { cat.name = e.target.value; };
   block.querySelector(".cat-header .btn-ghost").onclick = () => {
     if (!confirm("Удалить категорию со всеми вопросами?")) return;
-    pack.categories.splice(ci,1); renderCategories(container);
+    pack.categories.splice(ci, 1); renderCategories(container);
   };
-  block.querySelector(".add-q-btn").onclick = () => {
-    cat.questions.push({ value:100, question:"", penalty:"none", image:null, audio:null, video:null, answer_reveal:null });
+  block.querySelector(".aq-btn").onclick = () => {
+    cat.questions.push({value:100,question:"",type:"normal",penalty:"none",image:null,audio:null,video:null,answer_reveal:null});
     renderCategories(container);
   };
-  const body = block.querySelector(`#cat-body-${ci}`);
-  cat.questions.forEach((q,qi) => body.appendChild(buildQuestionCard(q, ci, qi, container)));
+  const body = block.querySelector(`#cb-${ci}`);
+  cat.questions.forEach((q, qi) => body.appendChild(buildQuestionCard(q, ci, qi, container)));
   return block;
 }
 
 function buildQuestionCard(q, ci, qi, container) {
   const card = document.createElement("div");
   card.className = "q-card";
-  card.innerHTML = `
-    <div class="q-card-top">
-      <label>Стоимость</label>
-      <input type="number" value="${q.value||100}" min="0" step="50" style="width:90px">
-      <label>Штраф</label>
-      <div class="penalty-toggle">
-        <button class="penalty-btn ${(q.penalty||"none")==="none"?"active":""}" data-v="none">Без штрафа</button>
-        <button class="penalty-btn ${(q.penalty||"none")==="half"?"active":""}" data-v="half">−½</button>
-        <button class="penalty-btn ${(q.penalty||"none")==="full"?"active":""}" data-v="full">−полная</button>
-      </div>
-      <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-left:auto">✕</button>
+
+  // Top row
+  const top = document.createElement("div");
+  top.className = "q-card-top";
+  top.innerHTML = `
+    <label>Стоимость</label>
+    <input type="number" value="${q.value||100}" min="0" step="50" style="width:85px">
+    <label>Штраф</label>
+    <div class="penalty-toggle">
+      <button class="penalty-btn ${(q.penalty||"none")==="none"?"active":""}" data-p="none">Нет</button>
+      <button class="penalty-btn ${(q.penalty||"none")==="half"?"active":""}" data-p="half">−½</button>
+      <button class="penalty-btn ${(q.penalty||"none")==="full"?"active":""}" data-p="full">−всё</button>
     </div>
-    <textarea rows="3" placeholder="Текст вопроса">${esc(q.question||"")}</textarea>
-    <div class="media-field"><label>Картинка</label><input type="text" value="${esc(q.image||"")}" placeholder="media/photo.jpg"><span class="hint">путь к файлу</span></div>
-    <div class="media-field"><label>Аудио</label><input type="text" value="${esc(q.audio||"")}" placeholder="media/sound.mp3"><span class="hint">путь к файлу</span></div>
-    <div class="media-field"><label>Видео</label><input type="text" value="${esc(q.video||"")}" placeholder="media/video.mp4"><span class="hint">путь к файлу</span></div>
-    <button class="reveal-toggle">${q.answer_reveal?"▲ Скрыть блок ответа":"▼ Показать блок ответа"}</button>
-    <div class="reveal-block" style="${q.answer_reveal?"":"display:none"}">
-      <strong style="font-size:.82rem;color:var(--text-muted)">Ответ / пояснение (после ответа или аннуляции)</strong>
-      <textarea rows="2" placeholder="Текст ответа">${esc((q.answer_reveal||{}).text||"")}</textarea>
-      <div class="media-field"><label>Картинка</label><input type="text" value="${esc((q.answer_reveal||{}).image||"")}" placeholder="media/ans.jpg"></div>
-      <div class="media-field"><label>Аудио</label><input type="text" value="${esc((q.answer_reveal||{}).audio||"")}" placeholder="media/ans.mp3"></div>
-      <div class="media-field"><label>Видео</label><input type="text" value="${esc((q.answer_reveal||{}).video||"")}" placeholder="media/ans.mp4"></div>
+    <label>Тип</label>
+    <div class="type-toggle">
+      <button class="type-btn ${!q.type||q.type==="normal"?"active-normal":""}" data-t="normal">Обычный</button>
+      <button class="type-btn ${q.type==="bag"?"active-bag":""}" data-t="bag">🎁 Кот в мешке</button>
+      <button class="type-btn ${q.type==="auction"?"active-auction":""}" data-t="auction">🔨 Аукцион</button>
     </div>
+    <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-left:auto">✕</button>
   `;
-
-  card.querySelector("input[type=number]").oninput = e => { q.value = parseInt(e.target.value)||0; };
-  card.querySelectorAll(".penalty-btn").forEach(btn => {
-    btn.onclick = () => { q.penalty=btn.dataset.v; card.querySelectorAll(".penalty-btn").forEach(b=>b.classList.toggle("active",b===btn)); };
+  top.querySelector("input[type=number]").oninput = e => { q.value=parseInt(e.target.value)||0; };
+  top.querySelectorAll(".penalty-btn").forEach(b => {
+    b.onclick = () => { q.penalty=b.dataset.p; top.querySelectorAll(".penalty-btn").forEach(x=>x.classList.toggle("active",x===b)); };
   });
-  card.querySelector(".btn-ghost[style*=red]").onclick = () => {
-    pack.categories[ci].questions.splice(qi,1); renderCategories(container);
-  };
-  card.querySelectorAll("textarea")[0].oninput = e => { q.question=e.target.value; };
+  top.querySelectorAll(".type-btn").forEach(b => {
+    b.onclick = () => {
+      q.type=b.dataset.t;
+      top.querySelectorAll(".type-btn").forEach(x=>{ x.className="type-btn"; });
+      b.classList.add(b.dataset.t==="bag"?"active-bag":b.dataset.t==="auction"?"active-auction":"active-normal");
+    };
+  });
+  top.querySelector(".btn-ghost[style*=red]").onclick = () => { pack.categories[ci].questions.splice(qi,1); renderCategories(container); };
+  card.appendChild(top);
 
-  const mediaFields = card.querySelectorAll(".media-field input");
-  mediaFields[0].oninput = e => { q.image = e.target.value||null; };
-  mediaFields[1].oninput = e => { q.audio = e.target.value||null; };
-  mediaFields[2].oninput = e => { q.video = e.target.value||null; };
+  // Question text
+  const ta = document.createElement("textarea");
+  ta.rows=3; ta.placeholder="Текст вопроса"; ta.textContent=q.question||"";
+  ta.oninput = e => { q.question=e.target.value; };
+  card.appendChild(ta);
 
-  const revBlock = card.querySelector(".reveal-block");
-  const revToggle = card.querySelector(".reveal-toggle");
+  // Media fields
+  card.appendChild(buildMediaSection(q, ["image","audio","video"]));
+
+  // Reveal toggle
+  const revToggle = document.createElement("button");
+  revToggle.className="reveal-toggle";
+  revToggle.textContent = q.answer_reveal ? "▲ Скрыть блок ответа" : "▼ Добавить ответ/пояснение";
+  card.appendChild(revToggle);
+
+  const revBlock = document.createElement("div");
+  revBlock.className="reveal-block";
+  revBlock.style.display = q.answer_reveal ? "" : "none";
+  if (!q.answer_reveal) q.answer_reveal=null;
+
+  const revTa = document.createElement("textarea");
+  revTa.rows=2; revTa.placeholder="Текст ответа/пояснения";
+  revTa.textContent=(q.answer_reveal||{}).text||"";
+  revTa.oninput=e=>{ if(!q.answer_reveal)q.answer_reveal={}; q.answer_reveal.text=e.target.value; };
+  const revLabel=document.createElement("strong");
+  revLabel.style.cssText="font-size:.82rem;color:var(--text-muted)";
+  revLabel.textContent="Ответ / пояснение (показывается после ответа или аннуляции)";
+  revBlock.appendChild(revLabel);
+  revBlock.appendChild(revTa);
+  if(!q.answer_reveal) q.answer_reveal={text:"",image:null,audio:null,video:null};
+  revBlock.appendChild(buildMediaSection(q.answer_reveal, ["image","audio","video"]));
+  card.appendChild(revBlock);
+
   revToggle.onclick = () => {
     const hidden = revBlock.style.display==="none";
     revBlock.style.display = hidden?"":"none";
-    revToggle.textContent = hidden?"▲ Скрыть блок ответа":"▼ Показать блок ответа";
-    if (hidden && !q.answer_reveal) q.answer_reveal={text:"",image:null,audio:null,video:null};
-    if (!hidden) q.answer_reveal=null;
+    revToggle.textContent = hidden?"▲ Скрыть блок ответа":"▼ Добавить ответ/пояснение";
+    if(!hidden){ q.answer_reveal=null; }
+    else if(!q.answer_reveal){ q.answer_reveal={text:"",image:null,audio:null,video:null}; }
   };
-  card.querySelectorAll("textarea")[1].oninput = e => {
-    if (!q.answer_reveal) q.answer_reveal={};
-    q.answer_reveal.text=e.target.value;
-  };
-  const revFields = card.querySelectorAll(".reveal-block .media-field input");
-  if (revFields[0]) revFields[0].oninput = e => { if (!q.answer_reveal) q.answer_reveal={}; q.answer_reveal.image=e.target.value||null; };
-  if (revFields[1]) revFields[1].oninput = e => { if (!q.answer_reveal) q.answer_reveal={}; q.answer_reveal.audio=e.target.value||null; };
-  if (revFields[2]) revFields[2].oninput = e => { if (!q.answer_reveal) q.answer_reveal={}; q.answer_reveal.video=e.target.value||null; };
 
   return card;
 }
 
+function buildMediaSection(obj, fields) {
+  const wrap = document.createElement("div");
+  wrap.className="media-picker";
+  const labels = {image:"Картинка",audio:"Аудио",video:"Видео"};
+  fields.forEach(field => {
+    const row = document.createElement("div");
+    row.className="media-picker-row";
+
+    const lbl = document.createElement("label");
+    lbl.textContent=labels[field];
+
+    const pickBtn = document.createElement("button");
+    pickBtn.className="pick-btn";
+    pickBtn.textContent = obj[field] ? "Заменить" : "Выбрать файл…";
+
+    const fname = document.createElement("span");
+    fname.className="media-filename";
+    fname.textContent = obj[field] ? "✓ файл загружен" : "";
+
+    const clearBtn = document.createElement("button");
+    clearBtn.className="media-clear"; clearBtn.textContent="✕";
+    clearBtn.style.display = obj[field]?"inline":"none";
+    clearBtn.title="Удалить файл";
+
+    row.appendChild(lbl); row.appendChild(pickBtn); row.appendChild(fname); row.appendChild(clearBtn);
+    wrap.appendChild(row);
+
+    // Preview for images
+    let previewEl = null;
+    if(field==="image" && obj[field]){
+      previewEl = document.createElement("img");
+      previewEl.className="media-preview-img"; previewEl.src=obj[field];
+      wrap.appendChild(previewEl);
+    }
+
+    pickBtn.onclick = () => {
+      pickFile(mimeToAccept(field), async file => {
+        const dataUrl = await fileToDataURL(file);
+        obj[field] = dataUrl;
+        fname.textContent = "✓ "+file.name;
+        pickBtn.textContent = "Заменить";
+        clearBtn.style.display="inline";
+        if(field==="image"){
+          if(!previewEl){ previewEl=document.createElement("img"); previewEl.className="media-preview-img"; wrap.appendChild(previewEl); }
+          previewEl.src=dataUrl;
+        }
+      });
+    };
+
+    clearBtn.onclick = () => {
+      obj[field]=null; fname.textContent=""; pickBtn.textContent="Выбрать файл…"; clearBtn.style.display="none";
+      if(previewEl){ previewEl.remove(); previewEl=null; }
+    };
+  });
+  return wrap;
+}
+
 function downloadPack() {
   if (!pack) return;
-  const name = pack.name.trim()||"pack";
-  const blob = new Blob([JSON.stringify(pack, null, 2)], {type:"application/json"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = name.replace(/[^\wа-яёА-ЯЁ\s-]/gi,"_")+".json";
-  a.click();
+  const name=(pack.name||"pack").replace(/[^\wа-яёА-ЯЁ\s\-]/gi,"_");
+  const blob=new Blob([JSON.stringify(pack,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name+".json"; a.click();
 }
 
 function esc(s){ return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
