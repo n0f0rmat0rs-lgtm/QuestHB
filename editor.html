@@ -232,9 +232,11 @@ function buildQuestionCard(q, ci, qi, container) {
   top.className = "q-card-top";
   top.innerHTML = `
     <label>Стоимость</label>
-    <input type="number" value="${q.value||100}" min="0" step="50" style="width:85px">
+    <input id="qv-${ci}-${qi}" type="number" value="${q.value||100}" min="0" step="50" style="width:85px${q.random_value?';display:none':''}">
+    <label style="display:flex;align-items:center;gap:.3rem;cursor:pointer;font-size:.82rem;white-space:nowrap"><input id="qrv-${ci}-${qi}" type="checkbox" ${q.random_value?'checked':''}> Случайная</label>
+    <span id="qrr-${ci}-${qi}" style="display:${q.random_value?'flex':'none'};align-items:center;gap:.25rem;font-size:.8rem;white-space:nowrap">от <input id="qrmin-${ci}-${qi}" type="number" value="${q.value_min||100}" min="0" step="50" style="width:65px"> до <input id="qrmax-${ci}-${qi}" type="number" value="${q.value_max||500}" min="0" step="50" style="width:65px"></span>
     <label>Таймер&nbsp;(сек)</label>
-    <input type="number" value="${q.timer||60}" min="10" max="300" step="5" style="width:75px">
+    <input id="qtmr-${ci}-${qi}" type="number" value="${q.timer||60}" min="10" max="300" step="5" style="width:75px">
     <label>Штраф</label>
     <div class="penalty-toggle">
       <button class="penalty-btn ${(q.penalty||"none")==="none"?"active":""}" data-p="none">Нет</button>
@@ -251,8 +253,18 @@ function buildQuestionCard(q, ci, qi, container) {
     </div>
     <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-left:auto">✕</button>
   `;
-  top.querySelector("input[type=number]").oninput = e => { q.value=parseInt(e.target.value)||0; };
-  top.querySelectorAll("input[type=number]")[1].oninput = e => { q.timer=parseInt(e.target.value)||60; };
+  const valInp = top.querySelector(`#qv-${ci}-${qi}`);
+  valInp.oninput = e => { q.value=parseInt(e.target.value)||0; };
+  top.querySelector(`#qtmr-${ci}-${qi}`).oninput = e => { q.timer=parseInt(e.target.value)||60; };
+  const rvCb = top.querySelector(`#qrv-${ci}-${qi}`);
+  const rvRange = top.querySelector(`#qrr-${ci}-${qi}`);
+  rvCb.onchange = () => {
+    q.random_value = rvCb.checked;
+    valInp.style.display = q.random_value ? 'none' : '';
+    rvRange.style.display = q.random_value ? 'flex' : 'none';
+  };
+  top.querySelector(`#qrmin-${ci}-${qi}`).oninput = e => { q.value_min=parseInt(e.target.value)||100; };
+  top.querySelector(`#qrmax-${ci}-${qi}`).oninput = e => { q.value_max=parseInt(e.target.value)||500; };
   top.querySelectorAll(".penalty-btn").forEach(b => {
     b.onclick = () => { q.penalty=b.dataset.p; top.querySelectorAll(".penalty-btn").forEach(x=>x.classList.toggle("active",x===b)); };
   });

@@ -1,0 +1,301 @@
+{
+  "name": "Шаблон (все типы вопросов)",
+  "categories": [
+    {
+      "name": "Обычные вопросы",
+      "buzz_mode": "unlimited",
+      "questions": [
+        {
+          "value": 100,
+          "random_value": false,
+          "timer": 60,
+          "type": "normal",
+          "penalty": "none",
+          "question": "Сколько цветов у радуги?",
+          "answer": "7",
+          "image": null,
+          "audio": null,
+          "video": null,
+          "answer_reveal": {
+            "text": "Красный, оранжевый, жёлтый, зелёный, голубой, синий, фиолетовый.",
+            "image": null,
+            "audio": null,
+            "video": null
+          }
+        },
+        {
+          "value": 200,
+          "random_value": false,
+          "timer": 60,
+          "type": "normal",
+          "penalty": "half",
+          "question": "В каком городе находится Эйфелева башня?",
+          "answer": "Париж",
+          "image": null,
+          "audio": null,
+          "video": null,
+          "answer_reveal": null
+        },
+        {
+          "value": 300,
+          "random_value": false,
+          "timer": 60,
+          "type": "normal",
+          "penalty": "full",
+          "question": "Кто написал «Преступление и наказание»?",
+          "answer": "Фёдор Достоевский",
+          "image": null,
+          "audio": null,
+          "video": null,
+          "answer_reveal": null
+        },
+        {
+          "value": 400,
+          "random_value": false,
+          "timer": 30,
+          "type": "normal",
+          "penalty": "none",
+          "question": "Как называется самая длинная река в мире?",
+          "answer": "Нил",
+          "image": null,
+          "audio": null,
+          "video": null,
+          "answer_reveal": {
+            "text": "Нил — 6 853 км. (Хотя Амазонка иногда оспаривает первенство.)",
+            "image": null,
+            "audio": null,
+            "video": null
+          }
+        },
+        {
+          "value": 500,
+          "random_value": false,
+          "timer": 90,
+          "type": "normal",
+          "penalty": "none",
+          "question": "Назовите столицу Австралии.",
+          "answer": "Канберра",
+          "image": null,
+          "audio": null,
+          "video": null,
+          "answer_reveal": null
+        }
+      ]
+    },
+    {
+      "name": "Один шанс",
+      "buzz_mode": "one_chance",
+      "questions": [
+        {
+          "value": 100,
+          "random_value": false,
+          "timer": 60,
+          "type": "normal",
+          "penalty": "none",
+          "question": "Какой элемент обозначается символом Au?",
+          "answer": "Золото",
+          "image": null,
+          "audio": null,
+          "video": null,
+          "answer_reveal": null
+        },
+        {
+          "value": 200,
+          "random_value": false,
+          "timer": 60,
+          "type": "normal",
+          "penalty": "half",
+          "question": "Сколько граней у куба?",
+          "answer": "6",
+          "image": null,
+          "audio": null,
+          "video": null,
+          "answer_reveal": null
+        },
+        {
+          "value": 300,
+          "random_value": false,
+          "timer": 60,
+          "type": "normal",
+          "penalty": "full",
+          "question": "В каком году Гагарин полетел в космос?",
+          "answer": "1961",
+          "image": null,
+          "audio": null,
+          "video": null,
+          "answer_reveal": {
+            "text": "12 апреля 1961 года Юрий Гагарин совершил первый в истории орбитальный полёт.",
+            "image": null,
+            "audio": null,
+            "video": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "Случайная стоимость",
+      "buzz_mode": "unlimited",
+      "questions": [
+        {
+          "value": 0,
+          "random_value": true,
+          "value_min": 100,
+          "value_max": 300,
+          "timer": 60,
+          "type": "normal",
+          "penalty": "none",
+          "question": "Как называется высший законодательный орган России?",
+          "answer": "Федеральное Собрание",
+          "image": null,
+          "audio": null,
+          "video": null,
+          "answer_reveal": null
+        },
+        {
+          "value": 0,
+          "random_value": true,
+          "value_min": 200,
+          "value_max": 600,
+          "timer": 60,
+          "type": "normal",
+          "penalty": "half",
+          "question": "Какая планета Солнечной системы самая большая?",
+          "answer": "Юпитер",
+          "image": null,
+          "audio": null,
+          "video": null,
+          "answer_reveal": null
+        },
+        {
+          "value": 0,
+          "random_value": true,
+          "value_min": 50,
+          "value_max": 500,
+          "timer": 45,
+          "type": "normal",
+          "penalty": "none",
+          "question": "Сколько букв в русском алфавите?",
+          "answer": "33",
+          "image": null,
+          "audio": null,
+          "video": null,
+          "answer_reveal": null
+        }
+      ]
+    },
+    {
+      "name": "Спецвопросы",
+      "buzz_mode": "unlimited",
+      "questions": [
+        {
+          "value": 300,
+          "random_value": false,
+          "timer": 60,
+          "type": "bag",
+          "penalty": "full",
+          "question": "Назовите автора романа «Мастер и Маргарита».",
+          "answer": "Михаил Булгаков",
+          "image": null,
+          "audio": null,
+          "video": null,
+          "answer_reveal": null
+        },
+        {
+          "value": 500,
+          "random_value": false,
+          "timer": 60,
+          "type": "auction",
+          "penalty": "none",
+          "question": "В каком году была основана компания Apple?",
+          "answer": "1976",
+          "image": null,
+          "audio": null,
+          "video": null,
+          "answer_reveal": {
+            "text": "Apple была основана 1 апреля 1976 года Стивом Джобсом, Стивом Возняком и Рональдом Уэйном.",
+            "image": null,
+            "audio": null,
+            "video": null
+          }
+        },
+        {
+          "value": 400,
+          "random_value": false,
+          "timer": 60,
+          "type": "last",
+          "penalty": "none",
+          "question": "Назовите любую страну Южной Америки. Побеждает тот, кто назовёт последним, не повторив уже сказанное.",
+          "answer": "Последний правильный ответ",
+          "image": null,
+          "audio": null,
+          "video": null,
+          "answer_reveal": {
+            "text": "Страны Южной Америки: Аргентина, Боливия, Бразилия, Венесуэла, Гайана, Колумбия, Парагвай, Перу, Суринам, Уругвай, Чили, Эквадор.",
+            "image": null,
+            "audio": null,
+            "video": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "Блиц",
+      "buzz_mode": "unlimited",
+      "questions": [
+        {
+          "value": 300,
+          "random_value": false,
+          "timer": 60,
+          "type": "blitz",
+          "penalty": "none",
+          "question": "Блиц: столицы",
+          "sub_questions": [
+            { "question": "Столица Франции?", "answer": "Париж" },
+            { "question": "Столица Германии?", "answer": "Берлин" },
+            { "question": "Столица Японии?", "answer": "Токио" }
+          ],
+          "image": null,
+          "audio": null,
+          "video": null,
+          "answer_reveal": null
+        },
+        {
+          "value": 400,
+          "random_value": false,
+          "timer": 90,
+          "type": "blitz",
+          "penalty": "none",
+          "question": "Блиц: химические элементы",
+          "sub_questions": [
+            { "question": "Символ водорода?", "answer": "H" },
+            { "question": "Символ железа?", "answer": "Fe" },
+            { "question": "Символ натрия?", "answer": "Na" },
+            { "question": "Символ серебра?", "answer": "Ag" }
+          ],
+          "image": null,
+          "audio": null,
+          "video": null,
+          "answer_reveal": null
+        },
+        {
+          "value": 0,
+          "random_value": true,
+          "value_min": 200,
+          "value_max": 500,
+          "timer": 60,
+          "type": "blitz",
+          "penalty": "none",
+          "question": "Блиц: математика",
+          "sub_questions": [
+            { "question": "2 × 7 = ?", "answer": "14" },
+            { "question": "√81 = ?", "answer": "9" }
+          ],
+          "image": null,
+          "audio": null,
+          "video": null,
+          "answer_reveal": null
+        }
+      ]
+    }
+  ]
+}

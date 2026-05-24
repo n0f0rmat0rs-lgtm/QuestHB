@@ -805,7 +805,7 @@ function buildBoard() {
       if (!q) { cell.className = 'q-cell used'; }
       else {
         cell.className = 'q-cell' + (S.used[k] ? ' used' : '');
-        cell.textContent = q.value;
+        cell.textContent = q.random_value ? '???' : q.value;
         cell.onclick = () => openQ(ci, qi);
       }
       grid.appendChild(cell);
@@ -869,11 +869,14 @@ document.getElementById('flappy-return-btn').onclick = () => {
 function openQ(ci, qi) {
   const k = `${S.ri}-${ci}-${qi}`; if (S.used[k]) return;
   const cat = S.rounds[S.ri].pack.categories[ci], q = cat.questions[qi];
-  S.curQ = {ci, qi, k, q, catName: cat.name, buzzMode: cat.buzz_mode || 'unlimited', currentValue: q.value, hintBuzzed: false, lastCorrectTeam: null};
+  const qValue = q.random_value
+    ? (() => { const mn=q.value_min||100, mx=Math.max(mn,q.value_max||500); return Math.floor(Math.random()*(mx-mn+1))+mn; })()
+    : (q.value || 0);
+  S.curQ = {ci, qi, k, q, catName: cat.name, buzzMode: cat.buzz_mode || 'unlimited', currentValue: qValue, hintBuzzed: false, lastCorrectTeam: null};
   if (q.type === 'blitz') {
     S.curQ.subs = q.sub_questions || [];
     S.curQ.subIdx = 0;
-    S.curQ.subPts = S.curQ.subs.length > 0 ? Math.floor(q.value / S.curQ.subs.length) : q.value;
+    S.curQ.subPts = S.curQ.subs.length > 0 ? Math.floor(qValue / S.curQ.subs.length) : qValue;
     S.curQ.currentValue = S.curQ.subPts;
   }
   S.buzzed = null; S.wrongTeams = new Set();
@@ -891,7 +894,7 @@ function openBagModal(q) {
   _bagTeamIdx = 0;
   document.getElementById('bag-teams-list').innerHTML = S.teams.map((t, i) =>
     `<button class="bag-team-btn${i===0?' selected':''}" data-i="${i}">${t.name}</button>`).join('');
-  document.getElementById('bag-value-input').value = q.value || 100;
+  document.getElementById('bag-value-input').value = S.curQ.currentValue || q.value || 100;
   document.getElementById('modal-bag').style.display = 'flex';
   document.querySelectorAll('.bag-team-btn').forEach(btn => {
     btn.onclick = () => {
@@ -954,7 +957,7 @@ function fillQ(q, cat) {
     document.getElementById('q-cat').textContent = `⚡ Блиц — ${cat.name}`;
     setMedia('q-img','q-aud','q-vid','q-vwrap', {});
   } else {
-    document.getElementById('q-val').textContent = (isBag ? S.curQ.bagValue : q.value) + ' баллов';
+    document.getElementById('q-val').textContent = (isBag ? S.curQ.bagValue : S.curQ.currentValue) + ' баллов';
     document.getElementById('q-cat').textContent = isBag ? `Играет: ${S.teams[S.curQ.bagTeam].name}` : cat.name;
     const txt = q.question || '';
     const el = document.getElementById('q-text'); el.textContent = txt;
