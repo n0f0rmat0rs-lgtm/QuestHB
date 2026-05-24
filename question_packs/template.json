@@ -247,8 +247,9 @@
           "random_value": false,
           "timer": 60,
           "type": "blitz",
+          "blitz_auto_skip": false,
           "penalty": "none",
-          "question": "Блиц: столицы",
+          "question": "Блиц: столицы (ручной пропуск)",
           "sub_questions": [
             { "question": "Столица Франции?", "answer": "Париж" },
             { "question": "Столица Германии?", "answer": "Берлин" },
@@ -264,8 +265,9 @@
           "random_value": false,
           "timer": 90,
           "type": "blitz",
-          "penalty": "none",
-          "question": "Блиц: химические элементы",
+          "blitz_auto_skip": true,
+          "penalty": "half",
+          "question": "Блиц: химические элементы (автопропуск, штраф ½)",
           "sub_questions": [
             { "question": "Символ водорода?", "answer": "H" },
             { "question": "Символ железа?", "answer": "Fe" },

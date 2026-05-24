@@ -310,6 +310,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
       <button class="btn btn-secondary btn-sm" id="q-start">▶ Старт</button>
       <button class="btn btn-secondary btn-sm" id="q-last-end" style="display:none">Больше правильных ответов нет</button>
       <button class="btn btn-ghost    btn-sm" id="q-annul">Аннулировать</button>
+      <button class="btn btn-secondary btn-sm" id="q-blitz-skip" style="display:none">⏭ Пропустить</button>
     </div>
     <div id="hint-row" class="hint-row" style="display:none"></div>
   </div>
@@ -970,6 +971,7 @@ function fillQ(q, cat) {
   document.getElementById('q-last-end').style.display = q.type === 'last' ? 'inline-flex' : 'none';
   document.getElementById('q-start').style.display = 'inline-flex';
   document.getElementById('q-annul').style.display = 'inline-flex';
+  document.getElementById('q-blitz-skip').style.display = (q.type === 'blitz' && !q.blitz_auto_skip) ? 'inline-flex' : 'none';
 }
 function fillBlitzSub() {
   const sub = S.curQ.subs[S.curQ.subIdx];
@@ -1121,6 +1123,23 @@ document.getElementById('q-wrong').onclick = () => {
   updScores(); SFX.wrong(); flash('rgba(231,76,60,.45)');
   if (q.type === 'bag') { closeQ(); return; }
   if (S.curQ.hintBuzzed) { clearHintTimer(); afterHintFail(); return; }
+  if (q.type === 'blitz') {
+    if (q.blitz_auto_skip) {
+      S.curQ.subIdx++;
+      if (S.curQ.subIdx >= S.curQ.subs.length) { closeQ(); return; }
+      S.wrongTeams = new Set(); S.buzzed = null;
+      document.getElementById('buzz-pill').style.display = 'none';
+      showJudge(false); fillBlitzSub();
+      document.getElementById('q-start').style.display = 'inline-flex';
+    } else {
+      S.wrongTeams.add(S.buzzed); S.buzzed = null;
+      document.getElementById('buzz-pill').style.display = 'none';
+      showJudge(false);
+      document.getElementById('q-start').style.display = 'inline-flex';
+      resumeTimer();
+    }
+    return;
+  }
   S.wrongTeams.add(S.buzzed); S.buzzed = null;
   document.getElementById('buzz-pill').style.display = 'none';
   showJudge(false); document.getElementById('q-start').style.display = 'inline-flex';
@@ -1131,6 +1150,20 @@ document.getElementById('q-wrong').onclick = () => {
 document.getElementById('q-annul').onclick = () => {
   if (S.curQ && S.curQ.q.type === 'auction') { pauseTimer(); openAuctionModal(); }
   else closeQ();
+};
+document.getElementById('q-blitz-skip').onclick = () => {
+  if (!S.curQ || S.curQ.q.type !== 'blitz') return;
+  pauseTimer();
+  if (S.buzzed !== null) {
+    S.buzzed = null;
+    document.getElementById('buzz-pill').style.display = 'none';
+    showJudge(false);
+  }
+  S.curQ.subIdx++;
+  if (S.curQ.subIdx >= S.curQ.subs.length) { closeQ(); return; }
+  S.wrongTeams = new Set();
+  fillBlitzSub();
+  document.getElementById('q-start').style.display = 'inline-flex';
 };
 document.getElementById('q-back').onclick = () => { pauseTimer(); showScreen('screen-board'); };
 document.getElementById('q-start').onclick = () => { if (!S.tRun) startTimer(); };

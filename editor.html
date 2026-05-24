@@ -395,6 +395,14 @@ function buildBlitzSection(q) {
   hdr.style.cssText = 'font-size:.82rem;color:var(--text-muted);font-weight:600';
   hdr.textContent = '⚡ Подвопросы блица:';
   wrap.appendChild(hdr);
+  const autoSkipLabel = document.createElement('label');
+  autoSkipLabel.style.cssText = 'display:flex;align-items:center;gap:.4rem;cursor:pointer;font-size:.82rem;margin:.2rem 0 .4rem';
+  const autoSkipCb = document.createElement('input');
+  autoSkipCb.type = 'checkbox'; autoSkipCb.checked = !!q.blitz_auto_skip;
+  autoSkipCb.onchange = () => { q.blitz_auto_skip = autoSkipCb.checked; };
+  autoSkipLabel.appendChild(autoSkipCb);
+  autoSkipLabel.appendChild(document.createTextNode('Автопропуск при неверном ответе'));
+  wrap.appendChild(autoSkipLabel);
   const list = document.createElement('div');
   list.className = 'blitz-list';
   wrap.appendChild(list);
