@@ -6,8 +6,9 @@ echo "Запускаем игру..."
 python3 app.py &
 SERVER_PID=$!
 sleep 2
-open http://localhost:5000
+# Открываем в Safari - Яндекс браузер блокирует localhost
+open -a Safari http://127.0.0.1:5000
 echo ""
-echo "Игра открыта в браузере!"
+echo "Игра открыта в браузере Safari!"
 echo "Чтобы остановить сервер - закройте это окно."
 wait $SERVER_PID
