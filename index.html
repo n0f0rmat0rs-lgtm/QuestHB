@@ -8,7 +8,7 @@
 :root {
   --bg: #000; --surface: #111; --surface2: #1c1c1c; --border: #2a2a2a;
   --accent: #4f8ef7; --green: #2ecc71; --red: #e74c3c;
-  --text: #fff; --text-muted: #666; --gold: #f1c40f; --radius: 10px;
+  --text: #fff; --text-muted: #666; --radius: 10px;
 }
 html, body { height: 100%; }
 body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
@@ -25,13 +25,13 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 .btn-danger   { background: var(--red);   color: #fff; }
 .btn-sm       { font-size: .82rem; padding: .3em .75em; }
 
-/* ── FLASH OVERLAY ── */
+/* ── FLASH ── */
 #flash { position: fixed; inset: 0; pointer-events: none; z-index: 900; opacity: 0; transition: opacity .15s; }
 
 /* ── SETUP ── */
 #screen-setup { overflow-y: auto; align-items: center; justify-content: flex-start; padding: 2rem 1rem 4rem; background: var(--bg); }
 .setup-wrap { width: 100%; max-width: 660px; margin: 0 auto; }
-.logo { font-size: 3rem; font-weight: 900; text-align: center; margin-bottom: 2rem; letter-spacing: .12em; text-transform: uppercase; }
+.logo { font-size: 3rem; font-weight: 900; text-align: center; margin-bottom: 2rem; letter-spacing: .12em; text-transform: uppercase; color: #fff; }
 .setup-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.2rem; }
 .setup-card h2 { font-size: .78rem; text-transform: uppercase; letter-spacing: .12em; color: var(--text-muted); margin-bottom: 1rem; }
 .round-item { display: flex; align-items: center; gap: .4rem; background: var(--surface2); border-radius: 8px; padding: .55rem .8rem; margin-bottom: .4rem; }
@@ -40,7 +40,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 .icon-btn:hover { color: var(--text); }
 .del-btn  { background: none; border: none; color: var(--red); cursor: pointer; font-size: 1rem; }
 .team-item { display: flex; align-items: center; gap: .7rem; background: var(--surface2); border-radius: 8px; padding: .55rem .8rem; margin-bottom: .4rem; }
-.team-dot { width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; cursor: pointer; }
+.team-num { font-size: .82rem; color: var(--text-muted); min-width: 1.4rem; text-align: center; }
 .team-name-input { flex: 1; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: .3em .6em; font-size: .95rem; font-family: inherit; }
 .setup-hint { font-size: .75rem; color: var(--text-muted); margin-top: .5rem; }
 #start-btn { width: 100%; margin-top: .25rem; font-size: 1.2rem; padding: .8em; }
@@ -50,67 +50,68 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 #intro-round-label { font-size: 1rem; text-transform: uppercase; letter-spacing: .2em; color: var(--text-muted); margin-bottom: 1rem; }
 #intro-cat-name { font-size: 5rem; font-weight: 900; text-align: center; text-transform: uppercase; letter-spacing: .08em; opacity: 0; transform: scale(.8); transition: opacity .35s, transform .35s; padding: 0 2rem; line-height: 1.1; }
 #intro-cat-name.visible { opacity: 1; transform: scale(1); }
-#intro-skip { position: absolute; bottom: 2rem; right: 2rem; }
 
 /* ── BOARD ── */
 #screen-board { display: none; flex-direction: column; overflow: hidden; }
 #screen-board.active { display: flex; }
 .board-top { display: flex; align-items: center; padding: .6rem 1.2rem; background: var(--surface); border-bottom: 1px solid var(--border); gap: 1rem; flex-wrap: wrap; flex-shrink: 0; }
-.vittorina-title { font-size: 1.4rem; font-weight: 900; letter-spacing: .15em; text-transform: uppercase; color: var(--gold); flex-shrink: 0; }
+.vittorina-title { font-size: 1.4rem; font-weight: 900; letter-spacing: .15em; text-transform: uppercase; color: #fff; flex-shrink: 0; }
 #scores-bar { display: flex; gap: .75rem; flex-wrap: wrap; flex: 1; }
-.score-chip { display: flex; align-items: center; gap: .5rem; padding: .3rem .8rem; border-radius: 6px; }
+.score-chip { display: flex; align-items: center; gap: .5rem; padding: .3rem .8rem; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); }
 .chip-name { font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; opacity: .8; }
 .chip-score { font-size: 1.3rem; font-weight: 700; }
 .board-ctrl { display: flex; gap: .4rem; align-items: center; flex-shrink: 0; }
 .round-lbl { color: var(--text-muted); font-size: .82rem; }
 
 .board-grid { flex: 1; display: grid; overflow: auto; padding: .75rem 1.2rem 1.5rem; gap: 6px; align-content: start; }
-.cat-head { background: var(--accent); color: #fff; border-radius: 6px; padding: .5rem; text-align: center; font-weight: 700; font-size: .9rem; text-transform: uppercase; letter-spacing: .04em; display: flex; align-items: center; justify-content: center; min-height: 52px; }
-.q-cell { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .2rem; font-size: 1.5rem; font-weight: 700; color: var(--gold); cursor: pointer; transition: background .12s, transform .1s; min-height: 62px; }
+.cat-head { background: var(--surface2); border: 1px solid var(--border); color: #fff; border-radius: 6px; padding: .5rem; text-align: center; font-weight: 700; font-size: .9rem; text-transform: uppercase; letter-spacing: .04em; display: flex; align-items: center; justify-content: center; min-height: 52px; }
+.q-cell { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; color: #fff; cursor: pointer; transition: background .12s, transform .1s; min-height: 62px; }
 .q-cell:hover { background: var(--surface2); transform: scale(1.04); }
-.q-cell.used { background: #000; color: #222; cursor: default; pointer-events: none; }
-.cell-badge { font-size: .58rem; font-weight: 700; padding: .12em .45em; border-radius: 3px; text-transform: uppercase; }
-.badge-bag     { background: #8e44ad; color: #fff; }
-.badge-auction { background: var(--gold); color: #000; }
+.q-cell.used { background: #000; color: #1e1e1e; cursor: default; pointer-events: none; border-color: #111; }
 
 /* ── QUESTION ── */
 #screen-question { background: #000; overflow: hidden; }
 .q-screen-inner { display: flex; flex-direction: column; height: 100%; padding: .8rem 1.2rem 1rem; gap: .6rem; position: relative; }
 .q-topbar { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
 .q-meta { display: flex; align-items: center; gap: .75rem; }
-.q-value-lbl { font-size: 1.2rem; font-weight: 700; color: var(--gold); }
+.q-value-lbl { font-size: 1.2rem; font-weight: 700; color: #fff; }
 .q-cat-lbl { font-size: .85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; }
-.q-type-badge { font-size: .85rem; font-weight: 700; padding: .2em .8em; border-radius: 20px; }
-.badge-bag-q     { background: #8e44ad; color: #fff; }
-.badge-auction-q { background: var(--gold); color: #000; }
-
-/* Question text — fills the space */
 .q-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: .8rem; min-height: 0; }
 .q-text { font-weight: 700; line-height: 1.25; max-width: 1000px; color: #fff; }
 .q-media { max-width: 100%; max-height: 35vh; border-radius: 6px; }
 
 /* BUZZ */
 .buzz-wrap { flex-shrink: 0; text-align: center; min-height: 70px; display: flex; align-items: center; justify-content: center; }
-.buzz-pill { display: inline-block; padding: .45rem 2rem; border-radius: 40px; font-size: 2rem; font-weight: 900; color: #fff; animation: buzzPop .25s cubic-bezier(.34,1.56,.64,1); }
+.buzz-pill { display: inline-block; padding: .5rem 2.5rem; border-radius: 40px; font-size: 2.2rem; font-weight: 900; color: #fff; background: #1c1c1c; border: 2px solid #fff; animation: buzzPop .25s cubic-bezier(.34,1.56,.64,1); }
 @keyframes buzzPop { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-/* Timer — big semi-transparent overlay in bottom-right */
+/* Timer */
 .timer-wrap {
   position: absolute; bottom: 5.5rem; right: 1.5rem;
-  width: 140px; height: 140px; flex-shrink: 0;
-  opacity: .35; transition: opacity .2s;
+  width: 180px; height: 180px; flex-shrink: 0;
+  opacity: .15; transition: opacity .2s;
   pointer-events: none;
 }
-.timer-wrap.active { opacity: .75; }
-.timer-wrap svg { transform: rotate(-90deg); width: 140px; height: 140px; }
-.t-bg  { fill: none; stroke: #333; stroke-width: 9; }
-.t-arc { fill: none; stroke: #fff; stroke-width: 9; stroke-linecap: round; transition: stroke-dashoffset .8s linear, stroke .3s; }
-.t-arc.warn { stroke: var(--gold); }
-.t-arc.danger { stroke: var(--red); }
+.timer-wrap.active { opacity: .65; }
+.timer-wrap svg { transform: rotate(-90deg); width: 180px; height: 180px; }
+.t-bg  { fill: none; stroke: #222; stroke-width: 10; }
+.t-arc { fill: none; stroke: #fff; stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset .8s linear; }
 .t-num {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  font-size: 2.8rem; font-weight: 900; color: #fff;
+  font-size: 3.8rem; font-weight: 900; color: #fff;
 }
+@keyframes timerShake {
+  0%   { transform: scale(1.35); }
+  10%  { transform: scale(1.18) translate(-7px,-3px); }
+  22%  { transform: scale(1.14) translate(7px,3px); }
+  34%  { transform: scale(1.09) translate(-5px,-2px); }
+  46%  { transform: scale(1.06) translate(5px,2px); }
+  58%  { transform: scale(1.03) translate(-3px,0); }
+  70%  { transform: scale(1.02) translate(2px,0); }
+  84%  { transform: scale(1.01); }
+  100% { transform: scale(1); }
+}
+.timer-wrap.flash-start { animation: timerShake 1.5s ease-out forwards; }
 
 /* Controls */
 .q-controls { flex-shrink: 0; display: flex; gap: .6rem; justify-content: center; align-items: center; flex-wrap: wrap; padding-bottom: .2rem; }
@@ -130,39 +131,52 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 .event-pop.show { transform: translate(-50%,-50%) scale(1); }
 .event-pop.hide { transform: translate(-50%,-50%) scale(0) translateY(-40px); opacity: 0; transition: transform .35s ease-in, opacity .35s; }
 .ep-pts  { font-size: 5.5rem; font-weight: 900; line-height: 1; text-shadow: 0 4px 24px rgba(0,0,0,.6); }
-.ep-name { font-size: 2rem; font-weight: 700; margin-top: .2rem; }
+.ep-name { font-size: 2rem; font-weight: 700; margin-top: .2rem; color: #fff; }
 
 /* Score modal */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.75); display: flex; align-items: center; justify-content: center; z-index: 200; }
 .modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.8rem; min-width: 320px; max-width: 95vw; display: flex; flex-direction: column; gap: 1rem; }
 .modal h2 { font-size: 1.05rem; text-transform: uppercase; letter-spacing: .1em; }
+.modal-sub { font-size: .82rem; color: var(--text-muted); }
 .adj-row { display: flex; align-items: center; gap: .6rem; padding: .5rem; background: var(--surface2); border-radius: 8px; }
-.adj-dot  { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; }
 .adj-lbl  { flex: 1; font-weight: 600; font-size: .95rem; }
 .adj-score{ font-size: 1.15rem; font-weight: 700; min-width: 55px; text-align: right; }
 .adj-inp  { width: 65px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: .25em .5em; font-size: .9rem; text-align: center; font-family: inherit; }
 .adj-plus { background: var(--green); color: #fff; border: none; border-radius: 6px; padding: .3em .65em; cursor: pointer; font-weight: 700; font-family: inherit; }
 .adj-minus{ background: var(--red);   color: #fff; border: none; border-radius: 6px; padding: .3em .65em; cursor: pointer; font-weight: 700; font-family: inherit; }
 
+/* Bag modal */
+.bag-team-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: .45em 1em; cursor: pointer; font-size: .95rem; font-weight: 600; font-family: inherit; transition: background .12s; }
+.bag-team-btn.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
+.bag-team-btn:hover:not(.selected) { border-color: var(--accent); }
+#bag-teams-list { display: flex; flex-wrap: wrap; gap: .5rem; }
+
+/* Auction modal */
+.auc-row { display: flex; align-items: center; gap: .6rem; padding: .5rem; background: var(--surface2); border-radius: 8px; margin-bottom: .4rem; }
+.auc-name { flex: 1; font-weight: 600; font-size: .95rem; }
+.auc-inp  { width: 80px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: .25em .5em; font-size: .9rem; text-align: center; font-family: inherit; }
+.auc-res-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); border-radius: 6px; padding: .3em .7em; cursor: pointer; font-weight: 700; font-family: inherit; font-size: 1rem; transition: background .12s; }
+.auc-res-btn.correct { background: var(--green); border-color: var(--green); color: #fff; }
+.auc-res-btn.wrong   { background: var(--red);   border-color: var(--red);   color: #fff; }
+
 /* ── CREDITS ── */
-#screen-credits { background: #000; align-items: center; justify-content: flex-end; padding-bottom: 0; overflow: hidden; }
-.credits-inner { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0; }
-.credits-title { font-size: 1rem; letter-spacing: .3em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1.5rem; padding-top: 2rem; }
+#screen-credits { background: #000; align-items: center; justify-content: center; overflow: hidden; }
+.credits-inner { width: 100%; max-width: 700px; display: flex; flex-direction: column; align-items: stretch; gap: 0; }
+.credits-title { font-size: 1rem; letter-spacing: .3em; text-transform: uppercase; color: var(--text-muted); text-align: center; margin-bottom: 1.5rem; }
 .credit-row {
-  width: 100%; max-width: 700px; display: flex; align-items: center; gap: 1.5rem;
+  display: flex; align-items: center; gap: 1.5rem;
   padding: 1rem 2rem; border-top: 1px solid #1a1a1a;
-  transform: translateY(120px); opacity: 0;
-  transition: transform .7s cubic-bezier(.22,1,.36,1), opacity .5s;
+  transform: translateX(-40px); opacity: 0;
+  transition: transform .9s cubic-bezier(.22,1,.36,1), opacity .7s;
 }
-.credit-row.entered { transform: translateY(0); opacity: 1; }
+.credit-row.entered { transform: translateX(0); opacity: 1; }
 .credit-place { font-size: 1.1rem; color: var(--text-muted); font-weight: 700; min-width: 2rem; text-align: center; }
-.credit-color { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; }
 .credit-name  { flex: 1; font-size: 1.6rem; font-weight: 700; }
 .credit-score { font-size: 1.6rem; font-weight: 900; }
 .credit-row.first-place .credit-name,
 .credit-row.first-place .credit-score { font-size: 2.2rem; }
-.credit-row.first-place { padding: 1.4rem 2rem; border-color: var(--gold); }
-.credits-restart { margin-top: 3rem; padding-bottom: 2rem; }
+.credit-row.first-place { padding: 1.4rem 2rem; border-top-color: #333; }
+.credits-restart { position: fixed; bottom: 1.5rem; right: 1.5rem; }
 </style>
 </head>
 <body>
@@ -228,35 +242,29 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
       <div class="q-meta">
         <span class="q-value-lbl" id="q-val"></span>
         <span class="q-cat-lbl"   id="q-cat"></span>
-        <span class="q-type-badge" id="q-badge" style="display:none"></span>
       </div>
       <button class="btn btn-ghost btn-sm" id="q-back">← Поле</button>
     </div>
-
     <div class="q-body" id="q-body">
       <p class="q-text" id="q-text"></p>
       <img  id="q-img"   class="q-media" style="display:none">
       <audio id="q-aud"  controls style="display:none"></audio>
       <div   id="q-vwrap" style="display:none"><video id="q-vid" controls class="q-media"></video></div>
     </div>
-
     <div class="buzz-wrap" id="buzz-wrap">
       <div class="buzz-pill" id="buzz-pill" style="display:none"></div>
     </div>
-
-    <!-- semi-transparent timer -->
     <div class="timer-wrap" id="timer-wrap">
-      <svg viewBox="0 0 140 140">
-        <circle class="t-bg"  cx="70" cy="70" r="60"/>
-        <circle class="t-arc" id="t-arc" cx="70" cy="70" r="60" stroke-dasharray="376.99" stroke-dashoffset="0"/>
+      <svg viewBox="0 0 180 180">
+        <circle class="t-bg"  cx="90" cy="90" r="78"/>
+        <circle class="t-arc" id="t-arc" cx="90" cy="90" r="78" stroke-dasharray="490.09" stroke-dashoffset="0"/>
       </svg>
       <div class="t-num" id="t-num">60</div>
     </div>
-
     <div class="q-controls">
-      <button class="btn btn-success btn-sm" id="q-correct" style="display:none">✓ Верно</button>
-      <button class="btn btn-danger  btn-sm" id="q-wrong"   style="display:none">✗ Неверно</button>
-      <button class="btn btn-secondary btn-sm" id="q-start">▶ Пробел</button>
+      <button class="btn btn-success btn-sm" id="q-correct" style="display:none">✓ Верно  [Пробел]</button>
+      <button class="btn btn-danger  btn-sm" id="q-wrong"   style="display:none">✗ Неверно  [Z]</button>
+      <button class="btn btn-secondary btn-sm" id="q-start">▶ Старт</button>
       <button class="btn btn-ghost    btn-sm" id="q-annul">Аннулировать</button>
     </div>
   </div>
@@ -292,385 +300,548 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
   </div>
 </div>
 
+<!-- bag selection modal -->
+<div id="modal-bag" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h2>🎁 Кот в мешке</h2>
+    <p class="modal-sub">Выберите команду и укажите ставку</p>
+    <div id="bag-teams-list"></div>
+    <div style="display:flex;align-items:center;gap:.75rem;margin-top:.75rem">
+      <label style="font-size:.85rem;color:var(--text-muted);white-space:nowrap">Ставка:</label>
+      <input id="bag-value-input" type="number" value="100" min="0" step="50"
+        style="width:110px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:.3em .6em;font-size:1rem;font-family:inherit">
+    </div>
+    <div style="display:flex;gap:.5rem;margin-top:1rem">
+      <button class="btn btn-primary" id="bag-confirm-btn">▶ Начать вопрос</button>
+      <button class="btn btn-ghost btn-sm" id="bag-cancel-btn">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<!-- auction results modal -->
+<div id="modal-auction" class="modal-overlay" style="display:none">
+  <div class="modal" style="max-width:480px">
+    <h2>🔨 Аукцион</h2>
+    <p class="modal-sub">Введите ставки и отметьте результат каждой команды</p>
+    <div id="auction-rows"></div>
+    <div style="display:flex;gap:.5rem;margin-top:1rem;flex-wrap:wrap">
+      <button class="btn btn-primary" id="auction-apply">Применить</button>
+      <button class="btn btn-ghost btn-sm" id="auction-annul-btn">Аннулировать всё</button>
+    </div>
+  </div>
+</div>
+
 <script>
-/* ═══ AUDIO ENGINE ═══ */
-let _ctx = null;
-const actx = () => _ctx || (_ctx = new (window.AudioContext||window.webkitAudioContext)());
-function tone(f,type,dur,vol=.4,t0=0){
-  try{const c=actx(),o=c.createOscillator(),g=c.createGain();
-  o.connect(g);g.connect(c.destination);o.frequency.value=f;o.type=type;
-  const t=c.currentTime+t0;g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);
-  o.start(t);o.stop(t+dur);}catch{}
+/* ═══ SOUNDS ═══ */
+function playSound(name) {
+  try { new Audio(`sounds/${name}.mp3`).play().catch(() => {}); } catch {}
 }
-const SFX={
-  click()  {tone(900,'sine',.04,.12);},
-  buzz()   {tone(160,'sawtooth',.12,.5);tone(130,'sawtooth',.12,.4,.1);},
-  correct(){tone(523,'sine',.11,.4);tone(659,'sine',.11,.4,.11);tone(784,'sine',.22,.4,.22);},
-  wrong()  {tone(260,'sawtooth',.09,.5);tone(210,'sawtooth',.09,.5,.09);tone(160,'square',.18,.4,.18);},
-  timerEnd(){for(let i=0;i<3;i++)tone(880,'square',.1,.35,i*.18);},
-  slide()  {tone(420,'sine',.08,.18);tone(560,'sine',.08,.14,.07);},
-  intro()  {[523,659,784,1047].forEach((f,i)=>tone(f,'sine',.16,.35,i*.14));},
-  reveal() {tone(440,'sine',.07,.18);tone(560,'sine',.14,.28,.09);},
-  catShow(){tone(600,'sine',.12,.3);tone(800,'sine',.12,.25,.1);},
+const SFX = {
+  click()   { playSound('click'); },
+  buzz()    { playSound('answer'); },
+  correct() { playSound('correct'); },
+  wrong()   { playSound('wrong'); },
+  timerEnd(){ playSound('wrong'); },
+  tick()    { playSound('click'); },
+  slide()   { playSound('slide_on'); },
+  intro()   { playSound('slide_on'); },
+  catShow() { playSound('slide_on'); },
+  reveal()  { playSound('slide_on'); },
+  rick()    { playSound('rick'); },
 };
-document.addEventListener('mouseover',e=>{
-  if(e.target.closest('.btn,.q-cell,.icon-btn,.del-btn,.adj-plus,.adj-minus'))SFX.click();
+let _hoverLast = 0;
+document.addEventListener('mouseover', e => {
+  if (Date.now() - _hoverLast < 80) return;
+  if (e.target.closest('.btn,.q-cell,.icon-btn,.del-btn,.adj-plus,.adj-minus,.bag-team-btn,.auc-res-btn')) {
+    SFX.click(); _hoverLast = Date.now();
+  }
 });
 
 /* ═══ FLASH ═══ */
-function flash(color){
-  const el=document.getElementById('flash');
-  el.style.background=color;el.style.opacity='1';
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{el.style.transition='opacity .45s';el.style.opacity='0';setTimeout(()=>{el.style.transition='';},500);}));
+function flash(color) {
+  const el = document.getElementById('flash');
+  el.style.background = color; el.style.opacity = '1';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    el.style.transition = 'opacity .45s'; el.style.opacity = '0';
+    setTimeout(() => { el.style.transition = ''; }, 500);
+  }));
+}
+function flashWhite() {
+  flash('rgba(255,255,255,.55)');
 }
 
 /* ═══ EVENT POPUP ═══ */
-let _popT=null;
-function showPopup(pts,name,color){
-  const p=document.getElementById('evpop');
-  document.getElementById('ep-pts').textContent=(pts>0?'+':'')+pts;
-  document.getElementById('ep-pts').style.color=pts>0?'#2ecc71':'#e74c3c';
-  document.getElementById('ep-name').textContent=name;
-  document.getElementById('ep-name').style.color=color;
-  p.classList.remove('hide');p.classList.add('show');
+let _popT = null;
+function showPopup(pts, name) {
+  const p = document.getElementById('evpop');
+  document.getElementById('ep-pts').textContent = (pts > 0 ? '+' : '') + pts;
+  document.getElementById('ep-pts').style.color = pts > 0 ? '#2ecc71' : '#e74c3c';
+  document.getElementById('ep-name').textContent = name;
+  p.classList.remove('hide'); p.classList.add('show');
   clearTimeout(_popT);
-  _popT=setTimeout(()=>{p.classList.remove('show');p.classList.add('hide');setTimeout(()=>p.classList.remove('hide'),450);},1700);
+  _popT = setTimeout(() => {
+    p.classList.remove('show'); p.classList.add('hide');
+    setTimeout(() => p.classList.remove('hide'), 450);
+  }, 1700);
 }
 
 /* ═══ STATE ═══ */
-const S={
-  rounds:[],ri:0,teams:[],used:{},
-  curQ:null,
-  tRun:false,tSec:60,tInt:null,
-  buzzed:null,
-  wrongTeams:new Set(),
+const S = {
+  rounds: [], ri: 0, teams: [], used: {},
+  curQ: null,
+  tRun: false, tSec: 60, tInt: null,
+  buzzed: null,
+  wrongTeams: new Set(),
 };
-const COLORS=["#4f8ef7","#e74c3c","#2ecc71","#9b59b6","#f39c12","#1abc9c"];
-const TARC=376.99;
+const TARC_VAL = 490.09; // 2π×78
 
-function showScreen(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
 
 /* ═══ SETUP ═══ */
-let sRounds=[], sTeams=[{name:"Команда 1",color:COLORS[0]},{name:"Команда 2",color:COLORS[1]}];
+let sRounds = [], sTeams = [{name:"Команда 1"},{name:"Команда 2"}];
 
-function renderRounds(){
-  const el=document.getElementById('rounds-list');
-  if(!sRounds.length){el.innerHTML='<p style="color:var(--text-muted);font-size:.8rem">Раундов нет — добавь JSON-файл</p>';return;}
-  el.innerHTML='';
-  sRounds.forEach((r,i)=>{
-    const d=document.createElement('div');d.className='round-item';
-    d.innerHTML=`<span style="color:var(--text-muted);font-size:.78rem">R${i+1}</span><span class="round-name">${r.packName}</span><button class="icon-btn">▲</button><button class="icon-btn">▼</button><button class="del-btn">✕</button>`;
-    d.querySelectorAll('.icon-btn')[0].onclick=()=>{if(i>0){[sRounds[i-1],sRounds[i]]=[sRounds[i],sRounds[i-1]];renderRounds();}};
-    d.querySelectorAll('.icon-btn')[1].onclick=()=>{if(i<sRounds.length-1){[sRounds[i],sRounds[i+1]]=[sRounds[i+1],sRounds[i]];renderRounds();}};
-    d.querySelector('.del-btn').onclick=()=>{sRounds.splice(i,1);renderRounds();};
+function renderRounds() {
+  const el = document.getElementById('rounds-list');
+  if (!sRounds.length) { el.innerHTML = '<p style="color:var(--text-muted);font-size:.8rem">Раундов нет — добавь JSON-файл</p>'; return; }
+  el.innerHTML = '';
+  sRounds.forEach((r, i) => {
+    const d = document.createElement('div'); d.className = 'round-item';
+    d.innerHTML = `<span style="color:var(--text-muted);font-size:.78rem">R${i+1}</span><span class="round-name">${r.packName}</span><button class="icon-btn">▲</button><button class="icon-btn">▼</button><button class="del-btn">✕</button>`;
+    d.querySelectorAll('.icon-btn')[0].onclick = () => { if (i > 0) { [sRounds[i-1],sRounds[i]] = [sRounds[i],sRounds[i-1]]; renderRounds(); }};
+    d.querySelectorAll('.icon-btn')[1].onclick = () => { if (i < sRounds.length-1) { [sRounds[i],sRounds[i+1]] = [sRounds[i+1],sRounds[i]]; renderRounds(); }};
+    d.querySelector('.del-btn').onclick = () => { sRounds.splice(i, 1); renderRounds(); };
     el.appendChild(d);
   });
 }
-document.getElementById('add-round-btn').onclick=()=>{
-  const inp=document.createElement('input');inp.type='file';inp.accept='.json';
-  inp.onchange=async e=>{const f=e.target.files[0];if(!f)return;
-    try{const p=JSON.parse(await f.text());sRounds.push({packName:p.name||f.name.replace(/\.json$/,''),pack:p});renderRounds();SFX.slide();}
-    catch{alert('Ошибка чтения JSON');}};
+document.getElementById('add-round-btn').onclick = () => {
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json';
+  inp.onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try { const p = JSON.parse(await f.text()); sRounds.push({packName: p.name || f.name.replace(/\.json$/, ''), pack: p}); renderRounds(); SFX.slide(); }
+    catch { alert('Ошибка чтения JSON'); }
+  };
   inp.click();
 };
-function renderTeams(){
-  const el=document.getElementById('teams-list');el.innerHTML='';
-  sTeams.forEach((t,i)=>{
-    const d=document.createElement('div');d.className='team-item';
-    d.innerHTML=`<div class="team-dot" style="background:${t.color}"></div><input class="team-name-input" value="${t.name}" placeholder="Название команды"><button class="del-btn">✕</button>`;
-    d.querySelector('.team-dot').onclick=()=>{t.color=COLORS[(COLORS.indexOf(t.color)+1)%COLORS.length];renderTeams();};
-    d.querySelector('input').oninput=e=>{sTeams[i].name=e.target.value;};
-    d.querySelector('.del-btn').onclick=()=>{sTeams.splice(i,1);renderTeams();};
+
+function renderTeams() {
+  const el = document.getElementById('teams-list'); el.innerHTML = '';
+  sTeams.forEach((t, i) => {
+    const d = document.createElement('div'); d.className = 'team-item';
+    d.innerHTML = `<span class="team-num">${i+1}</span><input class="team-name-input" value="${t.name}" placeholder="Название команды"><button class="del-btn">✕</button>`;
+    d.querySelector('input').oninput = e => { sTeams[i].name = e.target.value; };
+    d.querySelector('.del-btn').onclick = () => { sTeams.splice(i, 1); renderTeams(); };
     el.appendChild(d);
   });
 }
-document.getElementById('add-team-btn').onclick=()=>{
-  if(sTeams.length>=6)return;
-  sTeams.push({name:`Команда ${sTeams.length+1}`,color:COLORS[sTeams.length%COLORS.length]});
+document.getElementById('add-team-btn').onclick = () => {
+  if (sTeams.length >= 6) return;
+  sTeams.push({name:`Команда ${sTeams.length+1}`});
   renderTeams();
 };
-document.getElementById('start-btn').onclick=()=>{
-  if(!sRounds.length){alert('Добавь хотя бы один раунд.');return;}
-  if(!sTeams.length){alert('Добавь хотя бы одну команду.');return;}
-  if(sTeams.some(t=>!t.name.trim())){alert('У всех команд должны быть названия.');return;}
-  S.rounds=sRounds.map(r=>({...r}));S.ri=0;
-  S.teams=sTeams.map(t=>({...t,score:0}));S.used={};
+document.getElementById('start-btn').onclick = () => {
+  if (!sRounds.length) { alert('Добавь хотя бы один раунд.'); return; }
+  if (!sTeams.length) { alert('Добавь хотя бы одну команду.'); return; }
+  if (sTeams.some(t => !t.name.trim())) { alert('У всех команд должны быть названия.'); return; }
+  S.rounds = sRounds.map(r => ({...r}));
+  S.ri = 0;
+  S.teams = sTeams.map(t => ({name: t.name, score: 0}));
+  S.used = {};
   SFX.intro();
   startRound(0);
 };
 
 /* ═══ CATEGORY INTRO ═══ */
-function startRound(idx){
-  S.ri=idx;
-  const pack=S.rounds[idx].pack;
-  const cats=(pack.categories||[]).map(c=>c.name);
-  document.getElementById('intro-round-label').textContent=`Раунд ${idx+1} — ${pack.name}`;
+function startRound(idx) {
+  S.ri = idx;
+  const pack = S.rounds[idx].pack;
+  const cats = (pack.categories || []).map(c => c.name);
+  document.getElementById('intro-round-label').textContent = `Раунд ${idx+1} — ${pack.name}`;
   showScreen('screen-intro');
-  runCatIntro(cats,0,()=>{buildBoard();renderScores();updateRoundLbl();checkDone();showScreen('screen-board');});
+  runCatIntro(cats, 0, () => { buildBoard(); renderScores(); updateRoundLbl(); checkDone(); showScreen('screen-board'); });
 }
-
-function runCatIntro(cats,i,done){
-  const el=document.getElementById('intro-cat-name');
-  if(i>=cats.length){done();return;}
-  el.textContent=cats[i];
+function runCatIntro(cats, i, done) {
+  const el = document.getElementById('intro-cat-name');
+  if (i >= cats.length) { done(); return; }
+  el.textContent = cats[i];
   el.classList.remove('visible');
   SFX.catShow();
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  requestAnimationFrame(() => requestAnimationFrame(() => {
     el.classList.add('visible');
-    setTimeout(()=>{el.classList.remove('visible');setTimeout(()=>runCatIntro(cats,i+1,done),350);},1000);
+    setTimeout(() => { el.classList.remove('visible'); setTimeout(() => runCatIntro(cats, i+1, done), 350); }, 1100);
   }));
 }
-document.getElementById('intro-skip').onclick=()=>{
-  // skip: just go to board
-  buildBoard();renderScores();updateRoundLbl();checkDone();showScreen('screen-board');
+document.getElementById('intro-skip').onclick = () => {
+  buildBoard(); renderScores(); updateRoundLbl(); checkDone(); showScreen('screen-board');
 };
 
 /* ═══ BOARD ═══ */
-function updateRoundLbl(){
-  document.getElementById('round-lbl').textContent=`Раунд ${S.ri+1}/${S.rounds.length}: ${S.rounds[S.ri].packName}`;
+function updateRoundLbl() {
+  document.getElementById('round-lbl').textContent = `Раунд ${S.ri+1}/${S.rounds.length}: ${S.rounds[S.ri].packName}`;
 }
-function buildBoard(){
-  const pack=S.rounds[S.ri].pack,grid=document.getElementById('board-grid');
-  const cats=pack.categories||[];
-  if(!cats.length){grid.innerHTML='<p>Нет категорий.</p>';return;}
-  const maxQ=Math.max(...cats.map(c=>c.questions.length));
-  grid.style.gridTemplateColumns=`repeat(${cats.length},1fr)`;grid.innerHTML='';
-  cats.forEach(cat=>{
-    const h=document.createElement('div');h.className='cat-head';h.textContent=cat.name;grid.appendChild(h);
+function buildBoard() {
+  const pack = S.rounds[S.ri].pack, grid = document.getElementById('board-grid');
+  const cats = pack.categories || [];
+  if (!cats.length) { grid.innerHTML = '<p>Нет категорий.</p>'; return; }
+  const maxQ = Math.max(...cats.map(c => c.questions.length));
+  grid.style.gridTemplateColumns = `repeat(${cats.length},1fr)`; grid.innerHTML = '';
+  cats.forEach(cat => {
+    const h = document.createElement('div'); h.className = 'cat-head'; h.textContent = cat.name; grid.appendChild(h);
   });
-  for(let qi=0;qi<maxQ;qi++){
-    cats.forEach((cat,ci)=>{
-      const q=cat.questions[qi],cell=document.createElement('div');
-      const k=`${S.ri}-${ci}-${qi}`;
-      if(!q){cell.className='q-cell used';}
-      else{
-        cell.className='q-cell'+(S.used[k]?' used':'');
-        cell.innerHTML=`<span>${q.value}</span>`;
-        if(q.type==='bag')     cell.innerHTML+=`<span class="cell-badge badge-bag">🎁 Кот в мешке</span>`;
-        if(q.type==='auction') cell.innerHTML+=`<span class="cell-badge badge-auction">🔨 Аукцион</span>`;
-        cell.onclick=()=>openQ(ci,qi);
+  for (let qi = 0; qi < maxQ; qi++) {
+    cats.forEach((cat, ci) => {
+      const q = cat.questions[qi], cell = document.createElement('div');
+      const k = `${S.ri}-${ci}-${qi}`;
+      if (!q) { cell.className = 'q-cell used'; }
+      else {
+        cell.className = 'q-cell' + (S.used[k] ? ' used' : '');
+        cell.textContent = q.value; // no type badges shown
+        cell.onclick = () => openQ(ci, qi);
       }
       grid.appendChild(cell);
     });
   }
 }
-function renderScores(){
-  document.getElementById('scores-bar').innerHTML=S.teams.map((t,i)=>`
-    <div class="score-chip" style="background:${t.color}22;border:1px solid ${t.color}55">
-      <span class="chip-name">${t.name}</span>
-      <span class="chip-score" id="sc-${i}">${t.score}</span>
-    </div>`).join('');
+function renderScores() {
+  document.getElementById('scores-bar').innerHTML = S.teams.map((t, i) =>
+    `<div class="score-chip"><span class="chip-name">${t.name}</span><span class="chip-score" id="sc-${i}">${t.score}</span></div>`
+  ).join('');
 }
-function updScores(){S.teams.forEach((t,i)=>{const e=document.getElementById(`sc-${i}`);if(e)e.textContent=t.score;});}
-function checkDone(){
-  const pack=S.rounds[S.ri].pack;
-  const roundDone=(pack.categories||[]).every((cat,ci)=>cat.questions.every((_,qi)=>S.used[`${S.ri}-${ci}-${qi}`]));
-  const hasNext=S.ri+1<S.rounds.length;
-  const allDone=roundDone&&!hasNext;
-  document.getElementById('next-round-btn').style.display=(roundDone&&hasNext)?'inline-flex':'none';
-  document.getElementById('end-btn').style.display=allDone?'inline-flex':'none';
+function updScores() {
+  S.teams.forEach((t, i) => { const e = document.getElementById(`sc-${i}`); if (e) e.textContent = t.score; });
+}
+function checkDone() {
+  const pack = S.rounds[S.ri].pack;
+  const roundDone = (pack.categories || []).every((cat, ci) => cat.questions.every((_, qi) => S.used[`${S.ri}-${ci}-${qi}`]));
+  const hasNext = S.ri + 1 < S.rounds.length;
+  document.getElementById('next-round-btn').style.display = (roundDone && hasNext) ? 'inline-flex' : 'none';
+  document.getElementById('end-btn').style.display = (roundDone && !hasNext) ? 'inline-flex' : 'none';
 }
 
-document.getElementById('adj-btn').onclick=openScoreModal;
-document.getElementById('modal-close').onclick=()=>{document.getElementById('modal-scores').style.display='none';};
-function openScoreModal(){
-  document.getElementById('modal-list').innerHTML=S.teams.map((t,i)=>`
+document.getElementById('adj-btn').onclick = openScoreModal;
+document.getElementById('modal-close').onclick = () => { document.getElementById('modal-scores').style.display = 'none'; };
+function openScoreModal() {
+  document.getElementById('modal-list').innerHTML = S.teams.map((t, i) => `
     <div class="adj-row">
-      <div class="adj-dot" style="background:${t.color}"></div>
       <span class="adj-lbl">${t.name}</span>
       <span class="adj-score" id="ms-${i}">${t.score}</span>
       <input class="adj-inp" type="number" value="100" id="mi-${i}">
       <button class="adj-plus"  onclick="adjScore(${i},1)">+</button>
       <button class="adj-minus" onclick="adjScore(${i},-1)">−</button>
     </div>`).join('');
-  document.getElementById('modal-scores').style.display='flex';
+  document.getElementById('modal-scores').style.display = 'flex';
 }
-function adjScore(idx,sign){
-  const v=parseInt(document.getElementById(`mi-${idx}`).value)||0;
-  S.teams[idx].score+=sign*v;
-  document.getElementById(`ms-${idx}`).textContent=S.teams[idx].score;
+function adjScore(idx, sign) {
+  const v = parseInt(document.getElementById(`mi-${idx}`).value) || 0;
+  S.teams[idx].score += sign * v;
+  document.getElementById(`ms-${idx}`).textContent = S.teams[idx].score;
   updScores();
 }
-document.getElementById('next-round-btn').onclick=()=>{startRound(S.ri+1);};
-document.getElementById('back-setup-btn').onclick=()=>showScreen('screen-setup');
-document.getElementById('end-btn').onclick=showCredits;
+document.getElementById('next-round-btn').onclick = () => { startRound(S.ri+1); };
+document.getElementById('back-setup-btn').onclick = () => showScreen('screen-setup');
+document.getElementById('end-btn').onclick = showCredits;
 
 /* ═══ QUESTION ═══ */
-function openQ(ci,qi){
-  const k=`${S.ri}-${ci}-${qi}`;if(S.used[k])return;
-  const cat=S.rounds[S.ri].pack.categories[ci],q=cat.questions[qi];
-  S.curQ={ci,qi,k,q,catName:cat.name,buzzMode:cat.buzz_mode||'unlimited'};
-  S.buzzed=null;S.wrongTeams=new Set();
-  resetTimer();fillQ(q,cat);
-  document.getElementById('buzz-pill').style.display='none';
+function openQ(ci, qi) {
+  const k = `${S.ri}-${ci}-${qi}`; if (S.used[k]) return;
+  const cat = S.rounds[S.ri].pack.categories[ci], q = cat.questions[qi];
+  S.curQ = {ci, qi, k, q, catName: cat.name, buzzMode: cat.buzz_mode || 'unlimited'};
+  S.buzzed = null; S.wrongTeams = new Set();
+
+  if (q.type === 'bag') { openBagModal(q); return; }
+
+  resetTimer(); fillQ(q, cat);
+  document.getElementById('buzz-pill').style.display = 'none';
   showJudge(false);
-  document.getElementById('ans-overlay').style.display='none';
-  SFX.slide();showScreen('screen-question');
+  document.getElementById('ans-overlay').style.display = 'none';
+  SFX.slide(); showScreen('screen-question');
 }
 
-function fillQ(q,cat){
-  document.getElementById('q-val').textContent=q.value+' баллов';
-  const catLbl=document.getElementById('q-cat'),badge=document.getElementById('q-badge');
-  if(q.type==='bag'){catLbl.textContent='';badge.textContent='🎁 Кот в мешке';badge.className='q-type-badge badge-bag-q';badge.style.display='inline';}
-  else if(q.type==='auction'){catLbl.textContent=cat.name;badge.textContent='🔨 Аукцион';badge.className='q-type-badge badge-auction-q';badge.style.display='inline';}
-  else{catLbl.textContent=cat.name;badge.style.display='none';}
+/* Кот в мешке */
+let _bagTeamIdx = 0;
+function openBagModal(q) {
+  _bagTeamIdx = 0;
+  document.getElementById('bag-teams-list').innerHTML = S.teams.map((t, i) =>
+    `<button class="bag-team-btn${i===0?' selected':''}" data-i="${i}">${t.name}</button>`
+  ).join('');
+  document.getElementById('bag-value-input').value = q.value || 100;
+  document.getElementById('modal-bag').style.display = 'flex';
+  document.querySelectorAll('.bag-team-btn').forEach(btn => {
+    btn.onclick = () => {
+      _bagTeamIdx = parseInt(btn.dataset.i);
+      document.querySelectorAll('.bag-team-btn').forEach(b => b.classList.toggle('selected', b === btn));
+    };
+  });
+}
+document.getElementById('bag-confirm-btn').onclick = () => {
+  S.curQ.bagTeam = _bagTeamIdx;
+  S.curQ.bagValue = parseInt(document.getElementById('bag-value-input').value) || 100;
+  document.getElementById('modal-bag').style.display = 'none';
+  const cat = S.rounds[S.ri].pack.categories[S.curQ.ci];
+  resetTimer(); fillQ(S.curQ.q, cat);
+  document.getElementById('buzz-pill').style.display = 'none';
+  showJudge(false);
+  document.getElementById('ans-overlay').style.display = 'none';
+  SFX.slide(); showScreen('screen-question');
+};
+document.getElementById('bag-cancel-btn').onclick = () => {
+  document.getElementById('modal-bag').style.display = 'none';
+  S.curQ = null;
+};
 
-  const txt=q.question||'';
-  const el=document.getElementById('q-text');
-  el.textContent=txt;
-  // auto-size text
-  const len=txt.length;
-  el.style.fontSize=len<60?'3.5rem':len<120?'2.5rem':len<250?'1.9rem':'1.4rem';
-
-  setMedia('q-img','q-aud','q-vid','q-vwrap',q);
-  document.getElementById('q-start').style.display='inline-flex';
-  document.getElementById('q-annul').style.display='inline-flex';
+/* Auction */
+function openAuctionModal() {
+  document.getElementById('auction-rows').innerHTML = S.teams.map((t, i) => `
+    <div class="auc-row">
+      <span class="auc-name">${t.name}</span>
+      <input class="auc-inp" type="number" value="0" min="0" step="50" id="auc-val-${i}">
+      <button class="auc-res-btn" data-team="${i}" data-res="correct">✓</button>
+      <button class="auc-res-btn" data-team="${i}" data-res="wrong">✗</button>
+    </div>`).join('');
+  document.querySelectorAll('.auc-res-btn').forEach(btn => {
+    btn.onclick = () => {
+      const ti = btn.dataset.team;
+      document.querySelectorAll(`.auc-res-btn[data-team="${ti}"]`).forEach(b => {
+        b.classList.remove('correct','wrong');
+      });
+      btn.classList.add(btn.dataset.res);
+    };
+  });
+  document.getElementById('modal-auction').style.display = 'flex';
 }
-
-function setMedia(imgId,audId,vidId,vidWId,src){
-  const img=document.getElementById(imgId);
-  if(src.image){img.src=src.image;img.style.display='block';}else img.style.display='none';
-  const aud=document.getElementById(audId);
-  if(src.audio){aud.src=src.audio;aud.style.display='block';}else aud.style.display='none';
-  const vw=document.getElementById(vidWId),vid=document.getElementById(vidId);
-  if(src.video){vid.src=src.video;vw.style.display='block';}else vw.style.display='none';
-}
-
-/* TIMER */
-const TARC_VAL=376.99;
-function resetTimer(){
-  clearInterval(S.tInt);S.tRun=false;S.tSec=60;
-  updTimer(60,60);
-  document.getElementById('timer-wrap').classList.remove('active');
-}
-function startTimer(){
-  if(S.tRun)return;S.tRun=true;
-  document.getElementById('timer-wrap').classList.add('active');
-  S.tInt=setInterval(()=>{
-    S.tSec--;updTimer(S.tSec,60);
-    if(S.tSec<=0){clearInterval(S.tInt);S.tRun=false;SFX.timerEnd();flashScreen();}
-  },1000);
-}
-function pauseTimer(){clearInterval(S.tInt);S.tRun=false;}
-function resumeTimer(){if(S.tSec>0)startTimer();}
-function updTimer(s,tot){
-  document.getElementById('t-num').textContent=s;
-  const arc=document.getElementById('t-arc'),f=s/tot;
-  arc.style.strokeDashoffset=TARC_VAL*(1-f);
-  arc.classList.toggle('warn',f<=.5&&f>.25);
-  arc.classList.toggle('danger',f<=.25);
-}
-function flashScreen(){document.getElementById('flash').style.background='rgba(255,255,255,.5)';document.getElementById('flash').style.opacity='1';setTimeout(()=>{document.getElementById('flash').style.transition='opacity .4s';document.getElementById('flash').style.opacity='0';setTimeout(()=>document.getElementById('flash').style.transition='',450)},80);}
-
-/* BUZZ */
-function onBuzz(idx){
-  if(!S.teams[idx])return;
-  if(!S.tRun&&S.tSec===60)return; // timer not started
-  if(S.buzzed!==null)return;       // someone already buzzed
-  // one_chance mode: skip if team already answered wrong
-  if(S.curQ.buzzMode==='one_chance'&&S.wrongTeams.has(idx))return;
-  pauseTimer();S.buzzed=idx;SFX.buzz();
-  const t=S.teams[idx];
-  const pill=document.getElementById('buzz-pill');
-  pill.textContent=t.name;pill.style.background=t.color;pill.style.display='inline-block';
-  showJudge(true);
-  document.getElementById('q-start').style.display='none';
-}
-function showJudge(v){
-  document.getElementById('q-correct').style.display=v?'inline-flex':'none';
-  document.getElementById('q-wrong').style.display=v?'inline-flex':'none';
-}
-
-document.getElementById('q-correct').onclick=()=>{
-  const q=S.curQ.q,t=S.teams[S.buzzed];
-  t.score+=q.value;updScores();
-  SFX.correct();flash('rgba(46,204,113,.45)');
-  showPopup(q.value,t.name,t.color);
+document.getElementById('auction-apply').onclick = () => {
+  S.teams.forEach((t, i) => {
+    const bid = parseInt(document.getElementById(`auc-val-${i}`).value) || 0;
+    if (bid <= 0) return;
+    const btn = document.querySelector(`.auc-res-btn[data-team="${i}"].correct, .auc-res-btn[data-team="${i}"].wrong`);
+    if (!btn) return;
+    if (btn.classList.contains('correct')) { t.score += bid; showPopup(bid, t.name); SFX.correct(); }
+    else { t.score -= bid; showPopup(-bid, t.name); SFX.wrong(); }
+  });
+  updScores();
+  document.getElementById('modal-auction').style.display = 'none';
   closeQ();
 };
-document.getElementById('q-wrong').onclick=()=>{
-  const q=S.curQ.q,t=S.teams[S.buzzed];
-  let pen=0;
-  if(q.penalty==='half')pen=Math.floor(q.value/2);
-  else if(q.penalty==='full')pen=q.value;
-  if(pen){t.score-=pen;showPopup(-pen,t.name,t.color);}
-  updScores();SFX.wrong();flash('rgba(231,76,60,.45)');
-  S.wrongTeams.add(S.buzzed);S.buzzed=null;
-  document.getElementById('buzz-pill').style.display='none';
-  showJudge(false);document.getElementById('q-start').style.display='inline-flex';
-  // in one_chance mode: close if all teams tried
-  if(S.curQ.buzzMode==='one_chance'&&S.teams.every((_,i)=>S.wrongTeams.has(i))){closeQ();return;}
+document.getElementById('auction-annul-btn').onclick = () => {
+  document.getElementById('modal-auction').style.display = 'none';
+  closeQ();
+};
+
+function fillQ(q, cat) {
+  const isBag = S.curQ.q.type === 'bag';
+  const pts = isBag ? S.curQ.bagValue : q.value;
+  document.getElementById('q-val').textContent = pts + ' баллов';
+  const catLbl = document.getElementById('q-cat');
+  if (isBag) catLbl.textContent = `Играет: ${S.teams[S.curQ.bagTeam].name}`;
+  else catLbl.textContent = cat.name;
+
+  const txt = q.question || '';
+  const el = document.getElementById('q-text');
+  el.textContent = txt;
+  const len = txt.length;
+  el.style.fontSize = len < 60 ? '3.5rem' : len < 120 ? '2.5rem' : len < 250 ? '1.9rem' : '1.4rem';
+
+  setMedia('q-img','q-aud','q-vid','q-vwrap', q);
+  document.getElementById('q-start').style.display = 'inline-flex';
+  document.getElementById('q-annul').style.display = 'inline-flex';
+}
+
+function setMedia(imgId, audId, vidId, vidWId, src) {
+  const img = document.getElementById(imgId);
+  if (src.image) { img.src = src.image; img.style.display = 'block'; } else img.style.display = 'none';
+  const aud = document.getElementById(audId);
+  if (src.audio) { aud.src = src.audio; aud.style.display = 'block'; } else aud.style.display = 'none';
+  const vw = document.getElementById(vidWId), vid = document.getElementById(vidId);
+  if (src.video) { vid.src = src.video; vw.style.display = 'block'; } else vw.style.display = 'none';
+}
+
+/* ═══ TIMER ═══ */
+function resetTimer() {
+  clearInterval(S.tInt); S.tRun = false; S.tSec = 60;
+  const arc = document.getElementById('t-arc');
+  arc.style.strokeDashoffset = '0';
+  arc.style.stroke = '';
+  document.getElementById('t-num').textContent = '60';
+  document.getElementById('t-num').style.color = '#fff';
+  const wrap = document.getElementById('timer-wrap');
+  wrap.classList.remove('active','flash-start');
+}
+function startTimer() {
+  if (S.tRun) return; S.tRun = true;
+  const wrap = document.getElementById('timer-wrap');
+  const arc = document.getElementById('t-arc');
+  wrap.classList.add('active');
+  // Flash white + shake
+  arc.style.stroke = '#fff';
+  arc.style.transition = 'none';
+  wrap.classList.remove('flash-start');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    wrap.classList.add('flash-start');
+  }));
+  setTimeout(() => {
+    wrap.classList.remove('flash-start');
+    arc.style.stroke = '';
+    arc.style.transition = '';
+  }, 1500);
+
+  S.tInt = setInterval(() => {
+    S.tSec--; updTimer(S.tSec, 60);
+    if (S.tSec <= 5 && S.tSec > 0) SFX.tick();
+    if (S.tSec <= 0) { clearInterval(S.tInt); S.tRun = false; onTimerEnd(); }
+  }, 1000);
+}
+function pauseTimer() { clearInterval(S.tInt); S.tRun = false; }
+function resumeTimer() { if (S.tSec > 0) startTimer(); }
+function updTimer(s, tot) {
+  document.getElementById('t-num').textContent = s;
+  const arc = document.getElementById('t-arc');
+  arc.style.strokeDashoffset = TARC_VAL * (1 - s / tot);
+  // Color: last 5s → red, last 15s → orange, else → white
+  if (!document.getElementById('timer-wrap').classList.contains('flash-start')) {
+    if (s <= 5)       { arc.style.stroke = '#e74c3c'; document.getElementById('t-num').style.color = '#e74c3c'; }
+    else if (s <= 15) { arc.style.stroke = '#e67e22'; document.getElementById('t-num').style.color = '#e67e22'; }
+    else              { arc.style.stroke = '';         document.getElementById('t-num').style.color = '#fff'; }
+  }
+}
+function onTimerEnd() {
+  if (S.curQ && S.curQ.q.type === 'auction') {
+    openAuctionModal();
+  } else {
+    SFX.timerEnd(); flashWhite();
+    S.buzzed = null;
+    document.getElementById('buzz-pill').style.display = 'none';
+    showJudge(false);
+    document.getElementById('q-start').style.display = 'none';
+  }
+}
+
+/* ═══ BUZZ ═══ */
+function onBuzz(idx) {
+  if (!S.teams[idx]) return;
+  if (!S.tRun && S.tSec === 60) return;        // timer not started
+  if (S.curQ.q.type === 'auction') return;      // auction: no buzzing
+  if (S.curQ.q.type === 'bag' && idx !== S.curQ.bagTeam) return; // bag: only selected team
+  if (S.buzzed !== null) return;
+  if (S.curQ.buzzMode === 'one_chance' && S.wrongTeams.has(idx)) return;
+  pauseTimer(); S.buzzed = idx; SFX.buzz();
+  const pill = document.getElementById('buzz-pill');
+  pill.textContent = S.teams[idx].name; pill.style.display = 'inline-block';
+  showJudge(true);
+  document.getElementById('q-start').style.display = 'none';
+}
+function showJudge(v) {
+  document.getElementById('q-correct').style.display = v ? 'inline-flex' : 'none';
+  document.getElementById('q-wrong').style.display   = v ? 'inline-flex' : 'none';
+}
+
+document.getElementById('q-correct').onclick = () => {
+  const q = S.curQ.q, t = S.teams[S.buzzed];
+  const pts = q.type === 'bag' ? S.curQ.bagValue : q.value;
+  t.score += pts; updScores();
+  SFX.correct(); flash('rgba(46,204,113,.45)');
+  showPopup(pts, t.name);
+  closeQ();
+};
+document.getElementById('q-wrong').onclick = () => {
+  const q = S.curQ.q, t = S.teams[S.buzzed];
+  let pen = 0;
+  if (q.type === 'bag') pen = S.curQ.bagValue; // always full for bag
+  else if (q.penalty === 'half') pen = Math.floor(q.value / 2);
+  else if (q.penalty === 'full') pen = q.value;
+  if (pen) { t.score -= pen; showPopup(-pen, t.name); }
+  updScores(); SFX.wrong(); flash('rgba(231,76,60,.45)');
+  if (q.type === 'bag') { closeQ(); return; } // bag: one chance only
+  S.wrongTeams.add(S.buzzed); S.buzzed = null;
+  document.getElementById('buzz-pill').style.display = 'none';
+  showJudge(false); document.getElementById('q-start').style.display = 'inline-flex';
+  if (S.curQ.buzzMode === 'one_chance' && S.teams.every((_, i) => S.wrongTeams.has(i))) { closeQ(); return; }
   resumeTimer();
 };
-document.getElementById('q-annul').onclick=closeQ;
-document.getElementById('q-back').onclick=()=>{pauseTimer();showScreen('screen-board');};
-document.getElementById('q-start').onclick=()=>{if(!S.tRun)startTimer();};
+document.getElementById('q-annul').onclick = () => {
+  if (S.curQ && S.curQ.q.type === 'auction') { pauseTimer(); openAuctionModal(); }
+  else closeQ();
+};
+document.getElementById('q-back').onclick = () => { pauseTimer(); showScreen('screen-board'); };
+document.getElementById('q-start').onclick = () => { if (!S.tRun) startTimer(); };
 
-document.getElementById('ans-close').onclick=()=>{
-  document.getElementById('ans-overlay').style.display='none';
-  S.used[S.curQ.k]=true;buildBoard();checkDone();showScreen('screen-board');
+document.getElementById('ans-close').onclick = () => {
+  document.getElementById('ans-overlay').style.display = 'none';
+  S.used[S.curQ.k] = true; buildBoard(); checkDone(); showScreen('screen-board');
 };
 
-function closeQ(){
+function closeQ() {
   pauseTimer();
-  const rev=S.curQ.q.answer_reveal;
-  if(rev&&(rev.text||rev.image||rev.audio||rev.video)){
+  const rev = S.curQ.q.answer_reveal;
+  if (rev && (rev.text || rev.image || rev.audio || rev.video)) {
     SFX.reveal();
-    document.getElementById('ans-text').textContent=rev.text||'';
-    setMedia('ans-img','ans-aud','ans-vid','ans-overlay',rev);
-    // fix: set video src directly since setMedia uses 'ans-overlay' as wrap id — redo
-    const ai=document.getElementById('ans-img');if(rev.image){ai.src=rev.image;ai.style.display='block';}else ai.style.display='none';
-    const aa=document.getElementById('ans-aud');if(rev.audio){aa.src=rev.audio;aa.style.display='block';}else aa.style.display='none';
-    const av=document.getElementById('ans-vid');if(rev.video){av.src=rev.video;av.style.display='block';}else av.style.display='none';
-    document.getElementById('ans-overlay').style.display='flex';
+    document.getElementById('ans-text').textContent = rev.text || '';
+    const ai = document.getElementById('ans-img'); if (rev.image) { ai.src=rev.image; ai.style.display='block'; } else ai.style.display='none';
+    const aa = document.getElementById('ans-aud'); if (rev.audio) { aa.src=rev.audio; aa.style.display='block'; } else aa.style.display='none';
+    const av = document.getElementById('ans-vid'); if (rev.video) { av.src=rev.video; av.style.display='block'; } else av.style.display='none';
+    document.getElementById('ans-overlay').style.display = 'flex';
   } else {
-    S.used[S.curQ.k]=true;buildBoard();checkDone();showScreen('screen-board');
+    S.used[S.curQ.k] = true; buildBoard(); checkDone(); showScreen('screen-board');
   }
 }
 
 /* ═══ CREDITS ═══ */
-function showCredits(){
-  const sorted=[...S.teams].sort((a,b)=>a.score-b.score); // losers first
-  const inner=document.getElementById('credits-inner');
-  inner.innerHTML='<div class="credits-title">— итоги —</div>';
-  sorted.forEach((t,i)=>{
-    const place=sorted.length-i; // 1st place = last to appear
-    const isFirst=i===sorted.length-1;
-    const row=document.createElement('div');
-    row.className='credit-row'+(isFirst?' first-place':'');
-    row.innerHTML=`
-      <span class="credit-place">${place}.</span>
-      <div class="credit-color" style="background:${t.color}"></div>
+function showCredits() {
+  const sorted = [...S.teams].sort((a, b) => b.score - a.score); // descending: winner index 0 = top
+  const inner = document.getElementById('credits-inner');
+  inner.innerHTML = '<div class="credits-title">— итоги —</div>';
+  sorted.forEach((t, i) => {
+    const isFirst = i === 0;
+    const row = document.createElement('div');
+    row.className = 'credit-row' + (isFirst ? ' first-place' : '');
+    row.innerHTML = `
+      <span class="credit-place">${i+1}.</span>
       <span class="credit-name">${t.name}</span>
-      <span class="credit-score" style="color:${isFirst?'var(--gold)':'var(--text)'}">${t.score}</span>
+      <span class="credit-score">${t.score}</span>
     `;
     inner.appendChild(row);
   });
+  playSound('slide_on');
   showScreen('screen-credits');
-  // animate rows bottom to top, staggered
-  const rows=inner.querySelectorAll('.credit-row');
-  rows.forEach((row,i)=>{
-    setTimeout(()=>{row.classList.add('entered');if(i===rows.length-1)SFX.correct();},300+i*600);
+  const rows = inner.querySelectorAll('.credit-row');
+  const n = rows.length;
+  // losers appear first, winner (index 0) appears last
+  rows.forEach((row, i) => {
+    const delay = 500 + (n - 1 - i) * 1000;
+    setTimeout(() => row.classList.add('entered'), delay);
   });
+  // rick plays when winner appears
+  setTimeout(() => SFX.rick(), 500 + (n - 1) * 1000 + 200);
 }
-document.getElementById('credits-back').onclick=()=>showScreen('screen-setup');
+document.getElementById('credits-back').onclick = () => showScreen('screen-setup');
 
 /* ═══ KEYBOARD ═══ */
-document.addEventListener('keydown',e=>{
-  const sc=document.querySelector('.screen.active');if(!sc)return;
-  if(sc.id==='screen-question'){
-    if(e.code==='Space'){e.preventDefault();if(!S.tRun)startTimer();}
-    const k={'1':0,'2':1,'3':2,'4':3,'5':4,'6':5}[e.key];
-    if(k!==undefined)onBuzz(k);
+document.addEventListener('keydown', e => {
+  const sc = document.querySelector('.screen.active'); if (!sc) return;
+  if (sc.id === 'screen-question') {
+    if (e.code === 'Space') {
+      e.preventDefault();
+      if (S.buzzed !== null) {
+        // Space confirms correct when someone buzzed
+        const btn = document.getElementById('q-correct');
+        if (btn.style.display !== 'none') btn.click();
+      } else if (!S.tRun) {
+        startTimer();
+      }
+    }
+    if (e.code === 'KeyZ') {
+      const btn = document.getElementById('q-wrong');
+      if (btn.style.display !== 'none') btn.click();
+    }
+    const k = {'1':0,'2':1,'3':2,'4':3,'5':4,'6':5}[e.key];
+    if (k !== undefined) onBuzz(k);
   }
-  if(sc.id==='screen-intro'&&e.code==='Escape')document.getElementById('intro-skip').click();
+  if (sc.id === 'screen-intro' && e.code === 'Escape') document.getElementById('intro-skip').click();
 });
 
 /* INIT */
-renderRounds();renderTeams();
+renderRounds(); renderTeams();
 </script>
 </body>
 </html>
