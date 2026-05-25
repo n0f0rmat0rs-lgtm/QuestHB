@@ -84,6 +84,12 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); bo
 
 .info-banner { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: .85rem 1rem; margin-bottom: 1.5rem; font-size: .85rem; color: var(--text-muted); line-height: 1.6; }
 .info-banner strong { color: var(--text); }
+
+.converter-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.88); z-index:200; overflow-y:auto; padding:2rem 1rem; }
+.converter-modal.open { display:flex; align-items:flex-start; justify-content:center; }
+.converter-box { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); max-width:740px; width:100%; padding:1.5rem; display:flex; flex-direction:column; gap:1rem; margin:auto; }
+.converter-box h3 { font-size:1.1rem; }
+.converter-result { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:1rem; font-size:.78rem; color:var(--text-muted); max-height:280px; overflow-y:auto; white-space:pre; font-family:'Consolas','Courier New',monospace; line-height:1.5; }
 </style>
 </head>
 <body>
@@ -95,6 +101,8 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); bo
     <hr style="border-color:var(--border);margin:.25rem 0">
     <p class="sidebar-hint">Медиафайлы (фото, аудио, видео) встраиваются прямо в JSON — никаких отдельных папок не нужно.</p>
     <p class="sidebar-hint" style="margin-top:.5rem">⚠️ Большие видеофайлы сильно увеличат размер JSON.</p>
+    <hr style="border-color:var(--border);margin:.25rem 0">
+    <button class="btn btn-ghost btn-sm" id="converter-btn">🔄 Конвертер Ф.Е.Е.</button>
     <hr style="border-color:var(--border);margin:.25rem 0">
     <a href="index.html" class="btn btn-ghost btn-sm">← Назад в игру</a>
   </aside>
@@ -556,6 +564,173 @@ ${body}
 }
 
 function esc(s){ return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+/* ── Конвертер старого Ф.Е.Е. ── */
+let _convPack = null;
+
+document.getElementById('converter-btn').onclick = () => {
+  document.getElementById('converter-modal').classList.add('open');
+};
+document.getElementById('converter-close').onclick = () => {
+  document.getElementById('converter-modal').classList.remove('open');
+};
+document.getElementById('conv-load-txt').onclick = () => {
+  pickFile('.txt,text/plain', async file => {
+    document.getElementById('conv-input').value = await file.text();
+    document.getElementById('conv-status').textContent = 'Файл: ' + file.name;
+    document.getElementById('conv-result-wrap').style.display = 'none';
+  });
+};
+document.getElementById('conv-parse-btn').onclick = () => {
+  const text = document.getElementById('conv-input').value.trim();
+  const packName = document.getElementById('conv-pack-name').value.trim() || 'Конвертированный пак';
+  if (!text) { document.getElementById('conv-status').textContent = '⚠ Вставьте текст или загрузите файл'; return; }
+  _convPack = parseOldFormat(text, packName);
+  const cats = _convPack.categories;
+  const total = cats.reduce((s, c) => s + c.questions.length, 0);
+  let preview = `Пак: «${_convPack.name}» — ${cats.length} кат., ${total} вопр.\n${'─'.repeat(48)}\n`;
+  cats.forEach(cat => {
+    preview += `\n📂 ${cat.name} (${cat.questions.length})\n`;
+    cat.questions.forEach((q, qi) => {
+      const mark = q.type !== 'normal' ? `[${q.type}] ` : '';
+      const ans = q.answer ? ` → ${q.answer.slice(0, 38)}${q.answer.length > 38 ? '…' : ''}` : '';
+      const qt = (q.question || '—').slice(0, 52) + ((q.question || '').length > 52 ? '…' : '');
+      preview += `  ${qi + 1}. (${q.value}) ${mark}${qt}${ans}\n`;
+    });
+  });
+  document.getElementById('conv-result').textContent = preview;
+  document.getElementById('conv-result-wrap').style.display = '';
+  document.getElementById('conv-status').textContent = `✓ ${cats.length} категорий, ${total} вопросов`;
+};
+document.getElementById('conv-to-editor').onclick = () => {
+  if (!_convPack) return;
+  pack = _convPack;
+  renderEditor();
+  document.getElementById('converter-modal').classList.remove('open');
+};
+document.getElementById('conv-dl').onclick = () => {
+  if (!_convPack) return;
+  const name = (_convPack.name || 'pack').replace(/[^\wа-яёА-ЯЁ\s\-]/gi, '_');
+  const blob = new Blob([JSON.stringify(_convPack, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name + '.json'; a.click();
+};
+
+function parseOldFormat(text, packName) {
+  const lines = text.split(/\r?\n/);
+  const categories = [];
+  let currentCat = null;
+  let pendingLines = [];
+  let skipToRecognized = false;
+  let awaitingRecognized = false;
+
+  function flushQuestion() {
+    if (!currentCat || !pendingLines.length) { pendingLines = []; return; }
+    const raw = pendingLines.join(' ').trim();
+    pendingLines = [];
+    if (!raw) return;
+
+    const m = raw.match(/^(.*?)\s*;[ \t]*\|\s*(?:\(([^)]*)\))?\s*$/);
+    let qText = m ? m[1].trim() : raw;
+    let answer = m ? (m[2] || '').trim() : '';
+
+    let type = 'normal';
+    if (/КОТ В МЕШКЕ/i.test(qText)) {
+      type = 'bag';
+      qText = qText.replace(/КОТ В МЕШКЕ/gi, '').trim();
+    } else if (/ВОПРОС[- ]АУКЦИОН/i.test(qText) || /^АУКЦИОН$/i.test(qText)) {
+      type = 'auction';
+      qText = qText.replace(/ВОПРОС[- ]АУКЦИОН/gi, '').trim();
+      if (!qText && answer) { qText = answer; answer = ''; }
+    }
+
+    currentCat.questions.push({
+      value: (currentCat.questions.length + 1) * 100,
+      timer: 60,
+      question: qText,
+      answer,
+      type,
+      penalty: 'none',
+      image: null, audio: null, video: null,
+      answer_reveal: answer ? { text: answer, image: null, audio: null, video: null } : null
+    });
+  }
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    const catMatch = trimmed.match(/^CATEGORY\s+\d+\s*:\s*(.*?)\s*;?\|?\s*$/);
+    if (catMatch) {
+      flushQuestion();
+      currentCat = { name: catMatch[1].trim(), buzz_mode: 'unlimited', questions: [] };
+      categories.push(currentCat);
+      skipToRecognized = false; awaitingRecognized = false;
+      continue;
+    }
+
+    const qMatch = trimmed.match(/^QUESTION\s+\d+\.\d+\s*:\s*(.*)$/);
+    if (qMatch) {
+      flushQuestion();
+      skipToRecognized = false; awaitingRecognized = false;
+      const rest = qMatch[1].trim();
+      if (/\[MBX:|ΔWIN\/|SCOPE_ERR::|!ERR::|#S#€|TR@SH/.test(rest)) {
+        skipToRecognized = true; continue;
+      }
+      if (rest) pendingLines.push(rest);
+      if (/;[ \t]*\|/.test(rest)) flushQuestion();
+      continue;
+    }
+
+    if (trimmed.startsWith('>> ') || /^>>\s*Вопрос распознан/i.test(trimmed)) {
+      skipToRecognized = false; awaitingRecognized = true; continue;
+    }
+
+    if (skipToRecognized) continue;
+
+    if (awaitingRecognized) {
+      awaitingRecognized = false;
+      pendingLines.push(trimmed);
+      if (/;[ \t]*\|/.test(trimmed)) flushQuestion();
+      continue;
+    }
+
+    if (pendingLines.length > 0) {
+      pendingLines.push(trimmed);
+      if (/;[ \t]*\|/.test(trimmed)) flushQuestion();
+    }
+  }
+
+  flushQuestion();
+  return { name: packName || 'Конвертированный пак', categories };
+}
 </script>
+
+<div class="converter-modal" id="converter-modal">
+  <div class="converter-box">
+    <div style="display:flex;align-items:center;gap:.75rem">
+      <h3>🔄 Конвертер старого Ф.Е.Е.</h3>
+      <button class="btn btn-ghost btn-sm" id="converter-close" style="margin-left:auto">✕</button>
+    </div>
+    <p style="font-size:.82rem;color:var(--text-muted);line-height:1.5">Вставьте текст старого формата или загрузите .txt файл. «КОТ В МЕШКЕ» и «ВОПРОС-АУКЦИОН» определяются автоматически. Стоимость — 100, 200, 300… по порядку.</p>
+    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+      <label style="font-size:.82rem;color:var(--text-muted);white-space:nowrap">Название пака:</label>
+      <input type="text" id="conv-pack-name" placeholder="Конвертированный пак" style="flex:1;min-width:160px">
+      <button class="btn btn-secondary btn-sm" id="conv-load-txt">📄 Загрузить .txt</button>
+    </div>
+    <textarea id="conv-input" rows="9" placeholder="Формат:&#10;CATEGORY 1: Название;|&#10;QUESTION 1.1: Текст вопроса;| (Ответ)&#10;QUESTION 1.2: КОТ В МЕШКЕ ;|&#10;QUESTION 1.3: ВОПРОС-АУКЦИОН ;| (Вопрос аукциона)&#10;..."></textarea>
+    <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-primary" id="conv-parse-btn">Конвертировать</button>
+      <span id="conv-status" style="font-size:.82rem;color:var(--text-muted)"></span>
+    </div>
+    <div id="conv-result-wrap" style="display:none">
+      <div class="converter-result" id="conv-result"></div>
+      <div style="display:flex;gap:.5rem;margin-top:.75rem;flex-wrap:wrap">
+        <button class="btn btn-primary" id="conv-to-editor">📥 Загрузить в редактор</button>
+        <button class="btn btn-secondary" id="conv-dl">⬇ Скачать JSON</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
