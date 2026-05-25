@@ -169,8 +169,13 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 .auc-res-btn.wrong   { background: var(--red);   border-color: var(--red);   color: #fff; }
 
 /* ── CREDITS ── */
-#screen-credits { background: #000; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+#screen-credits { background: #000; align-items: center; justify-content: flex-start; overflow-y: auto; position: relative; padding: 3rem 0 7rem; }
 .credits-inner { position: relative; z-index: 1; width: 100%; padding: 0 6%; display: flex; flex-direction: column; align-items: stretch; }
+.stats-block { margin-top: 2.5rem; opacity: 0; transition: opacity .8s; }
+.stats-title { font-size: 1.2rem; letter-spacing: .25em; text-transform: uppercase; color: var(--text-muted); text-align: center; margin-bottom: 1rem; }
+.stat-row { display: flex; align-items: baseline; gap: 1.2rem; padding: .7rem 3rem; border-top: 1px solid #1a1a1a; font-size: 1.1rem; flex-wrap: wrap; }
+.stat-name { font-weight: 700; min-width: 8rem; }
+.stat-detail { color: var(--text-muted); font-size: .95rem; }
 .credits-title { font-size: 1.8rem; letter-spacing: .3em; text-transform: uppercase; color: var(--text-muted); text-align: center; margin-bottom: 3rem; }
 .credit-row { display: flex; align-items: center; gap: 2rem; padding: 1.8rem 3rem; border-top: 2px solid #1a1a1a; transform: translateX(-60px); opacity: 0; transition: transform .9s cubic-bezier(.22,1,.36,1), opacity .7s; }
 .credit-row.entered { transform: translateX(0); opacity: 1; }
@@ -338,8 +343,9 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
   <div class="credits-inner" id="credits-inner">
     <div class="credits-title">— итоги —</div>
   </div>
-  <div class="credits-restart">
+  <div class="credits-restart" style="display:flex;gap:.5rem">
     <button class="btn btn-ghost btn-sm" id="credits-back">← В начало</button>
+    <button class="btn btn-ghost btn-sm" id="credits-download">📥 Скачать лог</button>
   </div>
 </div>
 
@@ -432,7 +438,7 @@ function showPopup(pts, name) {
 }
 
 /* ═══ STATE ═══ */
-const S = { rounds: [], ri: 0, teams: [], used: {}, curQ: null, tRun: false, tSec: 60, tTot: 60, tInt: null, buzzed: null, wrongTeams: new Set(), hintsUsed: {}, hintSec: 0, hintInt: null };
+const S = { rounds: [], ri: 0, teams: [], used: {}, curQ: null, tRun: false, tSec: 60, tTot: 60, tInt: null, buzzed: null, wrongTeams: new Set(), hintsUsed: {}, hintSec: 0, hintInt: null, log: [] };
 const TARC_VAL = 490.09;
 
 /* ═══ CHOOSER ═══ */
@@ -446,7 +452,7 @@ function saveGame() {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       ri: S.ri, teams: S.teams, used: S.used, rounds: S.rounds,
       tTot: S.tTot, hintsUsed: S.hintsUsed, wrongTeams: [...S.wrongTeams],
-      chooserBag: _chooserBag, lastChooser: _lastChooser
+      chooserBag: _chooserBag, lastChooser: _lastChooser, log: S.log
     }));
   } catch(e) {}
 }
@@ -571,7 +577,7 @@ document.getElementById('resume-btn').onclick = () => {
     S.ri = d.ri || 0; S.teams = d.teams; S.used = d.used || {};
     S.rounds = d.rounds; S.tTot = d.tTot || 60; S.tSec = d.tTot || 60;
     S.hintsUsed = d.hintsUsed || {}; S.wrongTeams = new Set(d.wrongTeams || []);
-    S.buzzed = null; S.curQ = null; S.tRun = false;
+    S.buzzed = null; S.curQ = null; S.tRun = false; S.log = d.log || [];
     _chooserBag = d.chooserBag || []; _lastChooser = d.lastChooser !== undefined ? d.lastChooser : -1;
     buildBoard(); renderScores(); updateRoundLbl(); checkDone(); showScreen('screen-board');
     const el = document.getElementById('chooser-lbl');
@@ -804,7 +810,7 @@ document.getElementById('start-game-btn').onclick = () => {
   const names = Array.from(inputs).map((inp, i) => inp.value.trim() || `Команда ${i+1}`);
   S.teams = names.map(n => ({ name: n, score: 0 }));
   S.rounds = sRounds.map(r => ({...r}));
-  S.ri = 0; S.used = {};
+  S.ri = 0; S.used = {}; S.log = [];
   deleteSave(); document.getElementById('resume-card').style.display = 'none';
   document.getElementById('modal-team-names').style.display = 'none';
   stopFlappy();
@@ -995,8 +1001,10 @@ document.getElementById('auction-apply').onclick = () => {
   S.teams.forEach((t, i) => {
     const bid = parseInt(document.getElementById(`auc-val-${i}`).value) || 0; if (bid <= 0) return;
     const btn = document.querySelector(`.auc-res-btn[data-team="${i}"].correct, .auc-res-btn[data-team="${i}"].wrong`); if (!btn) return;
-    if (btn.classList.contains('correct')) { t.score += bid; SFX.correct(); }
-    else { t.score -= bid; SFX.wrong(); }
+    const isCorrect = btn.classList.contains('correct');
+    if (isCorrect) { t.score += bid; SFX.correct(); } else { t.score -= bid; SFX.wrong(); }
+    S.log.push({ ts: Date.now(), teamIdx: i, teamName: t.name, catName: S.curQ.catName,
+      qType: 'auction', value: isCorrect ? bid : -bid, correct: isCorrect, buzzAtSec: null });
   });
   updScores();
   document.getElementById('modal-auction').style.display = 'none';
@@ -1102,6 +1110,8 @@ function awardLastCorrect() {
     const pts = S.curQ.currentValue;
     t.score += pts; updScores(); SFX.correct(); flash('rgba(46,204,113,.45)');
     showPopup(pts, t.name);
+    S.log.push({ ts: Date.now(), teamIdx: S.curQ.lastCorrectTeam, teamName: t.name,
+      catName: S.curQ.catName, qType: 'last-award', value: pts, correct: true, buzzAtSec: null });
   } else {
     SFX.timerEnd(); flash('rgba(255,255,255,.4)');
   }
@@ -1124,7 +1134,9 @@ function onBuzz(idx) {
   const bq = S.curQ.q;
   const timerPauses = !(bq.type === 'blitz' || bq.type === 'last') || !!bq.buzz_pauses_timer;
   if (timerPauses) pauseTimer();
-  S.buzzed = idx; SFX.buzz(); saveGame();
+  S.buzzed = idx; SFX.buzz();
+  if (S.curQ) S.curQ.lastBuzzAtSec = S.tTot - S.tSec;
+  saveGame();
   const pill = document.getElementById('buzz-pill');
   pill.textContent = S.teams[idx].name; pill.style.display = 'inline-block';
   showJudge(true);
@@ -1143,6 +1155,8 @@ document.getElementById('q-correct').onclick = () => {
     const pts = S.curQ.subPts;
     t.score += pts; updScores(); SFX.correct(); flash('rgba(46,204,113,.45)');
     showPopup(pts, t.name);
+    S.log.push({ ts: Date.now(), teamIdx: S.buzzed, teamName: t.name, catName: S.curQ.catName,
+      qType: 'blitz', value: pts, correct: true, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
     S.curQ.subIdx++;
     if (S.curQ.subIdx >= S.curQ.subs.length) { closeQ(); return; }
     S.wrongTeams = new Set(); S.buzzed = null;
@@ -1153,6 +1167,8 @@ document.getElementById('q-correct').onclick = () => {
   }
   if (q.type === 'last') {
     S.curQ.lastCorrectTeam = S.buzzed;
+    S.log.push({ ts: Date.now(), teamIdx: S.buzzed, teamName: t.name, catName: S.curQ.catName,
+      qType: 'last', value: 0, correct: true, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
     SFX.correct(); flash('rgba(46,204,113,.22)');
     const banner = document.getElementById('last-banner');
     banner.style.display = 'block';
@@ -1166,6 +1182,8 @@ document.getElementById('q-correct').onclick = () => {
   }
   const pts = q.type === 'bag' ? S.curQ.bagValue : S.curQ.currentValue;
   t.score += pts; updScores(); SFX.correct(); flash('rgba(46,204,113,.45)');
+  S.log.push({ ts: Date.now(), teamIdx: S.buzzed, teamName: t.name, catName: S.curQ.catName,
+    qType: q.type, value: pts, correct: true, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
   const rev = q.answer_reveal;
   if (!rev || (!rev.text && !rev.image && !rev.audio && !rev.video)) showPopup(pts, t.name);
   closeQ();
@@ -1179,6 +1197,8 @@ document.getElementById('q-wrong').onclick = () => {
   const rev = q.answer_reveal, hasReveal = rev && (rev.text || rev.image || rev.audio || rev.video);
   if (pen) { t.score -= pen; if (!hasReveal) showPopup(-pen, t.name); }
   updScores(); SFX.wrong(); flash('rgba(231,76,60,.45)');
+  S.log.push({ ts: Date.now(), teamIdx: S.buzzed, teamName: t.name, catName: S.curQ.catName,
+    qType: q.type, value: -pen, correct: false, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
   if (q.type === 'bag') { closeQ(); return; }
   if (S.curQ.hintBuzzed) { clearHintTimer(); afterHintFail(); saveGame(); return; }
   if (q.type === 'blitz') {
@@ -1367,6 +1387,7 @@ function stopFireworks() {
 
 function showCredits() {
   deleteSave();
+  const logSnap = S.log.slice(); // snapshot for download even after S.log might change
   const sorted = [...S.teams].sort((a, b) => b.score - a.score);
   const inner = document.getElementById('credits-inner');
   inner.innerHTML = '<div class="credits-title">— итоги —</div>';
@@ -1382,9 +1403,44 @@ function showCredits() {
   const rows = inner.querySelectorAll('.credit-row');
   const n = rows.length;
   rows.forEach((row, i) => setTimeout(() => row.classList.add('entered'), 500 + (n - 1 - i) * 1000));
+  const lastRowMs = 500 + (n - 1) * 1000;
   setTimeout(() => {
     try { _rickAudio = new Audio('sounds/rick.mp3'); _rickAudio.play().catch(() => {}); } catch {}
-  }, 500 + (n - 1) * 1000 + 200);
+  }, lastRowMs + 200);
+  // Stats block — fade in 2 sec after last row
+  setTimeout(() => {
+    const statsBlock = document.createElement('div');
+    statsBlock.className = 'stats-block';
+    const title = document.createElement('div');
+    title.className = 'stats-title'; title.textContent = '— статистика —';
+    statsBlock.appendChild(title);
+    S.teams.forEach((t, ti) => {
+      const entries = logSnap.filter(e => e.teamIdx === ti && e.qType !== 'last-award');
+      const correct = entries.filter(e => e.correct).length;
+      const wrong   = entries.filter(e => !e.correct).length;
+      const speedSamples = entries.filter(e => e.correct && e.buzzAtSec != null).map(e => e.buzzAtSec);
+      const avgSpeed = speedSamples.length
+        ? (speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(1)
+        : null;
+      const row = document.createElement('div');
+      row.className = 'stat-row';
+      row.innerHTML = `<span class="stat-name">${t.name}</span>`
+        + `<span class="stat-detail">✓ ${correct} верных&nbsp;&nbsp;✗ ${wrong} неверных`
+        + ` &nbsp;·&nbsp; ср. скорость: ${avgSpeed !== null ? avgSpeed + ' сек' : '—'}</span>`;
+      statsBlock.appendChild(row);
+    });
+    inner.appendChild(statsBlock);
+    requestAnimationFrame(() => requestAnimationFrame(() => { statsBlock.style.opacity = '1'; }));
+  }, lastRowMs + 2000);
+
+  document.getElementById('credits-download').onclick = () => {
+    const dt = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const fname = `vittorina-log-${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}-${pad(dt.getHours())}${pad(dt.getMinutes())}.json`;
+    const payload = { date: dt.toISOString(), teams: S.teams, log: logSnap };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fname; a.click();
+  };
 }
 document.getElementById('credits-back').onclick = () => { stopRick(); stopFireworks(); stopFlappy(); showScreen('screen-setup'); };
 
