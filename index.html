@@ -211,9 +211,13 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
       <div id="rounds-list"></div>
       <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem">
         <button class="btn btn-secondary btn-sm" id="add-round-btn">+ Добавить раунд (JSON)</button>
+        <button class="btn btn-secondary btn-sm" id="import-folder-btn">📁 Импорт папки</button>
+        <button class="btn btn-secondary btn-sm" id="import-files-btn">📄 Импорт файлов</button>
         <a href="editor.html" class="btn btn-ghost btn-sm" target="_blank">Редактор паков →</a>
       </div>
       <p class="setup-hint">По одному JSON-файлу на каждый раунд</p>
+      <p class="setup-hint" style="margin-top:.25rem">Папка question_packs/ или отдельные JSON-файлы — паки сохранятся в браузере</p>
+      <div id="import-toast" style="display:none;font-size:.82rem;color:#2ecc71;margin-top:.4rem;font-weight:600"></div>
       <div id="saved-packs-section" style="display:none;margin-top:.75rem">
         <p style="font-size:.78rem;color:var(--text-muted);margin-bottom:.4rem">Сохранённые паки:</p>
         <div id="saved-packs-list" style="display:flex;gap:.4rem;flex-wrap:wrap"></div>
@@ -600,6 +604,41 @@ document.getElementById('add-round-btn').onclick = () => {
     try { const p = JSON.parse(await f.text()); sRounds.push({packName: p.name || f.name.replace(/\.json$/,''), pack: p}); renderRounds(); SFX.slide(); }
     catch { alert('Ошибка чтения JSON'); }
   };
+  inp.click();
+};
+
+async function importJsonFiles(files) {
+  let ok = 0, skip = 0;
+  const jsons = Array.from(files).filter(f => f.name.toLowerCase().endsWith('.json'));
+  for (const f of jsons) {
+    try {
+      const data = JSON.parse(await f.text());
+      if (!data || typeof data !== 'object' || (!data.name && !data.categories)) { skip++; continue; }
+      const rawName = data.name || f.name.replace(/\.json$/i, '');
+      const name = (rawName.replace(/[^\wа-яёА-ЯЁ\s\-]/gi, '_').trim()) || 'pack';
+      localStorage.setItem('qhb_pack_' + name, JSON.stringify(data));
+      const names = JSON.parse(localStorage.getItem('qhb_pack_names') || '[]');
+      if (!names.includes(name)) { names.push(name); localStorage.setItem('qhb_pack_names', JSON.stringify(names)); }
+      ok++;
+    } catch { skip++; }
+  }
+  renderSavedPacks();
+  const toast = document.getElementById('import-toast');
+  toast.textContent = `Импортировано: ${ok} паков${skip ? `, пропущено: ${skip}` : ''}`;
+  toast.style.display = 'block';
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { toast.style.display = 'none'; }, 4000);
+}
+document.getElementById('import-folder-btn').onclick = () => {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.webkitdirectory = true;
+  inp.onchange = e => importJsonFiles(e.target.files);
+  inp.click();
+};
+document.getElementById('import-files-btn').onclick = () => {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.json'; inp.multiple = true;
+  inp.onchange = e => importJsonFiles(e.target.files);
   inp.click();
 };
 
