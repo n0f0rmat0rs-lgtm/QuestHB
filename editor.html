@@ -163,9 +163,11 @@ function renderEditor() {
   header.innerHTML = `
     <input class="pack-name-input" type="text" value="${esc(pack.name)}" placeholder="Название пака">
     <button class="btn btn-primary" id="dl-btn">⬇ Скачать JSON</button>
+    <button class="btn btn-secondary btn-sm" id="print-btn">🖨 Печать</button>
   `;
   header.querySelector(".pack-name-input").oninput = e => { pack.name = e.target.value; };
   header.querySelector("#dl-btn").onclick = downloadPack;
+  header.querySelector("#print-btn").onclick = printPack;
   main.appendChild(header);
 
   const catContainer = document.createElement("div");
@@ -460,6 +462,97 @@ function downloadPack() {
     const names = JSON.parse(localStorage.getItem('qhb_pack_names')||'[]');
     if (!names.includes(name)) { names.push(name); localStorage.setItem('qhb_pack_names', JSON.stringify(names)); }
   } catch {}
+}
+
+function printPack() {
+  if (!pack) return;
+  const e = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  function penaltyLabel(p) {
+    if (p === 'half') return '<span class="pen">Штраф: ½</span>';
+    if (p === 'full') return '<span class="pen">Штраф: полный</span>';
+    return '';
+  }
+  function typeLabel(t) {
+    if (t === 'bag')     return '<span class="qtype">🎁 Кот в мешке</span>';
+    if (t === 'auction') return '<span class="qtype">🔨 Аукцион</span>';
+    if (t === 'blitz')   return '<span class="qtype">⚡ Блиц</span>';
+    if (t === 'last')    return '<span class="qtype">🏁 Последний верный</span>';
+    return '';
+  }
+  function valueLabel(q) {
+    if (q.random_value) return `случайно: ${q.value_min ?? 100}–${q.value_max ?? 500}`;
+    return q.value ?? 0;
+  }
+
+  let body = '';
+  (pack.categories || []).forEach((cat, ci) => {
+    const modeNote = cat.buzz_mode === 'one_chance' ? ' <span class="mode">(один шанс)</span>' : '';
+    body += `<section${ci > 0 ? ' class="newpage"' : ''}>\n<h2>${e(cat.name)}${modeNote}</h2>\n<table>\n`;
+    const qs = [...(cat.questions || [])].sort((a, b) => (a.value ?? 0) - (b.value ?? 0));
+    qs.forEach(q => {
+      body += '<tr><td class="val">' + e(valueLabel(q)) + '</td><td class="content">';
+      const meta = [typeLabel(q.type), penaltyLabel(q.penalty)].filter(Boolean).join(' ');
+      if (meta) body += '<div class="meta">' + meta + '</div>';
+      body += '<div class="qtext">' + e(q.question || '') + '</div>';
+      if (q.type === 'blitz' && Array.isArray(q.sub_questions) && q.sub_questions.length) {
+        body += '<ol class="subs">';
+        q.sub_questions.forEach(sub => {
+          body += `<li>${e(sub.question || '')} <strong class="ans">→ ${e(sub.answer || '')}</strong></li>`;
+        });
+        body += '</ol>';
+      } else {
+        body += '<div class="ans"><strong>' + e(q.answer || '') + '</strong></div>';
+      }
+      if (q.answer_reveal && q.answer_reveal.text) {
+        body += '<div class="comment">Комментарий: ' + e(q.answer_reveal.text) + '</div>';
+      }
+      body += '</td></tr>\n';
+    });
+    body += '</table>\n</section>\n';
+  });
+
+  const html = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>${e(pack.name || 'Пак вопросов')}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Georgia, serif; font-size: 13pt; color: #000; background: #fff; padding: 1.2cm 1.5cm; }
+  h1 { font-size: 18pt; margin-bottom: .6cm; border-bottom: 2px solid #000; padding-bottom: .3cm; }
+  h2 { font-size: 14pt; margin: .4cm 0 .3cm; }
+  .mode { font-size: 10pt; font-weight: normal; color: #444; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: .3cm; }
+  td { vertical-align: top; padding: .18cm .2cm; border-bottom: 1px solid #ccc; }
+  td.val { width: 2.4cm; font-weight: bold; font-size: 11pt; color: #333; white-space: nowrap; }
+  td.content { padding-left: .3cm; }
+  .meta { font-size: 10pt; color: #555; margin-bottom: .1cm; }
+  .qtype { margin-right: .3cm; }
+  .pen { font-style: italic; }
+  .qtext { margin-bottom: .15cm; }
+  .ans { margin-bottom: .1cm; }
+  .ans strong { font-size: 13pt; }
+  .subs { margin: .1cm 0 .1cm .8cm; font-size: 11pt; }
+  .subs li { margin-bottom: .1cm; }
+  .comment { font-style: italic; font-size: 10pt; color: #555; margin-top: .05cm; }
+  .newpage { page-break-before: always; padding-top: .5cm; }
+  .print-btn { position: fixed; top: .6cm; right: 1cm; padding: .4em 1.2em; font-size: 12pt;
+    background: #000; color: #fff; border: none; cursor: pointer; border-radius: 4px; }
+  @media print { .print-btn { display: none; } }
+</style>
+</head>
+<body>
+<button class="print-btn" onclick="window.print()">🖨 Печать</button>
+<h1>${e(pack.name || 'Пак вопросов')}</h1>
+${body}
+</body>
+</html>`;
+
+  const w = window.open('', '_blank');
+  if (!w) { alert('Разрешите всплывающие окна для этой страницы'); return; }
+  w.document.write(html);
+  w.document.close();
 }
 
 function esc(s){ return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
