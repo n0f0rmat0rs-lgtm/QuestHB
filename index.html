@@ -182,7 +182,6 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 .credit-row.first-place { padding: 2.5rem 3rem; border-top-color: #333; }
 .credits-restart { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 2; }
 #fireworks-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
-.hint-row { display:flex; flex-wrap:wrap; gap:.4rem; justify-content:center; padding:.5rem .5rem 0; }
 .last-banner { text-align:center; font-size:1.6rem; font-weight:900; text-transform:uppercase; letter-spacing:.04em; color:#2ecc71; margin-top:1.2rem; padding:.6rem 1.2rem; border:2px solid #2ecc71; border-radius:8px; }
 .btn-hint { background: #e67e22; color: #fff; }
 </style>
@@ -312,7 +311,6 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
       <button class="btn btn-ghost    btn-sm" id="q-annul">Аннулировать</button>
       <button class="btn btn-secondary btn-sm" id="q-blitz-skip" style="display:none">⏭ Пропустить</button>
     </div>
-    <div id="hint-row" class="hint-row" style="display:none"></div>
   </div>
   <div id="ans-overlay" class="ans-overlay" style="display:none">
     <div class="ans-box">
@@ -426,7 +424,7 @@ function showPopup(pts, name) {
 }
 
 /* ═══ STATE ═══ */
-const S = { rounds: [], ri: 0, teams: [], used: {}, curQ: null, tRun: false, tSec: 60, tTot: 60, tInt: null, buzzed: null, wrongTeams: new Set(), hintsUsed: {}, hintTeam: null, hintSec: 0, hintInt: null };
+const S = { rounds: [], ri: 0, teams: [], used: {}, curQ: null, tRun: false, tSec: 60, tTot: 60, tInt: null, buzzed: null, wrongTeams: new Set(), hintsUsed: {}, hintSec: 0, hintInt: null };
 const TARC_VAL = 490.09;
 
 /* ═══ CHOOSER ═══ */
@@ -1146,7 +1144,6 @@ document.getElementById('q-wrong').onclick = () => {
   S.wrongTeams.add(S.buzzed); S.buzzed = null;
   document.getElementById('buzz-pill').style.display = 'none';
   showJudge(false); if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
-  updAllHintBtns();
   if (S.curQ.buzzMode === 'one_chance' && S.teams.every((_, i) => S.wrongTeams.has(i))) { closeQ(); return; }
   resumeTimer();
 };
@@ -1202,7 +1199,7 @@ function afterHintFail() {
   document.getElementById('q-start').style.display = 'inline-flex';
 }
 function clearHintTimer() {
-  clearInterval(S.hintInt); S.hintInt = null; S.hintTeam = null; S.hintSec = 0;
+  clearInterval(S.hintInt); S.hintInt = null; S.hintSec = 0;
 }
 function updHintTimer() {
   const num = document.getElementById('t-num'), arc = document.getElementById('t-arc');
@@ -1212,31 +1209,11 @@ function updHintTimer() {
   arc.style.strokeDashoffset = TARC_VAL * (1 - S.hintSec / 10);
   arc.style.stroke = '#4f8ef7'; num.style.color = '#4f8ef7';
 }
-function fillHintButtons() {
-  const row = document.getElementById('hint-row');
-  if (!row) return;
-  if (S.curQ.q.type !== 'normal') { row.style.display = 'none'; row.innerHTML = ''; return; }
-  row.style.display = 'flex';
-  row.innerHTML = S.teams.map((t, i) =>
-    `<button class="btn btn-ghost btn-sm hint-btn" id="hint-btn-${i}">💡 Подсказка: ${t.name}</button>`
-  ).join('');
-  S.teams.forEach((_, i) => {
-    document.getElementById(`hint-btn-${i}`).onclick = () => useHint(i);
-    updHintBtn(i);
-  });
-}
-function updHintBtn(i) {
-  const btn = document.getElementById(`hint-btn-${i}`);
-  if (!btn) return;
-  const disabled = S.hintsUsed[i] || S.hintTeam !== null || S.buzzed !== null;
-  btn.disabled = disabled; btn.style.opacity = disabled ? '0.3' : '1';
-}
-function updAllHintBtns() { S.teams.forEach((_, i) => updHintBtn(i)); }
 function useHint() {
   if (S.buzzed === null || S.curQ.hintBuzzed || S.hintsUsed[S.buzzed]) return;
   S.hintsUsed[S.buzzed] = true;
   S.curQ.hintBuzzed = true;
-  S.curQ.currentValue = Math.floor(S.curQ.q.value / 2);
+  S.curQ.currentValue = Math.floor(S.curQ.currentValue / 2);
   document.getElementById('q-val').textContent = S.curQ.currentValue + ' баллов (½ подсказка)';
   showJudge(true); // re-renders buttons; hint button hidden since hintBuzzed=true
   startHintTimer();
