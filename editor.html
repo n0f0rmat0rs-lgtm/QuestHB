@@ -111,6 +111,33 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); bo
   </main>
 </div>
 
+<div class="converter-modal" id="converter-modal">
+  <div class="converter-box">
+    <div style="display:flex;align-items:center;gap:.75rem">
+      <h3>🔄 Конвертер старого Ф.Е.Е.</h3>
+      <button class="btn btn-ghost btn-sm" id="converter-close" style="margin-left:auto">✕</button>
+    </div>
+    <p style="font-size:.82rem;color:var(--text-muted);line-height:1.5">Вставьте текст старого формата или загрузите .txt файл. «КОТ В МЕШКЕ» и «ВОПРОС-АУКЦИОН» определяются автоматически. Стоимость — 100, 200, 300… по порядку.</p>
+    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+      <label style="font-size:.82rem;color:var(--text-muted);white-space:nowrap">Название пака:</label>
+      <input type="text" id="conv-pack-name" placeholder="Конвертированный пак" style="flex:1;min-width:160px">
+      <button class="btn btn-secondary btn-sm" id="conv-load-txt">📄 Загрузить .txt</button>
+    </div>
+    <textarea id="conv-input" rows="9" placeholder="Формат:&#10;CATEGORY 1: Название;|&#10;QUESTION 1.1: Текст вопроса;| (Ответ)&#10;QUESTION 1.2: КОТ В МЕШКЕ ;|&#10;QUESTION 1.3: ВОПРОС-АУКЦИОН ;| (Вопрос аукциона)&#10;..."></textarea>
+    <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-primary" id="conv-parse-btn">Конвертировать</button>
+      <span id="conv-status" style="font-size:.82rem;color:var(--text-muted)"></span>
+    </div>
+    <div id="conv-result-wrap" style="display:none">
+      <div class="converter-result" id="conv-result"></div>
+      <div style="display:flex;gap:.5rem;margin-top:.75rem;flex-wrap:wrap">
+        <button class="btn btn-primary" id="conv-to-editor">📥 Загрузить в редактор</button>
+        <button class="btn btn-secondary" id="conv-dl">⬇ Скачать JSON</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 let pack = null;
 
@@ -704,33 +731,6 @@ function parseOldFormat(text, packName) {
   return { name: packName || 'Конвертированный пак', categories };
 }
 </script>
-
-<div class="converter-modal" id="converter-modal">
-  <div class="converter-box">
-    <div style="display:flex;align-items:center;gap:.75rem">
-      <h3>🔄 Конвертер старого Ф.Е.Е.</h3>
-      <button class="btn btn-ghost btn-sm" id="converter-close" style="margin-left:auto">✕</button>
-    </div>
-    <p style="font-size:.82rem;color:var(--text-muted);line-height:1.5">Вставьте текст старого формата или загрузите .txt файл. «КОТ В МЕШКЕ» и «ВОПРОС-АУКЦИОН» определяются автоматически. Стоимость — 100, 200, 300… по порядку.</p>
-    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
-      <label style="font-size:.82rem;color:var(--text-muted);white-space:nowrap">Название пака:</label>
-      <input type="text" id="conv-pack-name" placeholder="Конвертированный пак" style="flex:1;min-width:160px">
-      <button class="btn btn-secondary btn-sm" id="conv-load-txt">📄 Загрузить .txt</button>
-    </div>
-    <textarea id="conv-input" rows="9" placeholder="Формат:&#10;CATEGORY 1: Название;|&#10;QUESTION 1.1: Текст вопроса;| (Ответ)&#10;QUESTION 1.2: КОТ В МЕШКЕ ;|&#10;QUESTION 1.3: ВОПРОС-АУКЦИОН ;| (Вопрос аукциона)&#10;..."></textarea>
-    <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
-      <button class="btn btn-primary" id="conv-parse-btn">Конвертировать</button>
-      <span id="conv-status" style="font-size:.82rem;color:var(--text-muted)"></span>
-    </div>
-    <div id="conv-result-wrap" style="display:none">
-      <div class="converter-result" id="conv-result"></div>
-      <div style="display:flex;gap:.5rem;margin-top:.75rem;flex-wrap:wrap">
-        <button class="btn btn-primary" id="conv-to-editor">📥 Загрузить в редактор</button>
-        <button class="btn btn-secondary" id="conv-dl">⬇ Скачать JSON</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 </body>
 </html>
