@@ -108,6 +108,9 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 .buzz-wrap { flex-shrink: 0; text-align: center; min-height: 70px; display: flex; align-items: center; justify-content: center; }
 .buzz-pill { display: inline-block; padding: .5rem 2.5rem; border-radius: 40px; font-size: 2.2rem; font-weight: 900; color: #fff; background: #1c1c1c; border: 2px solid #fff; animation: buzzPop .25s cubic-bezier(.34,1.56,.64,1); }
 @keyframes buzzPop { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+#buzz-flash { position:fixed; inset:0; z-index:950; background:rgba(0,0,0,.85); display:none; align-items:center; justify-content:center; pointer-events:none; }
+.buzz-flash-name { font-size:clamp(4rem,14vw,14rem); font-weight:900; text-transform:uppercase; letter-spacing:.08em; color:#fff; text-align:center; line-height:1.05; padding:0 3rem; word-break:break-word; overflow-wrap:break-word; }
+@keyframes buzzFlashIn { from { transform:scale(.6); opacity:0; } to { transform:scale(1); opacity:1; } }
 
 /* Timer */
 .timer-wrap { position: absolute; bottom: 5.5rem; right: 1.5rem; width: 180px; height: 180px; flex-shrink: 0; opacity: .15; transition: opacity .2s; pointer-events: none; }
@@ -1137,6 +1140,7 @@ function onBuzz(idx) {
   S.buzzed = idx; SFX.buzz();
   if (S.curQ) S.curQ.lastBuzzAtSec = S.tTot - S.tSec;
   saveGame();
+  showBuzzFlash(S.teams[idx].name);
   const pill = document.getElementById('buzz-pill');
   pill.textContent = S.teams[idx].name; pill.style.display = 'inline-block';
   showJudge(true);
@@ -1150,6 +1154,7 @@ function showJudge(v) {
 }
 
 document.getElementById('q-correct').onclick = () => {
+  hideBuzzFlash();
   const q = S.curQ.q, t = S.teams[S.buzzed];
   if (q.type === 'blitz') {
     const pts = S.curQ.subPts;
@@ -1189,6 +1194,7 @@ document.getElementById('q-correct').onclick = () => {
   closeQ();
 };
 document.getElementById('q-wrong').onclick = () => {
+  hideBuzzFlash();
   const q = S.curQ.q, t = S.teams[S.buzzed];
   let pen = 0;
   if (q.type === 'bag') pen = S.curQ.bagValue;
@@ -1318,6 +1324,33 @@ function closeQ() {
 /* ═══════════════════════════════════════
    CREDITS
 ═══════════════════════════════════════ */
+/* ═══ BUZZ FLASH ═══ */
+let _buzzFlashTimer = null;
+function showBuzzFlash(name) {
+  clearTimeout(_buzzFlashTimer);
+  const el = document.getElementById('buzz-flash');
+  const nameEl = document.getElementById('buzz-flash-name');
+  nameEl.textContent = name;
+  nameEl.style.animation = 'none';
+  void nameEl.offsetWidth; // reflow to restart animation
+  nameEl.style.animation = 'buzzFlashIn .2s cubic-bezier(.34,1.56,.64,1) forwards';
+  el.style.transition = 'none';
+  el.style.opacity = '1';
+  el.style.display = 'flex';
+  _buzzFlashTimer = setTimeout(() => {
+    el.style.transition = 'opacity .25s';
+    el.style.opacity = '0';
+    _buzzFlashTimer = setTimeout(() => { el.style.display = 'none'; }, 260);
+  }, 800);
+}
+function hideBuzzFlash() {
+  clearTimeout(_buzzFlashTimer);
+  const el = document.getElementById('buzz-flash');
+  el.style.transition = 'none';
+  el.style.display = 'none';
+  el.style.opacity = '1';
+}
+
 let _rickAudio = null;
 function stopRick() {
   if (_rickAudio) { try { _rickAudio.pause(); _rickAudio.currentTime = 0; } catch {} _rickAudio = null; }
@@ -1481,5 +1514,6 @@ document.addEventListener('keydown', e => {
 /* INIT */
 renderRounds();
 </script>
+<div id="buzz-flash"><div class="buzz-flash-name" id="buzz-flash-name"></div></div>
 </body>
 </html>
