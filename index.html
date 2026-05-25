@@ -221,6 +221,14 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
       </div>
       <p class="setup-hint" style="margin-top:.75rem">Названия команд зададите перед началом игры</p>
     </div>
+    <div id="resume-card" class="setup-card" style="display:none;border:1px solid #f39c12;background:rgba(243,156,18,.07)">
+      <div style="font-size:1rem;font-weight:700;margin-bottom:.4rem">⏸ Продолжить прошлую игру</div>
+      <p id="resume-info" style="font-size:.88rem;color:var(--text-muted);margin:.2rem 0 .8rem;line-height:1.5"></p>
+      <div style="display:flex;gap:.5rem">
+        <button class="btn btn-primary btn-sm" id="resume-btn">▶ Продолжить</button>
+        <button class="btn btn-ghost btn-sm" id="resume-delete-btn">✕ Удалить</button>
+      </div>
+    </div>
     <button class="btn btn-primary" id="start-btn">▶ Дальше</button>
   </div>
 </div>
@@ -430,6 +438,20 @@ const TARC_VAL = 490.09;
 /* ═══ CHOOSER ═══ */
 let _chooserBag = [], _lastChooser = -1;
 
+/* ═══ AUTOSAVE ═══ */
+const SAVE_KEY = 'qhb_active_game';
+function saveGame() {
+  if (!S.teams || !S.teams.length) return;
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      ri: S.ri, teams: S.teams, used: S.used, rounds: S.rounds,
+      tTot: S.tTot, hintsUsed: S.hintsUsed, wrongTeams: [...S.wrongTeams],
+      chooserBag: _chooserBag, lastChooser: _lastChooser
+    }));
+  } catch(e) {}
+}
+function deleteSave() { localStorage.removeItem(SAVE_KEY); }
+
 function _shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -527,6 +549,40 @@ try {
   }
   renderSavedPacks();
 } catch {}
+
+// Check for saved game
+(function checkResume() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    if (!d.teams || !d.teams.length || !d.rounds || !d.rounds.length) return;
+    const scores = d.teams.map(t => `${t.name}: ${t.score}`).join(' · ');
+    const info = document.getElementById('resume-info');
+    info.textContent = `${d.teams.length} команд · раунд ${(d.ri||0)+1} из ${d.rounds.length}\n${scores}`;
+    info.style.whiteSpace = 'pre-line';
+    document.getElementById('resume-card').style.display = '';
+  } catch(e) {}
+})();
+document.getElementById('resume-btn').onclick = () => {
+  try {
+    const d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    if (!d) return;
+    S.ri = d.ri || 0; S.teams = d.teams; S.used = d.used || {};
+    S.rounds = d.rounds; S.tTot = d.tTot || 60; S.tSec = d.tTot || 60;
+    S.hintsUsed = d.hintsUsed || {}; S.wrongTeams = new Set(d.wrongTeams || []);
+    S.buzzed = null; S.curQ = null; S.tRun = false;
+    _chooserBag = d.chooserBag || []; _lastChooser = d.lastChooser !== undefined ? d.lastChooser : -1;
+    buildBoard(); renderScores(); updateRoundLbl(); checkDone(); showScreen('screen-board');
+    const el = document.getElementById('chooser-lbl');
+    if (el && _lastChooser >= 0 && S.teams[_lastChooser])
+      el.innerHTML = `Выбирает: <strong style="color:#fff">${S.teams[_lastChooser].name}</strong>`;
+  } catch(e) {}
+};
+document.getElementById('resume-delete-btn').onclick = () => {
+  deleteSave();
+  document.getElementById('resume-card').style.display = 'none';
+};
 
 document.getElementById('add-round-btn').onclick = () => {
   const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json';
@@ -749,6 +805,7 @@ document.getElementById('start-game-btn').onclick = () => {
   S.teams = names.map(n => ({ name: n, score: 0 }));
   S.rounds = sRounds.map(r => ({...r}));
   S.ri = 0; S.used = {};
+  deleteSave(); document.getElementById('resume-card').style.display = 'none';
   document.getElementById('modal-team-names').style.display = 'none';
   stopFlappy();
   resetChooser();
@@ -765,7 +822,7 @@ function startRound(idx) {
   document.getElementById('intro-round-label').textContent = `Раунд ${idx+1} — ${pack.name}`;
   showScreen('screen-intro');
   runCatIntro((pack.categories || []).map(c => c.name), 0, () => {
-    buildBoard(); renderScores(); updateRoundLbl(); checkDone(); showScreen('screen-board'); nextChooser();
+    buildBoard(); renderScores(); updateRoundLbl(); checkDone(); showScreen('screen-board'); nextChooser(); saveGame();
   });
 }
 function runCatIntro(cats, i, done) {
@@ -779,7 +836,7 @@ function runCatIntro(cats, i, done) {
   }));
 }
 document.getElementById('intro-skip').onclick = () => {
-  buildBoard(); renderScores(); updateRoundLbl(); checkDone(); showScreen('screen-board'); nextChooser();
+  buildBoard(); renderScores(); updateRoundLbl(); checkDone(); showScreen('screen-board'); nextChooser(); saveGame();
 };
 
 /* ═══════════════════════════════════════
@@ -844,7 +901,7 @@ function adjScore(idx, sign) {
   const v = parseInt(document.getElementById(`mi-${idx}`).value) || 0;
   S.teams[idx].score += sign * v;
   document.getElementById(`ms-${idx}`).textContent = S.teams[idx].score;
-  updScores();
+  updScores(); saveGame();
 }
 document.getElementById('next-round-btn').onclick = () => startRound(S.ri+1);
 document.getElementById('back-setup-btn').onclick = () => { stopFlappy(); showScreen('screen-setup'); };
@@ -1067,7 +1124,7 @@ function onBuzz(idx) {
   const bq = S.curQ.q;
   const timerPauses = !(bq.type === 'blitz' || bq.type === 'last') || !!bq.buzz_pauses_timer;
   if (timerPauses) pauseTimer();
-  S.buzzed = idx; SFX.buzz();
+  S.buzzed = idx; SFX.buzz(); saveGame();
   const pill = document.getElementById('buzz-pill');
   pill.textContent = S.teams[idx].name; pill.style.display = 'inline-block';
   showJudge(true);
@@ -1092,7 +1149,7 @@ document.getElementById('q-correct').onclick = () => {
     document.getElementById('buzz-pill').style.display = 'none';
     showJudge(false); fillBlitzSub();
     if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
-    return;
+    saveGame(); return;
   }
   if (q.type === 'last') {
     S.curQ.lastCorrectTeam = S.buzzed;
@@ -1123,7 +1180,7 @@ document.getElementById('q-wrong').onclick = () => {
   if (pen) { t.score -= pen; if (!hasReveal) showPopup(-pen, t.name); }
   updScores(); SFX.wrong(); flash('rgba(231,76,60,.45)');
   if (q.type === 'bag') { closeQ(); return; }
-  if (S.curQ.hintBuzzed) { clearHintTimer(); afterHintFail(); return; }
+  if (S.curQ.hintBuzzed) { clearHintTimer(); afterHintFail(); saveGame(); return; }
   if (q.type === 'blitz') {
     if (q.blitz_auto_skip) {
       S.curQ.subIdx++;
@@ -1139,13 +1196,13 @@ document.getElementById('q-wrong').onclick = () => {
       if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
       resumeTimer();
     }
-    return;
+    saveGame(); return;
   }
   S.wrongTeams.add(S.buzzed); S.buzzed = null;
   document.getElementById('buzz-pill').style.display = 'none';
   showJudge(false); if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
   if (S.curQ.buzzMode === 'one_chance' && S.teams.every((_, i) => S.wrongTeams.has(i))) { closeQ(); return; }
-  resumeTimer();
+  resumeTimer(); saveGame();
 };
 document.getElementById('q-annul').onclick = () => {
   if (S.curQ && S.curQ.q.type === 'auction') { pauseTimer(); openAuctionModal(); }
@@ -1169,7 +1226,7 @@ document.getElementById('q-back').onclick = () => { pauseTimer(); showScreen('sc
 document.getElementById('q-start').onclick = () => { if (!S.tRun) startTimer(); };
 document.getElementById('ans-close').onclick = () => {
   document.getElementById('ans-overlay').style.display = 'none';
-  S.used[S.curQ.k] = true; buildBoard(); checkDone(); showScreen('screen-board'); nextChooser();
+  S.used[S.curQ.k] = true; buildBoard(); checkDone(); showScreen('screen-board'); nextChooser(); saveGame();
 };
 
 function startHintTimer() {
@@ -1231,8 +1288,10 @@ function closeQ() {
     const aa=document.getElementById('ans-aud'); if(rev.audio){aa.src=rev.audio;aa.style.display='block';}else aa.style.display='none';
     const av=document.getElementById('ans-vid'); if(rev.video){av.src=rev.video;av.style.display='block';}else av.style.display='none';
     document.getElementById('ans-overlay').style.display = 'flex';
+    saveGame();
   } else {
     S.used[S.curQ.k] = true; buildBoard(); checkDone(); showScreen('screen-board'); nextChooser();
+    saveGame();
   }
 }
 
@@ -1307,6 +1366,7 @@ function stopFireworks() {
 }
 
 function showCredits() {
+  deleteSave();
   const sorted = [...S.teams].sort((a, b) => b.score - a.score);
   const inner = document.getElementById('credits-inner');
   inner.innerHTML = '<div class="credits-title">— итоги —</div>';
