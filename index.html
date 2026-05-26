@@ -194,6 +194,9 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 .last-banner { text-align:center; font-size:1.6rem; font-weight:900; text-transform:uppercase; letter-spacing:.04em; color:#2ecc71; margin-top:1.2rem; padding:.6rem 1.2rem; border:2px solid #2ecc71; border-radius:8px; }
 .btn-hint { background: #e67e22; color: #fff; }
 .btn-alliance { background: #9b59b6; color: #fff; }
+.mode-row { display:flex; align-items:center; gap:.6rem; cursor:pointer; font-size:.9rem; font-weight:600; user-select:none; }
+.mode-row input[type=checkbox] { width:17px; height:17px; cursor:pointer; accent-color: var(--accent); flex-shrink:0; }
+.mode-desc { color:var(--text-muted); font-size:.78rem; font-weight:400; }
 .reveal-tile { background: #1a1a1a; transition: opacity .3s ease; }
 .reveal-tile.open { opacity: 0; pointer-events: none; }
 </style>
@@ -236,6 +239,15 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
         <span style="color:var(--text-muted);font-size:.9rem">команды</span>
       </div>
       <p class="setup-hint" style="margin-top:.75rem">Названия команд зададите перед началом игры</p>
+    </div>
+    <div class="setup-card">
+      <h2>Режимы игры</h2>
+      <div style="display:flex;flex-direction:column;gap:.7rem">
+        <label class="mode-row"><input type="checkbox" id="mode-hint" checked><span>💡 Подсказки</span><span class="mode-desc">— разрешить команде взять подсказку за ½ стоимости (для нормальных вопросов)</span></label>
+        <label class="mode-row"><input type="checkbox" id="mode-alliance"><span>🤝 Альянс</span><span class="mode-desc">— разрешить объединить команды для совместного ответа (для нормальных вопросов)</span></label>
+        <label class="mode-row"><input type="checkbox" id="mode-progressive"><span>📈 Прогрессив</span><span class="mode-desc">— стоимость оставшихся вопросов растёт при каждом закрытом (+10%)</span></label>
+        <label class="mode-row"><input type="checkbox" id="mode-kubyshka"><span>🏦 Кубышка</span><span class="mode-desc">— при провале стоимость распределяется между незакрытыми вопросами</span></label>
+      </div>
     </div>
     <div id="resume-card" class="setup-card" style="display:none;border:1px solid #f39c12;background:rgba(243,156,18,.07)">
       <div style="font-size:1rem;font-weight:700;margin-bottom:.4rem">⏸ Продолжить прошлую игру</div>
@@ -459,7 +471,8 @@ function showPopup(pts, name) {
 }
 
 /* ═══ STATE ═══ */
-const S = { rounds: [], ri: 0, teams: [], used: {}, curQ: null, tRun: false, tSec: 60, tTot: 60, tInt: null, buzzed: null, wrongTeams: new Set(), hintsUsed: {}, hintSec: 0, hintInt: null, log: [], progressive: {}, kubyshka: {}, metaClosed: {} };
+const S = { rounds: [], ri: 0, teams: [], used: {}, curQ: null, tRun: false, tSec: 60, tTot: 60, tInt: null, buzzed: null, wrongTeams: new Set(), hintsUsed: {}, hintSec: 0, hintInt: null, log: [], progressive: {}, kubyshka: {}, metaClosed: {},
+  modeHint: true, modeAlliance: false, modeProgressive: false, modeKubyshka: false };
 const TARC_VAL = 490.09;
 
 /* ═══ CHOOSER ═══ */
@@ -474,7 +487,8 @@ function saveGame() {
       ri: S.ri, teams: S.teams, used: S.used, rounds: S.rounds,
       tTot: S.tTot, hintsUsed: S.hintsUsed, wrongTeams: [...S.wrongTeams],
       chooserBag: _chooserBag, lastChooser: _lastChooser, log: S.log,
-      progressive: S.progressive, kubyshka: S.kubyshka, metaClosed: S.metaClosed
+      progressive: S.progressive, kubyshka: S.kubyshka, metaClosed: S.metaClosed,
+      modeHint: S.modeHint, modeAlliance: S.modeAlliance, modeProgressive: S.modeProgressive, modeKubyshka: S.modeKubyshka
     }));
   } catch(e) {}
 }
@@ -601,6 +615,8 @@ document.getElementById('resume-btn').onclick = () => {
     S.hintsUsed = d.hintsUsed || {}; S.wrongTeams = new Set(d.wrongTeams || []);
     S.buzzed = null; S.curQ = null; S.tRun = false; S.log = d.log || [];
     S.progressive = d.progressive || {}; S.kubyshka = d.kubyshka || {}; S.metaClosed = d.metaClosed || {};
+    S.modeHint = d.modeHint !== undefined ? d.modeHint : true;
+    S.modeAlliance = !!d.modeAlliance; S.modeProgressive = !!d.modeProgressive; S.modeKubyshka = !!d.modeKubyshka;
     _chooserBag = d.chooserBag || []; _lastChooser = d.lastChooser !== undefined ? d.lastChooser : -1;
     buildBoard(); renderScores(); updateRoundLbl(); checkDone(); showScreen('screen-board');
     const el = document.getElementById('chooser-lbl');
@@ -869,6 +885,10 @@ document.getElementById('start-game-btn').onclick = () => {
   S.teams = names.map(n => ({ name: n, score: 0 }));
   S.rounds = sRounds.map(r => ({...r}));
   S.ri = 0; S.used = {}; S.log = []; S.progressive = {}; S.kubyshka = {}; S.metaClosed = {};
+  S.modeHint       = document.getElementById('mode-hint').checked;
+  S.modeAlliance   = document.getElementById('mode-alliance').checked;
+  S.modeProgressive= document.getElementById('mode-progressive').checked;
+  S.modeKubyshka   = document.getElementById('mode-kubyshka').checked;
   deleteSave(); document.getElementById('resume-card').style.display = 'none';
   document.getElementById('modal-team-names').style.display = 'none';
   stopFlappy();
@@ -1274,9 +1294,9 @@ function showJudge(v) {
   const isJeopardy = q && q.type === 'jeopardy';
   document.getElementById('q-correct').style.display = (v && !isJeopardy) ? 'inline-flex' : 'none';
   document.getElementById('q-wrong').style.display   = (v && !isJeopardy) ? 'inline-flex' : 'none';
-  const canHint = v && q && q.type === 'normal' && S.buzzed !== null && !S.hintsUsed[S.buzzed] && !S.curQ.hintBuzzed && !S.curQ.allianceUsed && !S.curQ.allianceActive;
+  const canHint = v && q && q.type === 'normal' && S.modeHint && S.buzzed !== null && !S.hintsUsed[S.buzzed] && !S.curQ.hintBuzzed && !S.curQ.allianceUsed && !S.curQ.allianceActive;
   document.getElementById('q-hint').style.display = canHint ? 'inline-flex' : 'none';
-  const canAlliance = v && q && q.type === 'normal' && q.alliance && S.curQ && !S.curQ.allianceUsed && !S.curQ.allianceWaiting && !S.curQ.allianceActive;
+  const canAlliance = v && q && q.type === 'normal' && (q.alliance || S.modeAlliance) && S.curQ && !S.curQ.allianceUsed && !S.curQ.allianceWaiting && !S.curQ.allianceActive;
   document.getElementById('q-alliance').style.display = canAlliance ? 'inline-flex' : 'none';
   if (v && isJeopardy) buildJeopardyBtns();
   else document.getElementById('jeopardy-btns').style.display = 'none';
@@ -1487,7 +1507,7 @@ function onQuestionClosed(ci, qi) {
     const mk = `${S.ri}-${ci}`;
     S.metaClosed[mk] = (S.metaClosed[mk] || 0) + 1;
   }
-  if (cat.progressive) {
+  if (cat.progressive || S.modeProgressive) {
     cat.questions.forEach((qq, qqi) => {
       if (qqi === qi) return;
       const kk = `${S.ri}-${ci}-${qqi}`;
@@ -1501,7 +1521,7 @@ function onQuestionClosed(ci, qi) {
 function triggerKubyshka() {
   if (!S.curQ) return;
   const cat = S.rounds[S.ri].pack.categories[S.curQ.ci];
-  if (!cat.kubyshka) return;
+  if (!cat.kubyshka && !S.modeKubyshka) return;
   const q = S.curQ.q;
   let amount;
   if (q.random_value) {
