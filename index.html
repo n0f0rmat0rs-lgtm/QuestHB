@@ -406,10 +406,9 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
   </div>
 </div>
 
-<div id="alliance-wait" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;text-align:center;padding:2rem">
-  <div style="font-size:2rem;font-weight:700" id="alliance-wait-text"></div>
-  <div style="font-size:6rem;font-weight:900;color:#9b59b6;line-height:1" id="alliance-wait-sec"></div>
-  <div style="font-size:1rem;color:var(--text-muted)">Другая команда нажимает свою кнопку для вступления в альянс</div>
+<div id="alliance-wait" style="display:none;position:fixed;top:3.8rem;right:1.2rem;z-index:300;background:#111;border:2px solid #9b59b6;border-radius:10px;padding:.55rem 1rem;max-width:280px;text-align:center;box-shadow:0 4px 20px rgba(155,89,182,.35)">
+  <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:.15rem" id="alliance-wait-text"></div>
+  <div style="font-size:1.25rem;font-weight:900;color:#9b59b6;white-space:nowrap">Ожидание напарника: <span id="alliance-wait-sec"></span></div>
 </div>
 <script>
 /* ═══ SOUNDS ═══ */
@@ -1275,7 +1274,7 @@ function showJudge(v) {
   const isJeopardy = q && q.type === 'jeopardy';
   document.getElementById('q-correct').style.display = (v && !isJeopardy) ? 'inline-flex' : 'none';
   document.getElementById('q-wrong').style.display   = (v && !isJeopardy) ? 'inline-flex' : 'none';
-  const canHint = v && q && q.type === 'normal' && S.buzzed !== null && !S.hintsUsed[S.buzzed] && !S.curQ.hintBuzzed;
+  const canHint = v && q && q.type === 'normal' && S.buzzed !== null && !S.hintsUsed[S.buzzed] && !S.curQ.hintBuzzed && !S.curQ.allianceUsed && !S.curQ.allianceActive;
   document.getElementById('q-hint').style.display = canHint ? 'inline-flex' : 'none';
   const canAlliance = v && q && q.type === 'normal' && q.alliance && S.curQ && !S.curQ.allianceUsed && !S.curQ.allianceWaiting && !S.curQ.allianceActive;
   document.getElementById('q-alliance').style.display = canAlliance ? 'inline-flex' : 'none';
@@ -1399,7 +1398,7 @@ document.getElementById('q-blitz-skip').onclick = () => {
   if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
 };
 document.getElementById('q-back').onclick = () => { pauseTimer(); showScreen('screen-board'); };
-document.getElementById('q-start').onclick = () => { if (!S.tRun) { startTimer(); if (S.curQ && S.curQ.q.type === 'reveal') startRevealInterval(); } };
+document.getElementById('q-start').onclick = () => { if (!S.tRun) { startTimer(); if (S.curQ && S.curQ.q.type === 'reveal') { openRevealTile(); startRevealInterval(); } } };
 document.getElementById('ans-close').onclick = () => {
   document.getElementById('ans-overlay').style.display = 'none';
   S.used[S.curQ.k] = true; buildBoard(); checkDone(); showScreen('screen-board'); nextChooser(); saveGame();
@@ -1552,11 +1551,8 @@ document.getElementById('q-alliance').onclick = () => {
     if (S.curQ.allianceWaitSec <= 0) {
       clearInterval(S.curQ.allianceWaitInt); S.curQ.allianceWaiting = false;
       document.getElementById('alliance-wait').style.display = 'none';
-      S.buzzed = null;
-      document.getElementById('buzz-pill').style.display = 'none';
-      showJudge(false);
-      if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
-      resumeTimer();
+      // Team A stays buzzed — restore Верно/Неверно (no hint/alliance since allianceUsed=true)
+      showJudge(true);
     }
   }, 1000);
 };
@@ -1652,7 +1648,7 @@ function buildRevealGrid() {
     const tile = document.createElement('div');
     tile.className = 'reveal-tile'; tile.id = `rtile-${i}`; grid.appendChild(tile);
   }
-  openRevealTile(); // open first tile immediately, no value drop
+  // First tile opens on Start, not here
 }
 function openRevealTile() {
   const idx = S.curQ.revealOpened;
@@ -1662,7 +1658,7 @@ function openRevealTile() {
   if (tile) tile.classList.add('open');
   S.curQ.revealOpened++;
   if (idx > 0) {
-    S.curQ.currentValue = Math.max(S.curQ.revealDropPer, S.curQ.currentValue - S.curQ.revealDropPer);
+    S.curQ.currentValue = Math.max(1, Math.round(S.curQ.revealOrigValue * (S.curQ.revealTotal - idx) / S.curQ.revealTotal));
     document.getElementById('q-val').textContent = S.curQ.currentValue + ' баллов';
   }
 }
