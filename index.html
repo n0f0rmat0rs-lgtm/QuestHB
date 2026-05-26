@@ -1508,13 +1508,27 @@ function onQuestionClosed(ci, qi) {
     S.metaClosed[mk] = (S.metaClosed[mk] || 0) + 1;
   }
   if (cat.progressive || S.modeProgressive) {
-    cat.questions.forEach((qq, qqi) => {
-      if (qqi === qi) return;
-      const kk = `${S.ri}-${ci}-${qqi}`;
-      if (S.used[kk]) return;
-      if (qq.random_value) return;
-      S.progressive[kk] = (S.progressive[kk] || 0) + Math.ceil((qq.value || 0) * 0.10);
-    });
+    if (S.modeProgressive) {
+      // Global mode: +10% на все открытые вопросы всей таблицы
+      S.rounds[S.ri].pack.categories.forEach((cc, cci) => {
+        cc.questions.forEach((qq, qqi) => {
+          if (cci === ci && qqi === qi) return;
+          const kk = `${S.ri}-${cci}-${qqi}`;
+          if (S.used[kk]) return;
+          if (qq.random_value) return;
+          S.progressive[kk] = (S.progressive[kk] || 0) + Math.ceil((qq.value || 0) * 0.10);
+        });
+      });
+    } else {
+      // Per-category mode: +10% только внутри той же категории
+      cat.questions.forEach((qq, qqi) => {
+        if (qqi === qi) return;
+        const kk = `${S.ri}-${ci}-${qqi}`;
+        if (S.used[kk]) return;
+        if (qq.random_value) return;
+        S.progressive[kk] = (S.progressive[kk] || 0) + Math.ceil((qq.value || 0) * 0.10);
+      });
+    }
   }
 }
 
@@ -1555,7 +1569,7 @@ function triggerKubyshka() {
    ALLIANCE
 ═══════════════════════════════════════ */
 document.getElementById('q-alliance').onclick = () => {
-  if (!S.curQ || !S.curQ.q.alliance || S.curQ.allianceUsed) return;
+  if (!S.curQ || (!S.curQ.q.alliance && !S.modeAlliance) || S.curQ.allianceUsed) return;
   S.curQ.allianceUsed = true;
   S.curQ.allianceWaiting = true;
   S.curQ.allianceTeams = [S.buzzed, null];
