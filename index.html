@@ -1047,7 +1047,7 @@ function openQ(ci, qi) {
     const order = []; for (let i = 0; i < N * N; i++) order.push(i); _shuffle(order);
     S.curQ.revealN = N; S.curQ.revealTotal = N * N; S.curQ.revealOrder = order;
     S.curQ.revealOpened = 0; S.curQ.revealInt = null;
-    S.curQ.revealOrigValue = qValue; S.curQ.revealDropPer = Math.max(1, Math.floor(qValue / N));
+    S.curQ.revealOrigValue = qValue;
     S.curQ.revealFrozen = false;
   }
   S.buzzed = null; S.wrongTeams = new Set();
@@ -1710,7 +1710,7 @@ function startRevealInterval() {
   if (!S.curQ || S.curQ.q.type !== 'reveal') return;
   const N = S.curQ.revealN;
   if (N <= 1) return;
-  const intervalMs = Math.floor(((S.curQ.q.timer || 60) * 1000) / (N - 1));
+  const intervalMs = Math.floor(((S.curQ.q.timer || 60) * 1000) / (S.curQ.revealTotal - 1));
   S.curQ.revealInt = setInterval(() => {
     if (S.curQ.revealFrozen) { clearInterval(S.curQ.revealInt); S.curQ.revealInt = null; return; }
     openRevealTile();
