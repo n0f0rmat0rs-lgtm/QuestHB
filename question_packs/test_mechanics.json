@@ -1,0 +1,79 @@
+{
+  "name": "Тест механик",
+  "categories": [
+    {
+      "name": "Прогрессив + Мета",
+      "buzz_mode": "one_chance",
+      "progressive": true,
+      "questions": [
+        {
+          "value": 100, "timer": 30,
+          "question": "Q1 (100 — обычный). Ответьте верно: прогрессив накапливается на остальных. При провале — кубышки нет в этой категории.",
+          "answer": "Ответ 1", "type": "normal", "penalty": "none",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 200, "timer": 30,
+          "question": "Q2 (200 — обычный). После закрытия Q1 должен стоить 220 (200+10%). После закрытия Q2 — META откроется.",
+          "answer": "Ответ 2", "type": "normal", "penalty": "none",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 300, "timer": 30,
+          "question": "Q3 (300 — обычный). После двух закрытий стоит 360.",
+          "answer": "Ответ 3", "type": "normal", "penalty": "none",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 400, "timer": 30, "meta_after": 2,
+          "question": "Q4 META (400, meta_after:2). Открывается только после 2 закрытых не-META вопросов в этой категории. С прогрессивом тоже растёт пока заблокирован.",
+          "answer": "Мета-ответ", "type": "normal", "penalty": "none",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 500, "timer": 30,
+          "question": "Q5 (500 — обычный). После двух закрытий стоит 600.",
+          "answer": "Ответ 5", "type": "normal", "penalty": "none",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        }
+      ]
+    },
+    {
+      "name": "Кубышка",
+      "buzz_mode": "one_chance",
+      "kubyshka": true,
+      "questions": [
+        {
+          "value": 100, "timer": 30,
+          "question": "QA (100, one_chance). Ошибитесь все команды — 100 баллов раздастся остальным четырём (по 25 каждому, остаток к самому дорогому).",
+          "answer": "Ответ A", "type": "normal", "penalty": "none",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 200, "timer": 30,
+          "question": "QB (200). После кубышки QA сюда +25.",
+          "answer": "Ответ B", "type": "normal", "penalty": "none",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 300, "timer": 30,
+          "question": "QC (300). После кубышки QA сюда +25.",
+          "answer": "Ответ C", "type": "normal", "penalty": "none",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 400, "timer": 30,
+          "question": "QD (400). После кубышки QA — самый дорогой, получает base+remainder.",
+          "answer": "Ответ D", "type": "normal", "penalty": "none",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 500, "timer": 30,
+          "question": "QE (500) — АННУЛИРУЙТЕ ЭТОТ ВОПРОС. 500 баллов разлетится на QB/QC/QD (QA — если не закрыт).",
+          "answer": "Ответ E", "type": "normal", "penalty": "none",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        }
+      ]
+    }
+  ]
+}

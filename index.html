@@ -94,6 +94,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 .q-cell { background: #000; border: 3px solid #fff; border-radius: 0; display: flex; align-items: center; justify-content: center; font-size: 4.5rem; font-weight: 900; color: #fff; cursor: pointer; transition: background .1s; padding: 0; }
 .q-cell:hover { background: #1a1a1a; }
 .q-cell.used { background: #000; color: #111; cursor: default; pointer-events: none; border-color: #1c1c1c; }
+.q-cell.meta-locked { cursor: default; pointer-events: none; color: #333; border-color: #222; font-size: 3rem; }
 
 /* ── QUESTION ── */
 #screen-question { background: #000; overflow: hidden; }
@@ -445,7 +446,7 @@ function showPopup(pts, name) {
 }
 
 /* ═══ STATE ═══ */
-const S = { rounds: [], ri: 0, teams: [], used: {}, curQ: null, tRun: false, tSec: 60, tTot: 60, tInt: null, buzzed: null, wrongTeams: new Set(), hintsUsed: {}, hintSec: 0, hintInt: null, log: [] };
+const S = { rounds: [], ri: 0, teams: [], used: {}, curQ: null, tRun: false, tSec: 60, tTot: 60, tInt: null, buzzed: null, wrongTeams: new Set(), hintsUsed: {}, hintSec: 0, hintInt: null, log: [], progressive: {}, kubyshka: {}, metaClosed: {} };
 const TARC_VAL = 490.09;
 
 /* ═══ CHOOSER ═══ */
@@ -459,7 +460,8 @@ function saveGame() {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       ri: S.ri, teams: S.teams, used: S.used, rounds: S.rounds,
       tTot: S.tTot, hintsUsed: S.hintsUsed, wrongTeams: [...S.wrongTeams],
-      chooserBag: _chooserBag, lastChooser: _lastChooser, log: S.log
+      chooserBag: _chooserBag, lastChooser: _lastChooser, log: S.log,
+      progressive: S.progressive, kubyshka: S.kubyshka, metaClosed: S.metaClosed
     }));
   } catch(e) {}
 }
@@ -585,6 +587,7 @@ document.getElementById('resume-btn').onclick = () => {
     S.rounds = d.rounds; S.tTot = d.tTot || 60; S.tSec = d.tTot || 60;
     S.hintsUsed = d.hintsUsed || {}; S.wrongTeams = new Set(d.wrongTeams || []);
     S.buzzed = null; S.curQ = null; S.tRun = false; S.log = d.log || [];
+    S.progressive = d.progressive || {}; S.kubyshka = d.kubyshka || {}; S.metaClosed = d.metaClosed || {};
     _chooserBag = d.chooserBag || []; _lastChooser = d.lastChooser !== undefined ? d.lastChooser : -1;
     buildBoard(); renderScores(); updateRoundLbl(); checkDone(); showScreen('screen-board');
     const el = document.getElementById('chooser-lbl');
@@ -852,7 +855,7 @@ document.getElementById('start-game-btn').onclick = () => {
   const names = Array.from(inputs).map((inp, i) => inp.value.trim() || `Команда ${i+1}`);
   S.teams = names.map(n => ({ name: n, score: 0 }));
   S.rounds = sRounds.map(r => ({...r}));
-  S.ri = 0; S.used = {}; S.log = [];
+  S.ri = 0; S.used = {}; S.log = []; S.progressive = {}; S.kubyshka = {}; S.metaClosed = {};
   deleteSave(); document.getElementById('resume-card').style.display = 'none';
   document.getElementById('modal-team-names').style.display = 'none';
   stopFlappy();
@@ -903,14 +906,33 @@ function buildBoard() {
   grid.innerHTML = '';
   cats.forEach((cat, ci) => {
     const h = document.createElement('div'); h.className = 'cat-head'; h.textContent = cat.name; grid.appendChild(h);
+    const nonMetaClosed = S.metaClosed[`${S.ri}-${ci}`] || 0;
     for (let qi = 0; qi < maxQ; qi++) {
       const q = cat.questions[qi], cell = document.createElement('div');
       const k = `${S.ri}-${ci}-${qi}`;
-      if (!q) { cell.className = 'q-cell used'; }
-      else {
-        cell.className = 'q-cell' + (S.used[k] ? ' used' : '');
-        cell.textContent = q.random_value ? '???' : q.value;
-        cell.onclick = () => openQ(ci, qi);
+      if (!q || S.used[k]) {
+        cell.className = 'q-cell used';
+      } else {
+        const isMeta = q.meta_after !== undefined && q.meta_after !== null;
+        const isLocked = isMeta && nonMetaClosed < q.meta_after;
+        if (isLocked) {
+          cell.className = 'q-cell meta-locked';
+          cell.textContent = '🔒';
+        } else {
+          const bonus = (S.progressive[k] || 0) + (S.kubyshka[k] || 0);
+          if (q.random_value) {
+            cell.textContent = '???';
+          } else {
+            const total = (q.value || 0) + bonus;
+            if (bonus > 0) {
+              cell.innerHTML = total + '<span style="font-size:.42em;vertical-align:super;opacity:.7"> ↑</span>';
+            } else {
+              cell.textContent = total;
+            }
+          }
+          cell.className = 'q-cell';
+          cell.onclick = () => openQ(ci, qi);
+        }
       }
       grid.appendChild(cell);
     }
@@ -973,10 +995,13 @@ document.getElementById('flappy-return-btn').onclick = () => {
 function openQ(ci, qi) {
   const k = `${S.ri}-${ci}-${qi}`; if (S.used[k]) return;
   const cat = S.rounds[S.ri].pack.categories[ci], q = cat.questions[qi];
+  const isMeta = q.meta_after !== undefined && q.meta_after !== null;
+  if (isMeta && (S.metaClosed[`${S.ri}-${ci}`] || 0) < q.meta_after) return;
+  const bonus = q.random_value ? 0 : ((S.progressive[k] || 0) + (S.kubyshka[k] || 0));
   const qValue = q.random_value
     ? (() => { const mn=q.value_min||100, mx=Math.max(mn,q.value_max||500); return Math.floor(Math.random()*(mx-mn+1))+mn; })()
-    : (q.value || 0);
-  S.curQ = {ci, qi, k, q, catName: cat.name, buzzMode: cat.buzz_mode || 'unlimited', currentValue: qValue, hintBuzzed: false, lastCorrectTeam: null};
+    : ((q.value || 0) + bonus);
+  S.curQ = {ci, qi, k, q, catName: cat.name, buzzMode: cat.buzz_mode || 'unlimited', currentValue: qValue, hintBuzzed: false, lastCorrectTeam: null, blitzAnyCorrect: false};
   if (q.type === 'blitz') {
     S.curQ.subs = q.sub_questions || [];
     S.curQ.subIdx = 0;
@@ -1053,7 +1078,7 @@ document.getElementById('auction-apply').onclick = () => {
   closeQ();
 };
 document.getElementById('auction-annul-btn').onclick = () => {
-  document.getElementById('modal-auction').style.display = 'none'; closeQ();
+  document.getElementById('modal-auction').style.display = 'none'; closeQ(true);
 };
 
 function fillQ(q, cat) {
@@ -1154,10 +1179,11 @@ function awardLastCorrect() {
     showPopup(pts, t.name);
     S.log.push({ ts: Date.now(), teamIdx: S.curQ.lastCorrectTeam, teamName: t.name,
       catName: S.curQ.catName, qType: 'last-award', value: pts, correct: true, buzzAtSec: null });
+    closeQ();
   } else {
     SFX.timerEnd(); flash('rgba(255,255,255,.4)');
+    closeQ(true);
   }
-  closeQ();
 }
 document.getElementById('q-last-end').onclick = () => {
   if (S.curQ && S.curQ.q.type === 'last') awardLastCorrect();
@@ -1201,6 +1227,7 @@ document.getElementById('q-correct').onclick = () => {
     showPopup(pts, t.name);
     S.log.push({ ts: Date.now(), teamIdx: S.buzzed, teamName: t.name, catName: S.curQ.catName,
       qType: 'blitz', value: pts, correct: true, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+    S.curQ.blitzAnyCorrect = true;
     S.curQ.subIdx++;
     if (S.curQ.subIdx >= S.curQ.subs.length) { closeQ(); return; }
     S.wrongTeams = new Set(); S.buzzed = null;
@@ -1249,7 +1276,7 @@ document.getElementById('q-wrong').onclick = () => {
   if (q.type === 'blitz') {
     if (q.blitz_auto_skip) {
       S.curQ.subIdx++;
-      if (S.curQ.subIdx >= S.curQ.subs.length) { closeQ(); return; }
+      if (S.curQ.subIdx >= S.curQ.subs.length) { closeQ(!S.curQ.blitzAnyCorrect); return; }
       S.wrongTeams = new Set(); S.buzzed = null;
       document.getElementById('buzz-pill').style.display = 'none';
       showJudge(false); fillBlitzSub();
@@ -1266,12 +1293,12 @@ document.getElementById('q-wrong').onclick = () => {
   S.wrongTeams.add(S.buzzed); S.buzzed = null;
   document.getElementById('buzz-pill').style.display = 'none';
   showJudge(false); if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
-  if (S.curQ.buzzMode === 'one_chance' && S.teams.every((_, i) => S.wrongTeams.has(i))) { closeQ(); return; }
+  if (S.curQ.buzzMode === 'one_chance' && S.teams.every((_, i) => S.wrongTeams.has(i))) { closeQ(true); return; }
   resumeTimer(); saveGame();
 };
 document.getElementById('q-annul').onclick = () => {
   if (S.curQ && S.curQ.q.type === 'auction') { pauseTimer(); openAuctionModal(); }
-  else closeQ();
+  else closeQ(true);
 };
 document.getElementById('q-blitz-skip').onclick = () => {
   if (!S.curQ || S.curQ.q.type !== 'blitz') return;
@@ -1282,7 +1309,7 @@ document.getElementById('q-blitz-skip').onclick = () => {
     showJudge(false);
   }
   S.curQ.subIdx++;
-  if (S.curQ.subIdx >= S.curQ.subs.length) { closeQ(); return; }
+  if (S.curQ.subIdx >= S.curQ.subs.length) { closeQ(!S.curQ.blitzAnyCorrect); return; }
   S.wrongTeams = new Set();
   fillBlitzSub();
   if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
@@ -1342,9 +1369,12 @@ function useHint() {
 }
 document.getElementById('q-hint').onclick = useHint;
 
-function closeQ() {
+function closeQ(failed = false) {
   pauseTimer();
   clearHintTimer();
+  const ci = S.curQ.ci, qi = S.curQ.qi, k = S.curQ.k;
+  if (failed) triggerKubyshka();
+  onQuestionClosed(ci, qi);
   const rev = S.curQ.q.answer_reveal;
   if (rev && (rev.text || rev.image || rev.audio || rev.video)) {
     SFX.reveal();
@@ -1355,9 +1385,61 @@ function closeQ() {
     document.getElementById('ans-overlay').style.display = 'flex';
     saveGame();
   } else {
-    S.used[S.curQ.k] = true; buildBoard(); checkDone(); showScreen('screen-board'); nextChooser();
+    S.used[k] = true; buildBoard(); checkDone(); showScreen('screen-board'); nextChooser();
     saveGame();
   }
+}
+
+function onQuestionClosed(ci, qi) {
+  const cat = S.rounds[S.ri].pack.categories[ci];
+  const q = cat.questions[qi];
+  const isMeta = q.meta_after !== undefined && q.meta_after !== null;
+  if (!isMeta) {
+    const mk = `${S.ri}-${ci}`;
+    S.metaClosed[mk] = (S.metaClosed[mk] || 0) + 1;
+  }
+  if (cat.progressive) {
+    cat.questions.forEach((qq, qqi) => {
+      if (qqi === qi) return;
+      const kk = `${S.ri}-${ci}-${qqi}`;
+      if (S.used[kk]) return;
+      if (qq.random_value) return;
+      S.progressive[kk] = (S.progressive[kk] || 0) + Math.ceil((qq.value || 0) * 0.10);
+    });
+  }
+}
+
+function triggerKubyshka() {
+  if (!S.curQ) return;
+  const cat = S.rounds[S.ri].pack.categories[S.curQ.ci];
+  if (!cat.kubyshka) return;
+  const q = S.curQ.q;
+  let amount;
+  if (q.random_value) {
+    amount = S.curQ.currentValue;
+  } else if (q.type === 'auction' || q.type === 'blitz') {
+    amount = q.value || 0;
+  } else {
+    amount = (q.value || 0) + (S.progressive[S.curQ.k] || 0) + (S.kubyshka[S.curQ.k] || 0);
+  }
+  if (amount <= 0) return;
+  const eligible = [];
+  S.rounds[S.ri].pack.categories[S.curQ.ci].questions.forEach((qq, qi) => {
+    if (qi === S.curQ.qi) return;
+    const kk = `${S.ri}-${S.curQ.ci}-${qi}`;
+    if (S.used[kk]) return;
+    if (qq.random_value) return;
+    eligible.push({ k: kk, val: (qq.value || 0) + (S.progressive[kk] || 0) + (S.kubyshka[kk] || 0) });
+  });
+  if (!eligible.length) return;
+  const N = eligible.length;
+  const base = Math.floor(amount / N);
+  const remainder = amount - base * N;
+  let richIdx = 0;
+  eligible.forEach((e, i) => { if (e.val > eligible[richIdx].val) richIdx = i; });
+  eligible.forEach((e, i) => {
+    S.kubyshka[e.k] = (S.kubyshka[e.k] || 0) + base + (i === richIdx ? remainder : 0);
+  });
 }
 
 /* ═══════════════════════════════════════
