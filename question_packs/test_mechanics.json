@@ -74,6 +74,50 @@
           "image": null, "audio": null, "video": null, "answer_reveal": null
         }
       ]
+    },
+    {
+      "name": "Альянс + Jeopardy",
+      "buzz_mode": "one_chance",
+      "questions": [
+        {
+          "value": 200, "timer": 30,
+          "question": "АЛЬЯНС (200). После баззера нажмите [A] — 5 сек для второй команды. При верном — 100 каждой. Штраф при неверном: half.",
+          "answer": "Ответ А1", "type": "normal", "alliance": true, "penalty": "half",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 300, "timer": 30,
+          "question": "АЛЬЯНС (300). Если вторая команда не присоединится за 5 сек — кнопка альянса блокируется, вопрос продолжается обычно.",
+          "answer": "Ответ А2", "type": "normal", "alliance": true, "penalty": "full",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 400, "timer": 30,
+          "question": "JEOPARDY: «Это государство расположено на Пиренейском полуострове» — назовите вопрос в форме «Что такое...?»",
+          "answer": "Что такое Испания (или Португалия)?", "type": "jeopardy", "penalty": "half",
+          "image": null, "audio": null, "video": null, "answer_reveal": {"text": "Испания и Португалия расположены на Пиренейском полуострове.", "image": null, "audio": null, "video": null}
+        }
+      ]
+    },
+    {
+      "name": "Раскрывающаяся картинка",
+      "buzz_mode": "unlimited",
+      "questions": [
+        {
+          "value": 300, "timer": 30, "type": "reveal", "reveal_grid": 3,
+          "question": "Что изображено на картинке?",
+          "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/PNG_transparency_demonstration_1.png/280px-PNG_transparency_demonstration_1.png",
+          "answer": "Шашечный узор (пример)", "penalty": "none",
+          "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 400, "timer": 30, "type": "reveal", "reveal_grid": 4,
+          "question": "Назовите то, что скрыто за плитками. Стоимость падает с каждой открытой плиткой.",
+          "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Bikesgray.jpg/320px-Bikesgray.jpg",
+          "answer": "Велосипеды (пример)", "penalty": "half",
+          "audio": null, "video": null, "answer_reveal": {"text": "Два велосипеда, припаркованных у стены.", "image": null, "audio": null, "video": null}
+        }
+      ]
     }
   ]
 }

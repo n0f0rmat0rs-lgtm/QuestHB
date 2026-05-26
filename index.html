@@ -193,6 +193,9 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 #fireworks-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
 .last-banner { text-align:center; font-size:1.6rem; font-weight:900; text-transform:uppercase; letter-spacing:.04em; color:#2ecc71; margin-top:1.2rem; padding:.6rem 1.2rem; border:2px solid #2ecc71; border-radius:8px; }
 .btn-hint { background: #e67e22; color: #fff; }
+.btn-alliance { background: #9b59b6; color: #fff; }
+.reveal-tile { background: #1a1a1a; transition: opacity .3s ease; }
+.reveal-tile.open { opacity: 0; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -312,6 +315,10 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
       <audio id="q-aud" controls style="display:none"></audio>
       <div id="q-vwrap" style="display:none"><video id="q-vid" controls class="q-media"></video></div>
       <div id="last-banner" class="last-banner" style="display:none"></div>
+      <div id="reveal-container" style="display:none;position:relative;width:100%;flex:1;min-height:0;max-height:55vh">
+        <img id="reveal-img-el" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:6px">
+        <div id="reveal-grid-el" style="position:absolute;inset:0;display:grid"></div>
+      </div>
     </div>
     <div class="buzz-wrap">
       <div class="buzz-pill" id="buzz-pill" style="display:none"></div>
@@ -327,6 +334,8 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
       <button class="btn btn-success btn-sm" id="q-correct" style="display:none">✓ Верно [Пробел]</button>
       <button class="btn btn-danger  btn-sm" id="q-wrong"   style="display:none">✗ Неверно [Z]</button>
       <button class="btn btn-hint    btn-sm" id="q-hint"    style="display:none">💡 Подсказка (½)</button>
+      <button class="btn btn-alliance btn-sm" id="q-alliance" style="display:none">🤝 Альянс [A]</button>
+      <div id="jeopardy-btns" style="display:none;gap:.5rem;flex-wrap:wrap;justify-content:center;align-items:center"></div>
       <button class="btn btn-secondary btn-sm" id="q-start">▶ Старт</button>
       <button class="btn btn-secondary btn-sm" id="q-last-end" style="display:none">Больше правильных ответов нет</button>
       <button class="btn btn-ghost    btn-sm" id="q-annul">Аннулировать</button>
@@ -397,6 +406,11 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
   </div>
 </div>
 
+<div id="alliance-wait" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;text-align:center;padding:2rem">
+  <div style="font-size:2rem;font-weight:700" id="alliance-wait-text"></div>
+  <div style="font-size:6rem;font-weight:900;color:#9b59b6;line-height:1" id="alliance-wait-sec"></div>
+  <div style="font-size:1rem;color:var(--text-muted)">Другая команда нажимает свою кнопку для вступления в альянс</div>
+</div>
 <script>
 /* ═══ SOUNDS ═══ */
 function playSound(name) {
@@ -1001,12 +1015,21 @@ function openQ(ci, qi) {
   const qValue = q.random_value
     ? (() => { const mn=q.value_min||100, mx=Math.max(mn,q.value_max||500); return Math.floor(Math.random()*(mx-mn+1))+mn; })()
     : ((q.value || 0) + bonus);
-  S.curQ = {ci, qi, k, q, catName: cat.name, buzzMode: cat.buzz_mode || 'unlimited', currentValue: qValue, hintBuzzed: false, lastCorrectTeam: null, blitzAnyCorrect: false};
+  S.curQ = {ci, qi, k, q, catName: cat.name, buzzMode: cat.buzz_mode || 'unlimited', currentValue: qValue, hintBuzzed: false, lastCorrectTeam: null, blitzAnyCorrect: false,
+    allianceUsed: false, allianceWaiting: false, allianceWaitSec: 0, allianceWaitInt: null, allianceActive: false, allianceTeams: null, allianceBlockedTeams: null};
   if (q.type === 'blitz') {
     S.curQ.subs = q.sub_questions || [];
     S.curQ.subIdx = 0;
     S.curQ.subPts = S.curQ.subs.length > 0 ? Math.floor(qValue / S.curQ.subs.length) : qValue;
     S.curQ.currentValue = S.curQ.subPts;
+  }
+  if (q.type === 'reveal') {
+    const N = q.reveal_grid || 3;
+    const order = []; for (let i = 0; i < N * N; i++) order.push(i); _shuffle(order);
+    S.curQ.revealN = N; S.curQ.revealTotal = N * N; S.curQ.revealOrder = order;
+    S.curQ.revealOpened = 0; S.curQ.revealInt = null;
+    S.curQ.revealOrigValue = qValue; S.curQ.revealDropPer = Math.max(1, Math.floor(qValue / N));
+    S.curQ.revealFrozen = false;
   }
   S.buzzed = null; S.wrongTeams = new Set();
   if (q.type === 'bag') { openBagModal(q); return; }
@@ -1089,12 +1112,21 @@ function fillQ(q, cat) {
     setMedia('q-img','q-aud','q-vid','q-vwrap', {});
   } else {
     document.getElementById('q-val').textContent = (isBag ? S.curQ.bagValue : S.curQ.currentValue) + ' баллов';
-    document.getElementById('q-cat').textContent = isBag ? `Играет: ${S.teams[S.curQ.bagTeam].name}` : cat.name;
+    const catLabel = isBag ? `Играет: ${S.teams[S.curQ.bagTeam].name}` : (q.type === 'jeopardy' ? `↩ ${cat.name}` : cat.name);
+    document.getElementById('q-cat').textContent = catLabel;
     const txt = q.question || '';
     const el = document.getElementById('q-text'); el.textContent = txt;
     const len = txt.length;
     el.style.fontSize = len < 60 ? '5rem' : len < 120 ? '3.5rem' : len < 250 ? '2.5rem' : '1.8rem';
-    setMedia('q-img','q-aud','q-vid','q-vwrap', q);
+    const rc = document.getElementById('reveal-container');
+    if (q.type === 'reveal') {
+      setMedia('q-img','q-aud','q-vid','q-vwrap', {});
+      rc.style.display = 'flex';
+      buildRevealGrid();
+    } else {
+      rc.style.display = 'none';
+      setMedia('q-img','q-aud','q-vid','q-vwrap', q);
+    }
   }
   if (isBlitz) fillBlitzSub();
   document.getElementById('last-banner').style.display = 'none';
@@ -1161,8 +1193,10 @@ function updTimer(s, tot) {
   }
 }
 function onTimerEnd() {
+  if (S.curQ && S.curQ.allianceActive) { allianceWrong(); return; }
   if (S.curQ && S.curQ.q.type === 'auction') { openAuctionModal(); return; }
   if (S.curQ && S.curQ.q.type === 'last')    { awardLastCorrect(); return; }
+  if (S.curQ && S.curQ.q.type === 'reveal')  { openAllRevealTiles(); }
   SFX.timerEnd();
   flash('rgba(255,255,255,.5)');
   S.buzzed = null;
@@ -1195,15 +1229,40 @@ document.getElementById('q-last-end').onclick = () => {
 function onBuzz(idx) {
   if (!S.teams[idx]) return;
   if (!S.tRun && S.tSec === S.tTot) return;
+  if (!S.curQ) return;
   if (S.curQ.q.type === 'auction') return;
   if (S.curQ.q.type === 'bag' && idx !== S.curQ.bagTeam) return;
+
+  // Alliance waiting: another team can join
+  if (S.curQ.allianceWaiting) {
+    if (idx === S.curQ.allianceTeams[0]) return;
+    if (S.curQ.buzzMode === 'one_chance' && S.wrongTeams.has(idx)) return;
+    clearInterval(S.curQ.allianceWaitInt); S.curQ.allianceWaiting = false;
+    S.curQ.allianceActive = true; S.curQ.allianceTeams[1] = idx;
+    document.getElementById('alliance-wait').style.display = 'none';
+    const pill = document.getElementById('buzz-pill');
+    pill.textContent = `🤝 ${S.teams[S.curQ.allianceTeams[0]].name} + ${S.teams[idx].name}`;
+    pill.style.display = 'inline-block';
+    S.curQ.allianceSavedTTot = S.tTot; S.curQ.allianceSavedTSec = S.tSec;
+    S.tTot = 20; S.tSec = 20; updTimer(20, 20);
+    const arc = document.getElementById('t-arc'), num = document.getElementById('t-num');
+    arc.style.stroke = '#9b59b6'; num.style.color = '#9b59b6';
+    document.getElementById('timer-wrap').classList.add('active');
+    startTimer();
+    showJudge(true);
+    return;
+  }
+
   if (S.buzzed !== null) return;
   if (S.curQ.buzzMode === 'one_chance' && S.wrongTeams.has(idx)) return;
+  if (S.curQ.allianceBlockedTeams && S.curQ.allianceBlockedTeams.has(idx)) return;
+
   const bq = S.curQ.q;
   const timerPauses = !(bq.type === 'blitz' || bq.type === 'last') || !!bq.buzz_pauses_timer;
   if (timerPauses) pauseTimer();
+  if (bq.type === 'reveal') { clearInterval(S.curQ.revealInt); S.curQ.revealInt = null; S.curQ.revealFrozen = true; }
   S.buzzed = idx; SFX.buzz();
-  if (S.curQ) S.curQ.lastBuzzAtSec = S.tTot - S.tSec;
+  S.curQ.lastBuzzAtSec = S.tTot - S.tSec;
   saveGame();
   showBuzzFlash(S.teams[idx].name);
   const pill = document.getElementById('buzz-pill');
@@ -1212,14 +1271,30 @@ function onBuzz(idx) {
   document.getElementById('q-start').style.display = 'none';
 }
 function showJudge(v) {
-  document.getElementById('q-correct').style.display = v ? 'inline-flex' : 'none';
-  document.getElementById('q-wrong').style.display   = v ? 'inline-flex' : 'none';
-  const canHint = v && S.curQ && S.curQ.q.type === 'normal' && S.buzzed !== null && !S.hintsUsed[S.buzzed] && !S.curQ.hintBuzzed;
+  const q = S.curQ ? S.curQ.q : null;
+  const isJeopardy = q && q.type === 'jeopardy';
+  document.getElementById('q-correct').style.display = (v && !isJeopardy) ? 'inline-flex' : 'none';
+  document.getElementById('q-wrong').style.display   = (v && !isJeopardy) ? 'inline-flex' : 'none';
+  const canHint = v && q && q.type === 'normal' && S.buzzed !== null && !S.hintsUsed[S.buzzed] && !S.curQ.hintBuzzed;
   document.getElementById('q-hint').style.display = canHint ? 'inline-flex' : 'none';
+  const canAlliance = v && q && q.type === 'normal' && q.alliance && S.curQ && !S.curQ.allianceUsed && !S.curQ.allianceWaiting && !S.curQ.allianceActive;
+  document.getElementById('q-alliance').style.display = canAlliance ? 'inline-flex' : 'none';
+  if (v && isJeopardy) buildJeopardyBtns();
+  else document.getElementById('jeopardy-btns').style.display = 'none';
 }
 
 document.getElementById('q-correct').onclick = () => {
   hideBuzzFlash();
+  if (S.curQ.allianceActive) {
+    const [a, b] = S.curQ.allianceTeams;
+    const pts = Math.ceil(S.curQ.currentValue / 2);
+    S.teams[a].score += pts; S.teams[b].score += pts;
+    updScores(); SFX.correct(); flash('rgba(46,204,113,.45)');
+    showPopup(pts, `${S.teams[a].name} + ${S.teams[b].name}`);
+    S.log.push({ ts: Date.now(), teamIdx: a, teamName: S.teams[a].name, catName: S.curQ.catName, qType: 'alliance', value: pts, correct: true, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+    S.log.push({ ts: Date.now(), teamIdx: b, teamName: S.teams[b].name, catName: S.curQ.catName, qType: 'alliance', value: pts, correct: true, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+    closeQ(); return;
+  }
   const q = S.curQ.q, t = S.teams[S.buzzed];
   if (q.type === 'blitz') {
     const pts = S.curQ.subPts;
@@ -1261,6 +1336,7 @@ document.getElementById('q-correct').onclick = () => {
 };
 document.getElementById('q-wrong').onclick = () => {
   hideBuzzFlash();
+  if (S.curQ.allianceActive) { allianceWrong(); return; }
   const q = S.curQ.q, t = S.teams[S.buzzed];
   let pen = 0;
   if (q.type === 'bag') pen = S.curQ.bagValue;
@@ -1290,13 +1366,21 @@ document.getElementById('q-wrong').onclick = () => {
     }
     saveGame(); return;
   }
+  const isReveal = q.type === 'reveal';
   S.wrongTeams.add(S.buzzed); S.buzzed = null;
   document.getElementById('buzz-pill').style.display = 'none';
-  showJudge(false); if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
+  showJudge(false);
+  if (!S.tRun && !isReveal) document.getElementById('q-start').style.display = 'inline-flex';
   if (S.curQ.buzzMode === 'one_chance' && S.teams.every((_, i) => S.wrongTeams.has(i))) { closeQ(true); return; }
-  resumeTimer(); saveGame();
+  resumeTimer();
+  if (isReveal) { S.curQ.revealFrozen = false; startRevealInterval(); }
+  saveGame();
 };
 document.getElementById('q-annul').onclick = () => {
+  if (S.curQ && S.curQ.allianceWaiting) {
+    clearInterval(S.curQ.allianceWaitInt); S.curQ.allianceWaiting = false;
+    document.getElementById('alliance-wait').style.display = 'none';
+  }
   if (S.curQ && S.curQ.q.type === 'auction') { pauseTimer(); openAuctionModal(); }
   else closeQ(true);
 };
@@ -1315,7 +1399,7 @@ document.getElementById('q-blitz-skip').onclick = () => {
   if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
 };
 document.getElementById('q-back').onclick = () => { pauseTimer(); showScreen('screen-board'); };
-document.getElementById('q-start').onclick = () => { if (!S.tRun) startTimer(); };
+document.getElementById('q-start').onclick = () => { if (!S.tRun) { startTimer(); if (S.curQ && S.curQ.q.type === 'reveal') startRevealInterval(); } };
 document.getElementById('ans-close').onclick = () => {
   document.getElementById('ans-overlay').style.display = 'none';
   S.used[S.curQ.k] = true; buildBoard(); checkDone(); showScreen('screen-board'); nextChooser(); saveGame();
@@ -1372,6 +1456,12 @@ document.getElementById('q-hint').onclick = useHint;
 function closeQ(failed = false) {
   pauseTimer();
   clearHintTimer();
+  if (S.curQ.revealInt) { clearInterval(S.curQ.revealInt); S.curQ.revealInt = null; }
+  if (S.curQ.allianceWaitInt) { clearInterval(S.curQ.allianceWaitInt); }
+  document.getElementById('alliance-wait').style.display = 'none';
+  document.getElementById('reveal-container').style.display = 'none';
+  document.getElementById('jeopardy-btns').style.display = 'none';
+  document.getElementById('q-alliance').style.display = 'none';
   const ci = S.curQ.ci, qi = S.curQ.qi, k = S.curQ.k;
   if (failed) triggerKubyshka();
   onQuestionClosed(ci, qi);
@@ -1440,6 +1530,162 @@ function triggerKubyshka() {
   eligible.forEach((e, i) => {
     S.kubyshka[e.k] = (S.kubyshka[e.k] || 0) + base + (i === richIdx ? remainder : 0);
   });
+}
+
+/* ═══════════════════════════════════════
+   ALLIANCE
+═══════════════════════════════════════ */
+document.getElementById('q-alliance').onclick = () => {
+  if (!S.curQ || !S.curQ.q.alliance || S.curQ.allianceUsed) return;
+  S.curQ.allianceUsed = true;
+  S.curQ.allianceWaiting = true;
+  S.curQ.allianceTeams = [S.buzzed, null];
+  S.curQ.allianceWaitSec = 5;
+  showJudge(false);
+  document.getElementById('q-start').style.display = 'none';
+  document.getElementById('alliance-wait-text').textContent = `${S.teams[S.buzzed].name} предлагает альянс`;
+  document.getElementById('alliance-wait-sec').textContent = '5';
+  document.getElementById('alliance-wait').style.display = 'flex';
+  S.curQ.allianceWaitInt = setInterval(() => {
+    S.curQ.allianceWaitSec--;
+    document.getElementById('alliance-wait-sec').textContent = S.curQ.allianceWaitSec;
+    if (S.curQ.allianceWaitSec <= 0) {
+      clearInterval(S.curQ.allianceWaitInt); S.curQ.allianceWaiting = false;
+      document.getElementById('alliance-wait').style.display = 'none';
+      S.buzzed = null;
+      document.getElementById('buzz-pill').style.display = 'none';
+      showJudge(false);
+      if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
+      resumeTimer();
+    }
+  }, 1000);
+};
+
+function allianceWrong() {
+  pauseTimer();
+  const [a, b] = S.curQ.allianceTeams;
+  const q = S.curQ.q;
+  let pen = 0;
+  if (q.penalty === 'half') pen = Math.floor(S.curQ.currentValue / 2);
+  else if (q.penalty === 'full') pen = S.curQ.currentValue;
+  if (pen) { S.teams[a].score -= pen; S.teams[b].score -= pen; if (!q.answer_reveal?.text && !q.answer_reveal?.image) showPopup(-pen, `${S.teams[a].name} + ${S.teams[b].name}`); }
+  updScores(); SFX.wrong(); flash('rgba(231,76,60,.45)');
+  S.log.push({ ts: Date.now(), teamIdx: a, teamName: S.teams[a].name, catName: S.curQ.catName, qType: 'alliance', value: -pen, correct: false, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+  S.log.push({ ts: Date.now(), teamIdx: b, teamName: S.teams[b].name, catName: S.curQ.catName, qType: 'alliance', value: -pen, correct: false, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+  S.curQ.allianceActive = false;
+  if (!S.curQ.allianceBlockedTeams) S.curQ.allianceBlockedTeams = new Set();
+  S.curQ.allianceBlockedTeams.add(a); S.curQ.allianceBlockedTeams.add(b);
+  if (S.curQ.buzzMode === 'one_chance') { S.wrongTeams.add(a); S.wrongTeams.add(b); }
+  S.buzzed = null;
+  document.getElementById('buzz-pill').style.display = 'none';
+  showJudge(false);
+  if (S.curQ.buzzMode === 'one_chance' && S.teams.every((_, i) => S.wrongTeams.has(i))) { closeQ(true); return; }
+  S.tTot = S.curQ.allianceSavedTTot || S.tTot;
+  S.tSec = S.curQ.allianceSavedTSec || 0;
+  updTimer(S.tSec, S.tTot);
+  const arc = document.getElementById('t-arc'), num = document.getElementById('t-num');
+  arc.style.stroke = ''; num.style.color = '#fff';
+  if (S.tSec > 0) resumeTimer();
+  else document.getElementById('q-start').style.display = 'inline-flex';
+  saveGame();
+}
+
+/* ═══════════════════════════════════════
+   JEOPARDY
+═══════════════════════════════════════ */
+function buildJeopardyBtns() {
+  const panel = document.getElementById('jeopardy-btns');
+  panel.innerHTML = '';
+  panel.style.display = 'flex';
+  const mults = [
+    { label: '2×', val: 2 }, { label: '1×', val: 1 }, { label: '¾', val: 0.75 },
+    { label: '½', val: 0.5 }, { label: '¼', val: 0.25 }, { label: '⅛', val: 0.125 },
+    { label: '✗ Неверно', val: 0, wrong: true }
+  ];
+  mults.forEach(m => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-sm ' + (m.wrong ? 'btn-danger' : 'btn-success');
+    btn.style.cssText = 'font-size:1.1rem;padding:.5em 1em;font-weight:700';
+    btn.textContent = m.label;
+    btn.onclick = () => applyJeopardyMult(m.val, !!m.wrong);
+    panel.appendChild(btn);
+  });
+}
+function applyJeopardyMult(mult, isWrong) {
+  hideBuzzFlash();
+  document.getElementById('jeopardy-btns').style.display = 'none';
+  const q = S.curQ.q, t = S.teams[S.buzzed];
+  if (isWrong) {
+    let pen = 0;
+    if (q.penalty === 'half') pen = Math.floor(S.curQ.currentValue / 2);
+    else if (q.penalty === 'full') pen = S.curQ.currentValue;
+    if (pen) { t.score -= pen; showPopup(-pen, t.name); }
+    updScores(); SFX.wrong(); flash('rgba(231,76,60,.45)');
+    S.log.push({ ts: Date.now(), teamIdx: S.buzzed, teamName: t.name, catName: S.curQ.catName, qType: 'jeopardy', value: -pen, correct: false, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+    S.wrongTeams.add(S.buzzed); S.buzzed = null;
+    document.getElementById('buzz-pill').style.display = 'none';
+    showJudge(false);
+    if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
+    if (S.curQ.buzzMode === 'one_chance' && S.teams.every((_, i) => S.wrongTeams.has(i))) { closeQ(true); return; }
+    resumeTimer(); saveGame();
+  } else {
+    const pts = Math.ceil(S.curQ.currentValue * mult);
+    t.score += pts; updScores(); SFX.correct(); flash('rgba(46,204,113,.45)');
+    S.log.push({ ts: Date.now(), teamIdx: S.buzzed, teamName: t.name, catName: S.curQ.catName, qType: 'jeopardy', value: pts, correct: true, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+    const rev = q.answer_reveal;
+    if (!rev || (!rev.text && !rev.image && !rev.audio && !rev.video)) showPopup(pts, t.name);
+    closeQ();
+  }
+}
+
+/* ═══════════════════════════════════════
+   REVEAL
+═══════════════════════════════════════ */
+function buildRevealGrid() {
+  const q = S.curQ.q, N = S.curQ.revealN;
+  document.getElementById('reveal-img-el').src = q.image || '';
+  const grid = document.getElementById('reveal-grid-el');
+  grid.style.gridTemplateColumns = `repeat(${N}, 1fr)`;
+  grid.style.gridTemplateRows = `repeat(${N}, 1fr)`;
+  grid.innerHTML = '';
+  for (let i = 0; i < N * N; i++) {
+    const tile = document.createElement('div');
+    tile.className = 'reveal-tile'; tile.id = `rtile-${i}`; grid.appendChild(tile);
+  }
+  openRevealTile(); // open first tile immediately, no value drop
+}
+function openRevealTile() {
+  const idx = S.curQ.revealOpened;
+  if (idx >= S.curQ.revealTotal) return;
+  const tileIdx = S.curQ.revealOrder[idx];
+  const tile = document.getElementById(`rtile-${tileIdx}`);
+  if (tile) tile.classList.add('open');
+  S.curQ.revealOpened++;
+  if (idx > 0) {
+    S.curQ.currentValue = Math.max(S.curQ.revealDropPer, S.curQ.currentValue - S.curQ.revealDropPer);
+    document.getElementById('q-val').textContent = S.curQ.currentValue + ' баллов';
+  }
+}
+function openAllRevealTiles() {
+  if (!S.curQ || S.curQ.q.type !== 'reveal') return;
+  clearInterval(S.curQ.revealInt); S.curQ.revealInt = null;
+  while (S.curQ.revealOpened < S.curQ.revealTotal) {
+    const tileIdx = S.curQ.revealOrder[S.curQ.revealOpened];
+    const tile = document.getElementById(`rtile-${tileIdx}`);
+    if (tile) tile.classList.add('open');
+    S.curQ.revealOpened++;
+  }
+}
+function startRevealInterval() {
+  if (!S.curQ || S.curQ.q.type !== 'reveal') return;
+  const N = S.curQ.revealN;
+  if (N <= 1) return;
+  const intervalMs = Math.floor(((S.curQ.q.timer || 60) * 1000) / (N - 1));
+  S.curQ.revealInt = setInterval(() => {
+    if (S.curQ.revealFrozen) { clearInterval(S.curQ.revealInt); S.curQ.revealInt = null; return; }
+    openRevealTile();
+    if (S.curQ.revealOpened >= S.curQ.revealTotal) { clearInterval(S.curQ.revealInt); S.curQ.revealInt = null; }
+  }, intervalMs);
 }
 
 /* ═══════════════════════════════════════
@@ -1624,6 +1870,10 @@ document.addEventListener('keydown', e => {
     }
     if (e.code === 'KeyZ') {
       const btn = document.getElementById('q-wrong');
+      if (btn.style.display !== 'none') btn.click();
+    }
+    if (e.code === 'KeyA') {
+      const btn = document.getElementById('q-alliance');
       if (btn.style.display !== 'none') btn.click();
     }
     const k = {'1':0,'2':1,'3':2,'4':3,'5':4,'6':5}[e.key];
