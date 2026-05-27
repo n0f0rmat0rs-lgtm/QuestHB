@@ -418,9 +418,13 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
   </div>
 </div>
 
-<div id="alliance-wait" style="display:none;position:fixed;top:3.8rem;right:1.2rem;z-index:300;background:#111;border:2px solid #9b59b6;border-radius:10px;padding:.55rem 1rem;max-width:280px;text-align:center;box-shadow:0 4px 20px rgba(155,89,182,.35)">
-  <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:.15rem" id="alliance-wait-text"></div>
-  <div style="font-size:1.25rem;font-weight:900;color:#9b59b6;white-space:nowrap">Ожидание напарника: <span id="alliance-wait-sec"></span></div>
+<div id="alliance-wait" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.75);align-items:center;justify-content:center">
+  <div style="background:#1a1230;border:3px solid #9b59b6;border-radius:20px;padding:2.5rem 3rem;max-width:640px;width:90%;text-align:center;box-shadow:0 8px 48px rgba(155,89,182,.55)">
+    <div id="alliance-wait-text" style="font-size:1.6rem;color:#ccc;margin-bottom:.6rem;font-weight:600"></div>
+    <div style="font-size:5rem;font-weight:900;color:#9b59b6;line-height:1;margin-bottom:1.6rem"><span id="alliance-wait-sec"></span></div>
+    <div style="font-size:1.1rem;color:#aaa;margin-bottom:1.2rem">Кто хочет вступить в альянс?</div>
+    <div id="alliance-team-btns" style="display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap"></div>
+  </div>
 </div>
 <script>
 /* ═══ SOUNDS ═══ */
@@ -1254,21 +1258,7 @@ function onBuzz(idx) {
 
   // Alliance waiting: another team can join
   if (S.curQ.allianceWaiting) {
-    if (idx === S.curQ.allianceTeams[0]) return;
-    if (S.curQ.buzzMode === 'one_chance' && S.wrongTeams.has(idx)) return;
-    clearInterval(S.curQ.allianceWaitInt); S.curQ.allianceWaiting = false;
-    S.curQ.allianceActive = true; S.curQ.allianceTeams[1] = idx;
-    document.getElementById('alliance-wait').style.display = 'none';
-    const pill = document.getElementById('buzz-pill');
-    pill.textContent = `🤝 ${S.teams[S.curQ.allianceTeams[0]].name} + ${S.teams[idx].name}`;
-    pill.style.display = 'inline-block';
-    S.curQ.allianceSavedTTot = S.tTot; S.curQ.allianceSavedTSec = S.tSec;
-    S.tTot = 20; S.tSec = 20; updTimer(20, 20);
-    const arc = document.getElementById('t-arc'), num = document.getElementById('t-num');
-    arc.style.stroke = '#9b59b6'; num.style.color = '#9b59b6';
-    document.getElementById('timer-wrap').classList.add('active');
-    startTimer();
-    showJudge(true);
+    joinAlliance(idx);
     return;
   }
 
@@ -1570,14 +1560,28 @@ function triggerKubyshka() {
 ═══════════════════════════════════════ */
 document.getElementById('q-alliance').onclick = () => {
   if (!S.curQ || (!S.curQ.q.alliance && !S.modeAlliance) || S.curQ.allianceUsed) return;
+  const teamAIdx = S.buzzed;
   S.curQ.allianceUsed = true;
   S.curQ.allianceWaiting = true;
-  S.curQ.allianceTeams = [S.buzzed, null];
+  S.curQ.allianceTeams = [teamAIdx, null];
   S.curQ.allianceWaitSec = 5;
   showJudge(false);
   document.getElementById('q-start').style.display = 'none';
-  document.getElementById('alliance-wait-text').textContent = `${S.teams[S.buzzed].name} предлагает альянс`;
+  document.getElementById('alliance-wait-text').textContent = `🤝 ${S.teams[teamAIdx].name} предлагает альянс`;
   document.getElementById('alliance-wait-sec').textContent = '5';
+  // Build per-team join buttons
+  const btns = document.getElementById('alliance-team-btns');
+  btns.innerHTML = '';
+  S.teams.forEach((t, i) => {
+    if (i === teamAIdx) return;
+    if (S.curQ.buzzMode === 'one_chance' && S.wrongTeams.has(i)) return;
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-primary';
+    btn.style.cssText = 'font-size:1.4rem;padding:.7em 1.6em;font-weight:800;background:#9b59b6;border-color:#9b59b6;min-width:140px';
+    btn.textContent = t.name;
+    btn.onclick = () => joinAlliance(i);
+    btns.appendChild(btn);
+  });
   document.getElementById('alliance-wait').style.display = 'flex';
   S.curQ.allianceWaitInt = setInterval(() => {
     S.curQ.allianceWaitSec--;
@@ -1585,11 +1589,30 @@ document.getElementById('q-alliance').onclick = () => {
     if (S.curQ.allianceWaitSec <= 0) {
       clearInterval(S.curQ.allianceWaitInt); S.curQ.allianceWaiting = false;
       document.getElementById('alliance-wait').style.display = 'none';
-      // Team A stays buzzed — restore Верно/Неверно (no hint/alliance since allianceUsed=true)
       showJudge(true);
     }
   }, 1000);
 };
+
+function joinAlliance(idx) {
+  if (!S.curQ || !S.curQ.allianceWaiting) return;
+  if (idx === S.curQ.allianceTeams[0]) return;
+  if (S.curQ.buzzMode === 'one_chance' && S.wrongTeams.has(idx)) return;
+  clearInterval(S.curQ.allianceWaitInt); S.curQ.allianceWaiting = false;
+  S.curQ.allianceActive = true; S.curQ.allianceTeams[1] = idx;
+  document.getElementById('alliance-wait').style.display = 'none';
+  const pill = document.getElementById('buzz-pill');
+  pill.textContent = `🤝 ${S.teams[S.curQ.allianceTeams[0]].name} + ${S.teams[idx].name}`;
+  pill.style.display = 'inline-block';
+  S.curQ.allianceSavedTTot = S.tTot; S.curQ.allianceSavedTSec = S.tSec;
+  S.tTot = 20; S.tSec = 20; updTimer(20, 20);
+  const arc = document.getElementById('t-arc'), num = document.getElementById('t-num');
+  arc.style.stroke = '#9b59b6'; num.style.color = '#9b59b6';
+  document.getElementById('timer-wrap').classList.add('active');
+  startTimer();
+  showJudge(true);
+  saveGame();
+}
 
 function allianceWrong() {
   pauseTimer();
