@@ -903,17 +903,21 @@ document.getElementById('start-game-btn').onclick = () => {
 /* ═══════════════════════════════════════
    CATEGORY INTRO
 ═══════════════════════════════════════ */
+let _introCancelled = false;
 function startRound(idx) {
   S.hintsUsed = {};
   S.ri = idx;
+  _introCancelled = false;
   const pack = S.rounds[idx].pack;
   document.getElementById('intro-round-label').textContent = `Раунд ${idx+1} — ${pack.name}`;
   showScreen('screen-intro');
   runCatIntro((pack.categories || []).map(c => c.name), 0, () => {
+    if (_introCancelled) return;
     buildBoard(); renderScores(); updateRoundLbl(); checkDone(); showScreen('screen-board'); nextChooser(); saveGame();
   });
 }
 function runCatIntro(cats, i, done) {
+  if (_introCancelled) return;
   const el = document.getElementById('intro-cat-name');
   if (i >= cats.length) { done(); return; }
   el.textContent = cats[i]; el.classList.remove('visible');
@@ -924,6 +928,7 @@ function runCatIntro(cats, i, done) {
   }));
 }
 document.getElementById('intro-skip').onclick = () => {
+  _introCancelled = true;
   buildBoard(); renderScores(); updateRoundLbl(); checkDone(); showScreen('screen-board'); nextChooser(); saveGame();
 };
 
