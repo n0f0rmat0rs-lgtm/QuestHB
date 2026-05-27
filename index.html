@@ -104,7 +104,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 .q-value-lbl { font-size: 1.2rem; font-weight: 700; color: #fff; }
 .q-cat-lbl { font-size: .85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; }
 .q-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: .8rem; min-height: 0; }
-.q-text { font-weight: 700; line-height: 1.25; max-width: 1000px; color: #fff; }
+.q-text { font-weight: 700; line-height: 1.15; color: #fff; width: 100%; }
 .q-media { max-width: 100%; max-height: 35vh; border-radius: 6px; }
 .buzz-wrap { flex-shrink: 0; text-align: center; min-height: 70px; display: flex; align-items: center; justify-content: center; }
 .buzz-pill { display: inline-block; padding: .5rem 2.5rem; border-radius: 40px; font-size: 2.2rem; font-weight: 900; color: #fff; background: #1c1c1c; border: 2px solid #fff; animation: buzzPop .25s cubic-bezier(.34,1.56,.64,1); }
@@ -1066,6 +1066,7 @@ function openQ(ci, qi) {
   showJudge(false);
   document.getElementById('ans-overlay').style.display = 'none';
   SFX.slide(); showScreen('screen-question');
+  requestAnimationFrame(fitQText);
 }
 
 /* Bag */
@@ -1093,6 +1094,7 @@ document.getElementById('bag-confirm-btn').onclick = () => {
   showJudge(false);
   document.getElementById('ans-overlay').style.display = 'none';
   SFX.slide(); showScreen('screen-question');
+  requestAnimationFrame(fitQText);
 };
 document.getElementById('bag-cancel-btn').onclick = () => {
   document.getElementById('modal-bag').style.display = 'none'; S.curQ = null;
@@ -1132,6 +1134,34 @@ document.getElementById('auction-annul-btn').onclick = () => {
   document.getElementById('modal-auction').style.display = 'none'; closeQ(true);
 };
 
+function fitQText() {
+  const el = document.getElementById('q-text');
+  if (!el) return;
+  const body = el.closest('.q-body');
+  if (!body || body.clientHeight === 0) return;
+  const txt = el.textContent.trim();
+  if (!txt) return;
+  // Subtract space used by visible siblings (images, banners, reveal)
+  let sibH = 0;
+  for (const ch of body.children) {
+    if (ch !== el) sibH += ch.offsetHeight;
+  }
+  const availH = body.clientHeight - sibH - 24;
+  if (availH < 20) return;
+  // Binary search: largest px font size that fits vertically
+  let lo = 12, hi = 600, best = 20;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    el.style.fontSize = mid + 'px';
+    if (el.scrollHeight <= availH) { best = mid; lo = mid + 1; }
+    else hi = mid - 1;
+  }
+  el.style.fontSize = best + 'px';
+}
+window.addEventListener('resize', () => {
+  if (document.getElementById('screen-question').classList.contains('active')) fitQText();
+});
+
 function fillQ(q, cat) {
   const isBag = S.curQ.q.type === 'bag';
   const isBlitz = q.type === 'blitz';
@@ -1144,8 +1174,6 @@ function fillQ(q, cat) {
     document.getElementById('q-cat').textContent = catLabel;
     const txt = q.question || '';
     const el = document.getElementById('q-text'); el.textContent = txt;
-    const len = txt.length;
-    el.style.fontSize = len < 60 ? '5rem' : len < 120 ? '3.5rem' : len < 250 ? '2.5rem' : '1.8rem';
     const rc = document.getElementById('reveal-container');
     if (q.type === 'reveal') {
       setMedia('q-img','q-aud','q-vid','q-vwrap', {});
@@ -1168,8 +1196,7 @@ function fillBlitzSub() {
   const el = document.getElementById('q-text');
   const txt = sub ? (sub.question || '') : '';
   el.textContent = txt;
-  const len = txt.length;
-  el.style.fontSize = len < 60 ? '5rem' : len < 120 ? '3.5rem' : len < 250 ? '2.5rem' : '1.8rem';
+  requestAnimationFrame(fitQText);
   document.getElementById('q-val').textContent =
     `${S.curQ.subPts} баллов (${S.curQ.subIdx + 1}/${S.curQ.subs.length})`;
 }
