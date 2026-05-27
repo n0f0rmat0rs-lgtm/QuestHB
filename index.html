@@ -1251,16 +1251,17 @@ document.getElementById('q-last-end').onclick = () => {
 ═══════════════════════════════════════ */
 function onBuzz(idx) {
   if (!S.teams[idx]) return;
-  if (!S.tRun && S.tSec === S.tTot) return;
   if (!S.curQ) return;
-  if (S.curQ.q.type === 'auction') return;
-  if (S.curQ.q.type === 'bag' && idx !== S.curQ.bagTeam) return;
 
-  // Alliance waiting: another team can join
+  // Alliance waiting takes priority — join regardless of timer state
   if (S.curQ.allianceWaiting) {
     joinAlliance(idx);
     return;
   }
+
+  if (!S.tRun && S.tSec === S.tTot) return;
+  if (S.curQ.q.type === 'auction') return;
+  if (S.curQ.q.type === 'bag' && idx !== S.curQ.bagTeam) return;
 
   if (S.buzzed !== null) return;
   if (S.curQ.buzzMode === 'one_chance' && S.wrongTeams.has(idx)) return;
