@@ -53,9 +53,15 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); bo
 .type-btn { padding: .3em .65em; border-radius: 6px; font-size: .8rem; font-weight: 600; border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted); cursor: pointer; font-family: inherit; }
 .type-btn.active-normal  { background: var(--accent); color: #fff; border-color: var(--accent); }
 .type-btn.active-bag     { background: #9b59b6; color: #fff; border-color: #9b59b6; }
-.type-btn.active-auction { background: var(--gold); color: #000; border-color: var(--gold); }
-.type-btn.active-last    { background: #2ecc71; color: #000; border-color: #2ecc71; }
-.type-btn.active-blitz   { background: #f39c12; color: #000; border-color: #f39c12; }
+.type-btn.active-auction  { background: var(--gold); color: #000; border-color: var(--gold); }
+.type-btn.active-last     { background: #2ecc71; color: #000; border-color: #2ecc71; }
+.type-btn.active-blitz    { background: #f39c12; color: #000; border-color: #f39c12; }
+.type-btn.active-jeopardy { background: #1abc9c; color: #000; border-color: #1abc9c; }
+.type-btn.active-reveal   { background: #2980b9; color: #fff; border-color: #2980b9; }
+.cat-flags { display:flex; gap:.6rem; flex-wrap:wrap; margin-top:.4rem; }
+.cat-flag-lbl { display:flex; align-items:center; gap:.3rem; font-size:.82rem; cursor:pointer; white-space:nowrap; }
+.q-extra-row { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; padding:.35rem 0 0; font-size:.82rem; border-top:1px solid var(--border); margin-top:.25rem; }
+.q-extra-lbl { display:flex; align-items:center; gap:.3rem; cursor:pointer; }
 .blitz-section { border-top:1px solid var(--border); padding-top:.75rem; margin-top:.25rem; display:flex; flex-direction:column; gap:.4rem; }
 .blitz-list { display:flex; flex-direction:column; gap:.5rem; }
 .blitz-sub-row { display:flex; align-items:flex-start; gap:.4rem; }
@@ -235,6 +241,10 @@ function buildCategoryBlock(cat, ci, container) {
       </div>
       <button class="btn btn-ghost btn-sm" style="color:var(--red)">✕</button>
     </div>
+    <div class="cat-flags">
+      <label class="cat-flag-lbl"><input type="checkbox" class="cflag-prog" ${cat.progressive?"checked":""}> 📈 Прогрессив</label>
+      <label class="cat-flag-lbl"><input type="checkbox" class="cflag-kub"  ${cat.kubyshka?"checked":""}> 🏦 Кубышка</label>
+    </div>
     <div class="cat-body" id="cb-${ci}"></div>
     <div class="cat-footer"><button class="btn btn-secondary btn-sm aq-btn">+ Вопрос</button></div>
   `;
@@ -247,6 +257,8 @@ function buildCategoryBlock(cat, ci, container) {
       });
     };
   });
+  block.querySelector(".cflag-prog").onchange = e => { cat.progressive = e.target.checked || undefined; if (!cat.progressive) delete cat.progressive; };
+  block.querySelector(".cflag-kub").onchange  = e => { cat.kubyshka   = e.target.checked || undefined; if (!cat.kubyshka)   delete cat.kubyshka;   };
   block.querySelector(".cat-header .btn-ghost").onclick = () => {
     if (!confirm("Удалить категорию со всеми вопросами?")) return;
     pack.categories.splice(ci, 1); renderCategories(container);
@@ -287,6 +299,8 @@ function buildQuestionCard(q, ci, qi, container) {
       <button class="type-btn ${q.type==="auction"?"active-auction":""}" data-t="auction">🔨 Аукцион</button>
       <button class="type-btn ${q.type==="last"?"active-last":""}" data-t="last">🏁 Назови последним</button>
       <button class="type-btn ${q.type==="blitz"?"active-blitz":""}" data-t="blitz">⚡ Блиц</button>
+      <button class="type-btn ${q.type==="jeopardy"?"active-jeopardy":""}" data-t="jeopardy">↩ Jeopardy</button>
+      <button class="type-btn ${q.type==="reveal"?"active-reveal":""}" data-t="reveal">🖼 Картинка</button>
     </div>
     <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-left:auto">✕</button>
   `;
@@ -305,15 +319,18 @@ function buildQuestionCard(q, ci, qi, container) {
   top.querySelectorAll(".penalty-btn").forEach(b => {
     b.onclick = () => { q.penalty=b.dataset.p; top.querySelectorAll(".penalty-btn").forEach(x=>x.classList.toggle("active",x===b)); };
   });
-  let blitzSection, timerSection;
+  let blitzSection, timerSection, revealSection, allianceRow, metaRow;
   top.querySelectorAll(".type-btn").forEach(b => {
     b.onclick = () => {
-      q.type=b.dataset.t;
+      q.type = b.dataset.t;
       if (q.type === 'blitz' && !q.sub_questions) q.sub_questions = [];
-      top.querySelectorAll(".type-btn").forEach(x=>{ x.className="type-btn"; });
-      b.classList.add(b.dataset.t==="bag"?"active-bag":b.dataset.t==="auction"?"active-auction":b.dataset.t==="last"?"active-last":b.dataset.t==="blitz"?"active-blitz":"active-normal");
-      if (blitzSection) blitzSection.style.display = q.type === 'blitz' ? '' : 'none';
-      if (timerSection) timerSection.style.display = (q.type === 'blitz' || q.type === 'last') ? '' : 'none';
+      top.querySelectorAll(".type-btn").forEach(x => { x.className = "type-btn"; });
+      const cls = {bag:"active-bag",auction:"active-auction",last:"active-last",blitz:"active-blitz",jeopardy:"active-jeopardy",reveal:"active-reveal"}[q.type] || "active-normal";
+      b.classList.add(cls);
+      if (blitzSection)   blitzSection.style.display   = q.type === 'blitz'   ? '' : 'none';
+      if (timerSection)   timerSection.style.display   = (q.type === 'blitz' || q.type === 'last') ? '' : 'none';
+      if (revealSection)  revealSection.style.display  = q.type === 'reveal'  ? '' : 'none';
+      if (allianceRow)    allianceRow.style.display     = q.type === 'normal'  ? '' : 'none';
     };
   });
   top.querySelector(".btn-ghost[style*=red]").onclick = () => { pack.categories[ci].questions.splice(qi,1); renderCategories(container); };
@@ -343,6 +360,55 @@ function buildQuestionCard(q, ci, qi, container) {
   timerLabel.appendChild(document.createTextNode('Таймер останавливается при ответе команды'));
   timerSection.appendChild(timerLabel);
   card.appendChild(timerSection);
+
+  // Reveal grid section
+  revealSection = document.createElement('div');
+  revealSection.className = 'blitz-section';
+  revealSection.style.display = q.type === 'reveal' ? '' : 'none';
+  const revGridLbl = document.createElement('label');
+  revGridLbl.style.cssText = 'display:flex;align-items:center;gap:.5rem;font-size:.82rem';
+  revGridLbl.appendChild(document.createTextNode('Сетка плиток:'));
+  const revGridSel = document.createElement('select');
+  revGridSel.style.cssText = 'padding:.2em .4em;font-family:inherit;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px';
+  [3,4,5].forEach(n => {
+    const opt = document.createElement('option');
+    opt.value = n; opt.textContent = `${n}×${n} (${n*n} плиток)`;
+    if ((q.reveal_grid || 3) === n) opt.selected = true;
+    revGridSel.appendChild(opt);
+  });
+  revGridSel.onchange = () => { q.reveal_grid = parseInt(revGridSel.value); };
+  revGridLbl.appendChild(revGridSel);
+  revealSection.appendChild(revGridLbl);
+  card.appendChild(revealSection);
+
+  // Extra options row: alliance + meta_after
+  const extraRow = document.createElement('div');
+  extraRow.className = 'q-extra-row';
+
+  allianceRow = document.createElement('label');
+  allianceRow.className = 'q-extra-lbl';
+  allianceRow.style.display = (!q.type || q.type === 'normal') ? '' : 'none';
+  const allianceCb = document.createElement('input');
+  allianceCb.type = 'checkbox'; allianceCb.checked = !!q.alliance;
+  allianceCb.onchange = () => { if (allianceCb.checked) q.alliance = true; else delete q.alliance; };
+  allianceRow.append(allianceCb, '🤝 Альянс');
+  extraRow.appendChild(allianceRow);
+
+  const metaWrap = document.createElement('label');
+  metaWrap.className = 'q-extra-lbl';
+  const metaCb = document.createElement('input');
+  metaCb.type = 'checkbox'; metaCb.checked = q.meta_after != null;
+  const metaInp = document.createElement('input');
+  metaInp.type = 'number'; metaInp.min = 1; metaInp.value = q.meta_after ?? 2;
+  metaInp.style.cssText = 'width:46px;' + (q.meta_after != null ? '' : 'display:none');
+  metaInp.oninput = () => { q.meta_after = parseInt(metaInp.value) || 1; };
+  metaCb.onchange = () => {
+    if (metaCb.checked) { q.meta_after = parseInt(metaInp.value) || 2; metaInp.style.display = ''; }
+    else { delete q.meta_after; metaInp.style.display = 'none'; }
+  };
+  metaWrap.append(metaCb, ' Мета: открыть после ', metaInp, ' вопросов');
+  extraRow.appendChild(metaWrap);
+  card.appendChild(extraRow);
 
   // Media fields
   card.appendChild(buildMediaSection(q, ["image","audio","video"]));
