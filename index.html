@@ -1,0 +1,2378 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>ВИТТОРИНА</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #000; --surface: #111; --surface2: #1c1c1c; --border: #2a2a2a;
+  --accent: #4f8ef7; --green: #2ecc71; --red: #e74c3c;
+  --text: #fff; --text-muted: #666; --radius: 10px;
+}
+html, body { height: 100%; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+
+.screen { display: none; position: fixed; inset: 0; flex-direction: column; }
+.screen.active { display: flex; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; padding: .5em 1.1em; border: none; border-radius: var(--radius); cursor: pointer; font-size: .95rem; font-weight: 600; transition: opacity .15s, transform .1s; text-decoration: none; white-space: nowrap; font-family: inherit; }
+.btn:hover { opacity: .8; } .btn:active { transform: scale(.97); }
+.btn-primary   { background: var(--accent); color: #fff; }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-ghost     { background: transparent; color: var(--text-muted); }
+.btn-success   { background: var(--green); color: #fff; }
+.btn-danger    { background: var(--red);   color: #fff; }
+.btn-sm        { font-size: .82rem; padding: .3em .75em; }
+
+/* ── FLASH ── */
+#flash { position: fixed; inset: 0; pointer-events: none; z-index: 900; opacity: 0; transition: opacity .15s; }
+
+/* ── SETUP ── */
+#screen-setup { overflow-y: auto; align-items: center; justify-content: flex-start; padding: 2rem 1rem 4rem; background: var(--bg); }
+.setup-wrap { width: 100%; max-width: 660px; margin: 0 auto; }
+.logo { font-size: 3rem; font-weight: 900; text-align: center; margin-bottom: 2rem; letter-spacing: .12em; text-transform: uppercase; color: #fff; }
+.setup-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.2rem; }
+.setup-card h2 { font-size: .78rem; text-transform: uppercase; letter-spacing: .12em; color: var(--text-muted); margin-bottom: 1rem; }
+.round-item { display: flex; align-items: center; gap: .4rem; background: var(--surface2); border-radius: 8px; padding: .55rem .8rem; margin-bottom: .4rem; }
+.round-name { flex: 1; font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.icon-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: .95rem; padding: .2em; }
+.icon-btn:hover { color: var(--text); }
+.del-btn  { background: none; border: none; color: var(--red); cursor: pointer; font-size: 1rem; }
+.setup-hint { font-size: .75rem; color: var(--text-muted); margin-top: .5rem; }
+#start-btn { width: 100%; margin-top: .25rem; font-size: 1.2rem; padding: .8em; }
+
+/* Team count selector */
+.team-count-row { display: flex; align-items: center; gap: 1.4rem; }
+.count-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; cursor: pointer; transition: background .12s; }
+.count-btn:hover { background: #2c2c2c; }
+#team-count-display { font-size: 3.2rem; font-weight: 900; min-width: 2.5rem; text-align: center; line-height: 1; }
+
+/* ── FLAPPY SCREEN ── */
+#screen-flappy { background: #000; flex-direction: column; overflow: hidden; }
+#flappy-columns { flex: 1; display: flex; overflow: hidden; }
+.flappy-col { flex: 1; position: relative; border-right: 1px solid #181818; overflow: hidden; }
+.flappy-col:last-child { border-right: none; }
+.flappy-col canvas { display: block; width: 100%; height: 100%; }
+.flappy-col-label {
+  position: absolute; bottom: 28px; left: 0; right: 0; text-align: center;
+  font-size: .72rem; color: rgba(255,255,255,.3); letter-spacing: .1em;
+  text-transform: uppercase; pointer-events: none;
+}
+#flappy-bar {
+  height: 56px; background: #080808; border-top: 1px solid #1a1a1a;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 1.5rem; gap: 1rem; flex-shrink: 0;
+}
+#flappy-bar-left { color: var(--text-muted); font-size: .8rem; }
+
+/* ── TEAM NAMING MODAL ── */
+.tn-row { display: flex; align-items: center; gap: .75rem; margin-bottom: .65rem; }
+.tn-num { font-size: .85rem; color: var(--text-muted); min-width: 1.2rem; text-align: center; }
+.tn-input { flex: 1; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: .4em .7em; font-size: 1.05rem; font-family: inherit; }
+.tn-input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
+/* ── CATEGORY INTRO ── */
+#screen-intro { background: #000; align-items: center; justify-content: center; flex-direction: column; gap: 0; }
+#intro-round-label { font-size: 1rem; text-transform: uppercase; letter-spacing: .2em; color: var(--text-muted); margin-bottom: 1rem; }
+#intro-cat-name { font-size: 5rem; font-weight: 900; text-align: center; text-transform: uppercase; letter-spacing: .08em; opacity: 0; transform: scale(.8); transition: opacity .35s, transform .35s; padding: 0 2rem; line-height: 1.1; }
+#intro-cat-name.visible { opacity: 1; transform: scale(1); }
+
+/* ── BOARD ── */
+#screen-board { display: none; flex-direction: column; overflow: hidden; }
+#screen-board.active { display: flex; }
+.board-top { display: flex; align-items: center; padding: .6rem 1.2rem; background: var(--surface); border-bottom: 1px solid var(--border); gap: 1rem; flex-wrap: wrap; flex-shrink: 0; }
+.vittorina-title { font-size: 1.4rem; font-weight: 900; letter-spacing: .15em; text-transform: uppercase; color: #fff; flex-shrink: 0; }
+#scores-bar { display: flex; gap: .75rem; flex-wrap: wrap; flex: 1; }
+.score-chip { display: flex; align-items: center; gap: .5rem; padding: .3rem .8rem; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); }
+.chip-name { font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; opacity: .8; }
+.chip-score { font-size: 1.3rem; font-weight: 700; }
+.board-ctrl { display: flex; gap: .4rem; align-items: center; flex-shrink: 0; }
+.round-lbl { color: var(--text-muted); font-size: .82rem; }
+.board-grid { flex: 1; display: grid; overflow: hidden; padding: .75rem 1.2rem 1rem; gap: 16px; align-content: stretch; }
+.cat-head { background: #000; border: 3px solid #fff; border-radius: 0; color: #fff; padding: .5rem 1rem; font-weight: 900; font-size: 1.7rem; text-transform: uppercase; letter-spacing: .04em; display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.15; }
+.q-cell { background: #000; border: 3px solid #fff; border-radius: 0; display: flex; align-items: center; justify-content: center; font-size: 4.5rem; font-weight: 900; color: #fff; cursor: pointer; transition: background .1s; padding: 0; }
+.q-cell:hover { background: #1a1a1a; }
+.q-cell.used { background: #000; color: #111; cursor: default; pointer-events: none; border-color: #1c1c1c; }
+.q-cell.meta-locked { cursor: default; pointer-events: none; color: #333; border-color: #222; font-size: 3rem; }
+
+/* ── QUESTION ── */
+#screen-question { background: #000; overflow: hidden; }
+.q-screen-inner { display: flex; flex-direction: column; height: 100%; padding: .8rem 1.2rem 1rem; gap: .6rem; position: relative; }
+.q-topbar { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.q-meta { display: flex; align-items: center; gap: .75rem; }
+.q-value-lbl { font-size: 1.2rem; font-weight: 700; color: #fff; }
+.q-cat-lbl { font-size: .85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; }
+.q-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: .8rem; min-height: 0; padding: 0 calc(1.5rem + 180px); }
+.q-text { font-weight: 700; line-height: 1.15; color: #fff; width: 100%; }
+.q-text.traffic-cycling { color: #7a7a7a; transition: none; }
+.q-text.traffic-selected { color: #ffe14d; text-shadow: 0 0 28px rgba(255,225,77,.85), 0 0 60px rgba(255,225,77,.55); animation: trafficPop .35s cubic-bezier(.34,1.56,.64,1); }
+@keyframes trafficPop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.q-media { max-width: 100%; max-height: 35vh; border-radius: 6px; }
+.buzz-wrap { flex-shrink: 0; text-align: center; min-height: 70px; display: flex; align-items: center; justify-content: center; }
+.buzz-pill { display: inline-block; padding: .5rem 2.5rem; border-radius: 40px; font-size: 2.2rem; font-weight: 900; color: #fff; background: #1c1c1c; border: 2px solid #fff; animation: buzzPop .25s cubic-bezier(.34,1.56,.64,1); }
+@keyframes buzzPop { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+#buzz-flash { position:fixed; inset:0; z-index:950; background:rgba(0,0,0,.85); display:none; align-items:center; justify-content:center; pointer-events:none; }
+.buzz-flash-name { font-size:clamp(4rem,14vw,14rem); font-weight:900; text-transform:uppercase; letter-spacing:.08em; color:#fff; text-align:center; line-height:1.05; padding:0 3rem; word-break:break-word; overflow-wrap:break-word; }
+@keyframes buzzFlashIn { from { transform:scale(.6); opacity:0; } to { transform:scale(1); opacity:1; } }
+
+/* Timer */
+.timer-wrap { position: absolute; bottom: 5.5rem; right: 1.5rem; width: 180px; height: 180px; flex-shrink: 0; opacity: .15; transition: opacity .2s; pointer-events: none; }
+.timer-wrap.active { opacity: .65; }
+.timer-wrap svg { transform: rotate(-90deg); width: 180px; height: 180px; }
+.t-bg  { fill: none; stroke: #222; stroke-width: 10; }
+.t-arc { fill: none; stroke: #fff; stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset .8s linear; }
+.t-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 3.8rem; font-weight: 900; color: #fff; }
+@keyframes timerShake {
+  0%   { transform: scale(1.35); }
+  10%  { transform: scale(1.18) translate(-7px,-3px); }
+  22%  { transform: scale(1.14) translate(7px,3px); }
+  34%  { transform: scale(1.09) translate(-5px,-2px); }
+  46%  { transform: scale(1.06) translate(5px,2px); }
+  58%  { transform: scale(1.03) translate(-3px,0); }
+  70%  { transform: scale(1.02) translate(2px,0); }
+  100% { transform: scale(1); }
+}
+.timer-wrap.flash-start { animation: timerShake 1.5s ease-out forwards; }
+.q-controls { flex-shrink: 0; display: flex; gap: .6rem; justify-content: center; align-items: center; flex-wrap: wrap; padding-bottom: .2rem; }
+
+/* Answer reveal */
+.ans-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.92); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.ans-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 2.5rem; max-width: 700px; width: 92%; text-align: center; display: flex; flex-direction: column; gap: 1rem; }
+.ans-box h2 { color: var(--accent); font-size: 1.2rem; text-transform: uppercase; letter-spacing: .1em; }
+.ans-text { font-size: 1.5rem; font-weight: 600; }
+
+/* Event popup */
+.event-pop { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(0); z-index: 500; text-align: center; pointer-events: none; transition: transform .22s cubic-bezier(.34,1.56,.64,1); }
+.event-pop.show { transform: translate(-50%,-50%) scale(1); }
+.event-pop.hide { transform: translate(-50%,-50%) scale(0) translateY(-40px); opacity: 0; transition: transform .35s ease-in, opacity .35s; }
+.ep-pts  { font-size: 5.5rem; font-weight: 900; line-height: 1; text-shadow: 0 4px 24px rgba(0,0,0,.6); }
+.ep-name { font-size: 2rem; font-weight: 700; margin-top: .2rem; color: #fff; }
+
+/* Modals */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.78); display: flex; align-items: center; justify-content: center; z-index: 200; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.8rem; min-width: 320px; max-width: 95vw; display: flex; flex-direction: column; gap: 1rem; }
+.modal h2 { font-size: 1.05rem; text-transform: uppercase; letter-spacing: .1em; }
+.modal-sub { font-size: .82rem; color: var(--text-muted); }
+.adj-row { display: flex; align-items: center; gap: .6rem; padding: .5rem; background: var(--surface2); border-radius: 8px; }
+.adj-lbl   { flex: 1; font-weight: 600; font-size: .95rem; }
+.adj-score { font-size: 1.15rem; font-weight: 700; min-width: 55px; text-align: right; }
+.adj-inp   { width: 65px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: .25em .5em; font-size: .9rem; text-align: center; font-family: inherit; }
+.adj-plus  { background: var(--green); color: #fff; border: none; border-radius: 6px; padding: .3em .65em; cursor: pointer; font-weight: 700; font-family: inherit; }
+.adj-minus { background: var(--red);   color: #fff; border: none; border-radius: 6px; padding: .3em .65em; cursor: pointer; font-weight: 700; font-family: inherit; }
+
+/* Bag modal */
+.bag-team-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: .45em 1em; cursor: pointer; font-size: .95rem; font-weight: 600; font-family: inherit; transition: background .12s; }
+.bag-team-btn.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
+.bag-team-btn:hover:not(.selected) { border-color: var(--accent); }
+#bag-teams-list { display: flex; flex-wrap: wrap; gap: .5rem; }
+
+/* Auction modal */
+.auc-row { display: flex; align-items: center; gap: .6rem; padding: .5rem; background: var(--surface2); border-radius: 8px; margin-bottom: .4rem; }
+.auc-name { flex: 1; font-weight: 600; font-size: .95rem; }
+.auc-inp  { width: 80px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: .25em .5em; font-size: .9rem; text-align: center; font-family: inherit; }
+.auc-res-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); border-radius: 6px; padding: .3em .7em; cursor: pointer; font-weight: 700; font-family: inherit; font-size: 1rem; transition: background .12s; }
+.auc-res-btn.correct { background: var(--green); border-color: var(--green); color: #fff; }
+.auc-res-btn.wrong   { background: var(--red);   border-color: var(--red);   color: #fff; }
+
+/* ── CREDITS ── */
+#screen-credits { background: #000; align-items: center; justify-content: flex-start; overflow-y: auto; position: relative; padding: 3rem 0 7rem; }
+.credits-inner { position: relative; z-index: 1; width: 100%; padding: 0 6%; display: flex; flex-direction: column; align-items: stretch; }
+.stats-block { margin-top: 2.5rem; opacity: 0; transition: opacity .8s; }
+.stats-title { font-size: 1.2rem; letter-spacing: .25em; text-transform: uppercase; color: var(--text-muted); text-align: center; margin-bottom: 1rem; }
+.stat-row { display: flex; align-items: baseline; gap: 1.2rem; padding: .7rem 3rem; border-top: 1px solid #1a1a1a; font-size: 1.1rem; flex-wrap: wrap; }
+.stat-name { font-weight: 700; min-width: 8rem; }
+.stat-detail { color: var(--text-muted); font-size: .95rem; }
+.credits-title { font-size: 1.8rem; letter-spacing: .3em; text-transform: uppercase; color: var(--text-muted); text-align: center; margin-bottom: 3rem; }
+.credit-row { display: flex; align-items: center; gap: 2rem; padding: 1.8rem 3rem; border-top: 2px solid #1a1a1a; transform: translateX(-60px); opacity: 0; transition: transform .9s cubic-bezier(.22,1,.36,1), opacity .7s; }
+.credit-row.entered { transform: translateX(0); opacity: 1; }
+.credit-place { font-size: 2rem; color: var(--text-muted); font-weight: 700; min-width: 3rem; text-align: center; }
+.credit-name  { flex: 1; font-size: 3.2rem; font-weight: 700; }
+.credit-score { font-size: 3.2rem; font-weight: 900; }
+.credit-row.first-place .credit-name,
+.credit-row.first-place .credit-score { font-size: 5rem; }
+.credit-row.first-place { padding: 2.5rem 3rem; border-top-color: #333; }
+.credits-restart { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 2; }
+#fireworks-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.last-banner { text-align:center; font-size:1.6rem; font-weight:900; text-transform:uppercase; letter-spacing:.04em; color:#2ecc71; margin-top:1.2rem; padding:.6rem 1.2rem; border:2px solid #2ecc71; border-radius:8px; }
+.btn-hint { background: #e67e22; color: #fff; }
+.btn-alliance { background: #9b59b6; color: #fff; }
+.mode-row { display:flex; align-items:center; gap:.6rem; cursor:pointer; font-size:.9rem; font-weight:600; user-select:none; }
+.mode-row input[type=checkbox] { width:17px; height:17px; cursor:pointer; accent-color: var(--accent); flex-shrink:0; }
+.mode-desc { color:var(--text-muted); font-size:.78rem; font-weight:400; }
+.reveal-tile { background: #1a1a1a; transition: opacity .3s ease; }
+.reveal-tile.open { opacity: 0; pointer-events: none; }
+/* Данетка */
+.danetka-tbl { width: 100%; border-collapse: collapse; }
+.danetka-tbl th { padding: .35rem .7rem; color: var(--text-muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; border-bottom: 1px solid #2a2a2a; font-weight: 600; }
+.danetka-tbl td { padding: .45rem .7rem; border-bottom: 1px solid #1a1a1a; }
+.dan-name { text-align: left; font-weight: 600; font-size: .95rem; }
+.dan-cnt  { text-align: center; font-size: 1.4rem; font-weight: 800; }
+.dan-cnt-yes { color: #2ecc71; }
+.dan-cnt-no  { color: #e74c3c; }
+tr.dan-buzzed { background: rgba(79,142,247,.12); }
+</style>
+</head>
+<body>
+
+<div id="flash"></div>
+<div class="event-pop" id="evpop">
+  <div class="ep-pts" id="ep-pts"></div>
+  <div class="ep-name" id="ep-name"></div>
+</div>
+
+<!-- ══ SETUP ══ -->
+<div id="screen-setup" class="screen active">
+  <div class="setup-wrap">
+    <h1 class="logo">Витторина</h1>
+    <div class="setup-card">
+      <h2>Раунды</h2>
+      <div id="rounds-list"></div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem">
+        <button class="btn btn-secondary btn-sm" id="add-round-btn">+ Добавить раунд (JSON)</button>
+        <button class="btn btn-secondary btn-sm" id="import-folder-btn">📁 Импорт папки</button>
+        <button class="btn btn-secondary btn-sm" id="import-files-btn">📄 Импорт файлов</button>
+        <a href="editor.html" class="btn btn-ghost btn-sm" target="_blank">Редактор паков →</a>
+      </div>
+      <p class="setup-hint">По одному JSON-файлу на каждый раунд</p>
+      <p class="setup-hint" style="margin-top:.25rem">Папка question_packs/ или отдельные JSON-файлы — паки сохранятся в браузере</p>
+      <div id="import-toast" style="display:none;font-size:.82rem;color:#2ecc71;margin-top:.4rem;font-weight:600"></div>
+      <div id="saved-packs-section" style="display:none;margin-top:.75rem">
+        <p style="font-size:.78rem;color:var(--text-muted);margin-bottom:.4rem">Сохранённые паки:</p>
+        <div id="saved-packs-list" style="display:flex;gap:.4rem;flex-wrap:wrap"></div>
+      </div>
+    </div>
+    <div class="setup-card">
+      <h2>Количество команд</h2>
+      <div class="team-count-row">
+        <button class="count-btn" id="team-minus">−</button>
+        <span id="team-count-display">2</span>
+        <button class="count-btn" id="team-plus">+</button>
+        <span style="color:var(--text-muted);font-size:.9rem">команды</span>
+      </div>
+      <p class="setup-hint" style="margin-top:.75rem">Названия команд зададите перед началом игры</p>
+    </div>
+    <div class="setup-card">
+      <h2>Режимы игры</h2>
+      <div style="display:flex;flex-direction:column;gap:.7rem">
+        <label class="mode-row"><input type="checkbox" id="mode-hint" checked><span>💡 Подсказки</span><span class="mode-desc">— разрешить команде взять подсказку за ½ стоимости (для нормальных вопросов)</span></label>
+        <label class="mode-row"><input type="checkbox" id="mode-alliance"><span>🤝 Альянс</span><span class="mode-desc">— разрешить объединить команды для совместного ответа (для нормальных вопросов)</span></label>
+        <label class="mode-row"><input type="checkbox" id="mode-progressive"><span>📈 Прогрессив</span><span class="mode-desc">— стоимость оставшихся вопросов растёт при каждом закрытом (+10%)</span></label>
+        <label class="mode-row"><input type="checkbox" id="mode-kubyshka"><span>🏦 Кубышка</span><span class="mode-desc">— при провале стоимость распределяется между незакрытыми вопросами</span></label>
+      </div>
+    </div>
+    <div id="resume-card" class="setup-card" style="display:none;border:1px solid #f39c12;background:rgba(243,156,18,.07)">
+      <div style="font-size:1rem;font-weight:700;margin-bottom:.4rem">⏸ Продолжить прошлую игру</div>
+      <p id="resume-info" style="font-size:.88rem;color:var(--text-muted);margin:.2rem 0 .8rem;line-height:1.5"></p>
+      <div style="display:flex;gap:.5rem">
+        <button class="btn btn-primary btn-sm" id="resume-btn">▶ Продолжить</button>
+        <button class="btn btn-ghost btn-sm" id="resume-delete-btn">✕ Удалить</button>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="start-btn">▶ Дальше</button>
+  </div>
+</div>
+
+<!-- ══ FLAPPY SCREEN ══ -->
+<div id="screen-flappy" class="screen">
+  <div id="flappy-columns"></div>
+  <div id="flappy-bar">
+    <span id="flappy-bar-left">Каждая команда нажимает свою кнопку — птица летит!</span>
+    <div style="display:flex;gap:.5rem">
+      <button class="btn btn-ghost btn-sm" id="flappy-return-btn" style="display:none">← Вернуться к игре</button>
+      <button class="btn btn-primary" id="flappy-to-names">Перейти к названию команд →</button>
+    </div>
+  </div>
+</div>
+
+<!-- team naming modal -->
+<div id="modal-team-names" class="modal-overlay" style="display:none">
+  <div class="modal" style="max-width:420px">
+    <h2>Названия команд</h2>
+    <p class="modal-sub">Введите названия перед стартом</p>
+    <div id="team-name-inputs" style="margin-top:.5rem"></div>
+    <div style="display:flex;gap:.5rem;margin-top:1.2rem">
+      <button class="btn btn-primary" id="start-game-btn" style="flex:1;font-size:1.05rem;padding:.7em">Начать игру ▶</button>
+      <button class="btn btn-ghost btn-sm" id="team-names-back">Назад</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CATEGORY INTRO ══ -->
+<div id="screen-intro" class="screen">
+  <span id="intro-round-label"></span>
+  <div id="intro-cat-name"></div>
+  <button class="btn btn-ghost btn-sm" id="intro-skip" style="position:fixed;bottom:1.5rem;right:1.5rem">Пропустить →</button>
+</div>
+
+<!-- ══ BOARD ══ -->
+<div id="screen-board" class="screen">
+  <div class="board-top">
+    <span class="vittorina-title">Витторина</span>
+    <div id="scores-bar"></div>
+    <span id="chooser-lbl" style="font-size:.82rem;color:var(--text-muted);white-space:nowrap;flex-shrink:0"></span>
+    <div class="board-ctrl">
+      <span class="round-lbl" id="round-lbl"></span>
+      <button class="btn btn-ghost btn-sm" id="pause-btn">⏸ Пауза</button>
+      <button class="btn btn-ghost btn-sm" id="adj-btn">± Баллы</button>
+      <button class="btn btn-ghost btn-sm" id="next-round-btn" style="display:none">Следующий раунд →</button>
+      <button class="btn btn-ghost btn-sm" id="end-btn" style="display:none">🏆 Итоги</button>
+      <button class="btn btn-ghost btn-sm" id="back-setup-btn">Настройки</button>
+    </div>
+  </div>
+  <div id="board-grid" class="board-grid"></div>
+</div>
+
+<!-- ══ QUESTION ══ -->
+<div id="screen-question" class="screen">
+  <div class="q-screen-inner">
+    <div class="q-topbar">
+      <div class="q-meta">
+        <span class="q-value-lbl" id="q-val"></span>
+        <span class="q-cat-lbl"   id="q-cat"></span>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="q-back">← Поле</button>
+    </div>
+    <div class="q-body">
+      <p class="q-text" id="q-text"></p>
+      <img  id="q-img"  class="q-media" style="display:none">
+      <audio id="q-aud" controls style="display:none"></audio>
+      <div id="q-vwrap" style="display:none"><video id="q-vid" controls class="q-media"></video></div>
+      <div id="last-banner" class="last-banner" style="display:none"></div>
+      <div id="reveal-container" style="display:none;position:relative;width:100%;flex:1;min-height:0;max-height:55vh">
+        <img id="reveal-img-el" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:6px">
+        <div id="reveal-grid-el" style="position:absolute;inset:0;display:grid"></div>
+      </div>
+      <div id="danetka-panel" style="display:none;width:100%;max-width:560px">
+        <table class="danetka-tbl">
+          <thead><tr>
+            <th style="text-align:left">Команда</th>
+            <th style="color:#2ecc71">ДА</th>
+            <th style="color:#e74c3c">НЕТ</th>
+          </tr></thead>
+          <tbody id="danetka-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="buzz-wrap">
+      <div class="buzz-pill" id="buzz-pill" style="display:none"></div>
+    </div>
+    <div class="timer-wrap" id="timer-wrap">
+      <svg viewBox="0 0 180 180">
+        <circle class="t-bg"  cx="90" cy="90" r="78"/>
+        <circle class="t-arc" id="t-arc" cx="90" cy="90" r="78" stroke-dasharray="490.09" stroke-dashoffset="0"/>
+      </svg>
+      <div class="t-num" id="t-num">60</div>
+    </div>
+    <div class="q-controls">
+      <button class="btn btn-success btn-sm" id="q-correct" style="display:none">✓ Верно [Пробел]</button>
+      <button class="btn btn-danger  btn-sm" id="q-wrong"   style="display:none">✗ Неверно [Z]</button>
+      <button class="btn btn-hint    btn-sm" id="q-hint"    style="display:none">💡 Подсказка (½)</button>
+      <button class="btn btn-alliance btn-sm" id="q-alliance" style="display:none">🤝 Альянс [A]</button>
+      <div id="jeopardy-btns" style="display:none;gap:.5rem;flex-wrap:wrap;justify-content:center;align-items:center"></div>
+      <div id="danetka-judge" style="display:none;gap:.5rem;flex-wrap:wrap;justify-content:center;align-items:center"></div>
+      <button class="btn btn-secondary btn-sm" id="q-start">▶ Старт</button>
+      <button class="btn btn-secondary btn-sm" id="q-last-end" style="display:none">Больше правильных ответов нет</button>
+      <button class="btn btn-ghost    btn-sm" id="q-annul">Аннулировать</button>
+      <button class="btn btn-secondary btn-sm" id="q-blitz-skip" style="display:none">⏭ Пропустить</button>
+    </div>
+  </div>
+  <div id="ans-overlay" class="ans-overlay" style="display:none">
+    <div class="ans-box">
+      <h2>Ответ</h2>
+      <p class="ans-text" id="ans-text"></p>
+      <img   id="ans-img" class="q-media" style="display:none">
+      <audio id="ans-aud" controls style="display:none"></audio>
+      <video id="ans-vid" controls class="q-media" style="display:none"></video>
+      <button class="btn btn-primary" id="ans-close">← К полю</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CREDITS ══ -->
+<div id="screen-credits" class="screen">
+  <canvas id="fireworks-canvas"></canvas>
+  <div class="credits-inner" id="credits-inner">
+    <div class="credits-title">— итоги —</div>
+  </div>
+  <div class="credits-restart" style="display:flex;gap:.5rem">
+    <button class="btn btn-ghost btn-sm" id="credits-back">← В начало</button>
+    <button class="btn btn-ghost btn-sm" id="credits-download">📥 Скачать лог</button>
+  </div>
+</div>
+
+<!-- score modal -->
+<div id="modal-scores" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h2>Промежуточные итоги</h2>
+    <div id="modal-list"></div>
+    <button class="btn btn-primary btn-sm" id="modal-close">Закрыть</button>
+  </div>
+</div>
+
+<!-- bag modal -->
+<div id="modal-bag" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h2>🎁 Кот в мешке</h2>
+    <p class="modal-sub">Выберите команду и укажите ставку</p>
+    <div id="bag-teams-list"></div>
+    <div style="display:flex;align-items:center;gap:.75rem;margin-top:.75rem">
+      <label style="font-size:.85rem;color:var(--text-muted);white-space:nowrap">Ставка:</label>
+      <input id="bag-value-input" type="number" value="100" min="0" step="50"
+        style="width:110px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:.3em .6em;font-size:1rem;font-family:inherit">
+    </div>
+    <div style="display:flex;gap:.5rem;margin-top:1rem">
+      <button class="btn btn-primary" id="bag-confirm-btn">▶ Начать вопрос</button>
+      <button class="btn btn-ghost btn-sm" id="bag-cancel-btn">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<!-- auction modal -->
+<div id="modal-auction" class="modal-overlay" style="display:none">
+  <div class="modal" style="max-width:480px">
+    <h2>🔨 Аукцион</h2>
+    <p class="modal-sub">Введите ставки и отметьте результат каждой команды</p>
+    <div id="auction-rows"></div>
+    <div style="display:flex;gap:.5rem;margin-top:1rem;flex-wrap:wrap">
+      <button class="btn btn-primary" id="auction-apply">Применить</button>
+      <button class="btn btn-ghost btn-sm" id="auction-annul-btn">Аннулировать всё</button>
+    </div>
+  </div>
+</div>
+
+<!-- settings modal -->
+<div id="modal-settings" class="modal-overlay" style="display:none">
+  <div class="modal" style="max-width:520px;width:94vw;max-height:90vh;overflow-y:auto">
+    <h2>⚙ Настройки игры</h2>
+    <div id="ms-current-round" style="font-size:.85rem;color:var(--text-muted);margin-top:-.3rem"></div>
+    <div style="border-top:1px solid var(--border);padding-top:.75rem;margin-top:.25rem">
+      <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:.5rem">Следующие раунды</div>
+      <div id="ms-rounds-list" style="display:flex;flex-direction:column;gap:.35rem"></div>
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.6rem">
+        <button class="btn btn-secondary btn-sm" id="ms-add-json-btn">+ JSON файл</button>
+        <button class="btn btn-secondary btn-sm" id="ms-add-saved-btn">📂 Из сохранённых</button>
+      </div>
+      <div id="ms-saved-popup" style="display:none;margin-top:.5rem;padding:.6rem;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">
+        <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:.4rem">Выберите сохранённый пак:</div>
+        <div id="ms-saved-list" style="display:flex;gap:.35rem;flex-wrap:wrap"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:.5rem;margin-top:1rem;flex-wrap:wrap">
+      <button class="btn btn-primary" id="ms-resume-btn" style="flex:1">▶ Продолжить игру</button>
+      <button class="btn btn-danger btn-sm" id="ms-quit-btn">Завершить игру</button>
+    </div>
+  </div>
+</div>
+
+<div id="alliance-wait" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.75);align-items:center;justify-content:center">
+  <div style="background:#1a1230;border:3px solid #9b59b6;border-radius:20px;padding:2.5rem 3rem;max-width:640px;width:90%;text-align:center;box-shadow:0 8px 48px rgba(155,89,182,.55)">
+    <div id="alliance-wait-text" style="font-size:1.6rem;color:#ccc;margin-bottom:.6rem;font-weight:600"></div>
+    <div style="font-size:5rem;font-weight:900;color:#9b59b6;line-height:1;margin-bottom:1.6rem"><span id="alliance-wait-sec"></span></div>
+    <div style="font-size:1.1rem;color:#aaa;margin-bottom:1.2rem">Кто хочет вступить в альянс?</div>
+    <div id="alliance-team-btns" style="display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap"></div>
+  </div>
+</div>
+<script>
+/* ═══ SOUNDS ═══ */
+function playSound(name) {
+  try { new Audio(`sounds/${name}.mp3`).play().catch(() => {}); } catch {}
+}
+const SFX = {
+  click()   { playSound('click'); },
+  buzz()    { playSound('answer'); },
+  correct() { playSound('correct'); },
+  wrong()   { playSound('wrong'); },
+  timerEnd(){ playSound('wrong'); },
+  tick()    { playSound('click'); },
+  slide()   { playSound('slide_on'); },
+  intro()   { playSound('slide_on'); },
+  catShow() { },
+  reveal()  { },
+  rick()    { playSound('rick'); },
+};
+let _hoverLast = 0;
+document.addEventListener('mouseover', e => {
+  if (Date.now() - _hoverLast < 80) return;
+  if (e.target.closest('.btn,.q-cell,.icon-btn,.del-btn,.adj-plus,.adj-minus,.bag-team-btn,.auc-res-btn,.count-btn')) {
+    SFX.click(); _hoverLast = Date.now();
+  }
+});
+
+/* ═══ FLASH ═══ */
+function flash(color) {
+  const el = document.getElementById('flash');
+  el.style.background = color; el.style.opacity = '1';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    el.style.transition = 'opacity .45s'; el.style.opacity = '0';
+    setTimeout(() => { el.style.transition = ''; }, 500);
+  }));
+}
+
+/* ═══ EVENT POPUP ═══ */
+let _popT = null;
+function showPopup(pts, name) {
+  const p = document.getElementById('evpop');
+  document.getElementById('ep-pts').textContent = (pts > 0 ? '+' : '') + pts;
+  document.getElementById('ep-pts').style.color = pts > 0 ? '#2ecc71' : '#e74c3c';
+  document.getElementById('ep-name').textContent = name;
+  p.classList.remove('hide'); p.classList.add('show');
+  clearTimeout(_popT);
+  _popT = setTimeout(() => { p.classList.remove('show'); p.classList.add('hide'); setTimeout(() => p.classList.remove('hide'), 450); }, 1700);
+}
+
+/* ═══ STATE ═══ */
+const S = { rounds: [], ri: 0, teams: [], used: {}, curQ: null, tRun: false, tSec: 60, tTot: 60, tInt: null, buzzed: null, wrongTeams: new Set(), hintsUsed: {}, hintSec: 0, hintInt: null, log: [], progressive: {}, kubyshka: {}, metaClosed: {},
+  modeHint: true, modeAlliance: false, modeProgressive: false, modeKubyshka: false };
+const TARC_VAL = 490.09;
+
+/* ═══ CHOOSER ═══ */
+let _chooserBag = [], _lastChooser = -1;
+
+/* ═══ AUTOSAVE ═══ */
+const SAVE_KEY = 'qhb_active_game';
+function saveGame() {
+  if (!S.teams || !S.teams.length) return;
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      ri: S.ri, teams: S.teams, used: S.used, rounds: S.rounds,
+      tTot: S.tTot, hintsUsed: S.hintsUsed, wrongTeams: [...S.wrongTeams],
+      chooserBag: _chooserBag, lastChooser: _lastChooser, log: S.log,
+      progressive: S.progressive, kubyshka: S.kubyshka, metaClosed: S.metaClosed,
+      modeHint: S.modeHint, modeAlliance: S.modeAlliance, modeProgressive: S.modeProgressive, modeKubyshka: S.modeKubyshka
+    }));
+  } catch(e) {}
+}
+function deleteSave() { localStorage.removeItem(SAVE_KEY); }
+
+function _shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/* Музыкальный светофор — наборы букв (без Ё, Й, Ь, Ъ, Ы) */
+const TRAFFIC_VOWELS = ['А','Е','И','О','У','Э','Ю','Я'];
+const TRAFFIC_CONSONANTS = ['Б','В','Г','Д','Ж','З','К','Л','М','Н','П','Р','С','Т','Ф','Х','Ц','Ч','Ш','Щ'];
+function trafficPool(q) {
+  if (q.traffic_mode === 'letters') {
+    const set = q.letters_set || 'all';
+    if (set === 'vowels') return [...TRAFFIC_VOWELS];
+    if (set === 'consonants') return [...TRAFFIC_CONSONANTS];
+    return [...TRAFFIC_VOWELS, ...TRAFFIC_CONSONANTS];
+  }
+  return (q.words || []).map(w => String(w).trim()).filter(Boolean);
+}
+
+function nextChooser() {
+  if (!S.teams.length) return;
+  if (_chooserBag.length === 0) {
+    // Refill: all teams, shuffle, ensure first ≠ lastChooser
+    const all = S.teams.map((_, i) => i);
+    do { _shuffle(all); } while (all.length > 1 && all[0] === _lastChooser);
+    _chooserBag = all;
+  }
+  _lastChooser = _chooserBag.shift();
+  const el = document.getElementById('chooser-lbl');
+  if (el) el.innerHTML = `Выбирает: <strong style="color:#fff">${S.teams[_lastChooser].name}</strong>`;
+}
+
+function resetChooser() {
+  _chooserBag = []; _lastChooser = -1;
+  const el = document.getElementById('chooser-lbl');
+  if (el) el.textContent = '';
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ═══════════════════════════════════════
+   SETUP
+═══════════════════════════════════════ */
+let sRounds = [], sTeamCount = 2;
+
+function renderRounds() {
+  const el = document.getElementById('rounds-list');
+  if (!sRounds.length) { el.innerHTML = '<p style="color:var(--text-muted);font-size:.8rem">Раундов нет — добавь JSON-файл</p>'; return; }
+  el.innerHTML = '';
+  sRounds.forEach((r, i) => {
+    const d = document.createElement('div'); d.className = 'round-item';
+    d.innerHTML = `<span style="color:var(--text-muted);font-size:.78rem">R${i+1}</span><span class="round-name">${r.packName}</span><button class="icon-btn">▲</button><button class="icon-btn">▼</button><button class="del-btn">✕</button>`;
+    d.querySelectorAll('.icon-btn')[0].onclick = () => { if (i > 0) { [sRounds[i-1],sRounds[i]]=[sRounds[i],sRounds[i-1]]; renderRounds(); } };
+    d.querySelectorAll('.icon-btn')[1].onclick = () => { if (i < sRounds.length-1) { [sRounds[i],sRounds[i+1]]=[sRounds[i+1],sRounds[i]]; renderRounds(); } };
+    d.querySelector('.del-btn').onclick = () => { sRounds.splice(i,1); renderRounds(); };
+    el.appendChild(d);
+  });
+}
+
+const EXAMPLE_PACK = {"name":"example","categories":[{"name":"История","buzz_mode":"unlimited","questions":[{"value":100,"timer":60,"question":"В каком году была основана Москва?","answer":"1147","type":"normal","penalty":"none","image":null,"audio":null,"video":null,"answer_reveal":{"text":"Москва основана в 1147 году князем Юрием Долгоруким.","image":null,"audio":null,"video":null}},{"value":200,"timer":60,"question":"Кто написал «Войну и мир»?","answer":"Лев Толстой","type":"normal","penalty":"half","image":null,"audio":null,"video":null,"answer_reveal":null},{"value":300,"timer":60,"question":"В каком году закончилась Вторая мировая война?","answer":"1945","type":"normal","penalty":"none","image":null,"audio":null,"video":null,"answer_reveal":null}]},{"name":"Наука","buzz_mode":"unlimited","questions":[{"value":100,"timer":60,"question":"Какой химический элемент обозначается символом O?","answer":"Кислород","type":"normal","penalty":"none","image":null,"audio":null,"video":null,"answer_reveal":null},{"value":200,"timer":60,"question":"Сколько планет в Солнечной системе?","answer":"8","type":"normal","penalty":"none","image":null,"audio":null,"video":null,"answer_reveal":{"text":"8 планет: Меркурий, Венера, Земля, Марс, Юпитер, Сатурн, Уран, Нептун. Плутон — карликовая планета.","image":null,"audio":null,"video":null}},{"value":300,"timer":60,"question":"Кто открыл пенициллин?","answer":"Александр Флеминг","type":"normal","penalty":"half","image":null,"audio":null,"video":null,"answer_reveal":null}]},{"name":"Кино","buzz_mode":"unlimited","questions":[{"value":100,"timer":60,"question":"В каком году вышел первый фильм о Гарри Поттере?","answer":"2001","type":"normal","penalty":"none","image":null,"audio":null,"video":null,"answer_reveal":null},{"value":200,"timer":60,"question":"Кто сыграл Тони Старка в киновселенной Marvel?","answer":"Роберт Дауни мл.","type":"normal","penalty":"none","image":null,"audio":null,"video":null,"answer_reveal":null},{"value":300,"timer":60,"question":"Назовите режиссёра фильма «Интерстеллар».","answer":"Кристофер Нолан","type":"normal","penalty":"full","image":null,"audio":null,"video":null,"answer_reveal":null}]}]};
+
+function renderSavedPacks() {
+  try {
+    const names = JSON.parse(localStorage.getItem('qhb_pack_names') || '[]');
+    const sec = document.getElementById('saved-packs-section');
+    const list = document.getElementById('saved-packs-list');
+    if (!names.length) { sec.style.display = 'none'; return; }
+    sec.style.display = '';
+    list.innerHTML = '';
+    names.forEach(name => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:.3rem;align-items:center';
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-secondary btn-sm';
+      btn.textContent = '+ ' + name;
+      btn.onclick = () => {
+        try {
+          const data = JSON.parse(localStorage.getItem('qhb_pack_' + name));
+          if (!data) return;
+          sRounds.push({packName: data.name || name, pack: data});
+          renderRounds(); SFX.slide();
+        } catch { alert('Ошибка чтения пака: ' + name); }
+      };
+      const del = document.createElement('button');
+      del.className = 'btn btn-ghost btn-sm'; del.textContent = '✕';
+      del.style.color = 'var(--red)'; del.title = 'Удалить из списка';
+      del.onclick = () => {
+        const ns = JSON.parse(localStorage.getItem('qhb_pack_names')||'[]').filter(n=>n!==name);
+        localStorage.setItem('qhb_pack_names', JSON.stringify(ns));
+        localStorage.removeItem('qhb_pack_' + name);
+        renderSavedPacks();
+      };
+      row.appendChild(btn); row.appendChild(del); list.appendChild(row);
+    });
+  } catch {}
+}
+// Seed example pack on first load
+try {
+  if (!localStorage.getItem('qhb_pack_example')) {
+    localStorage.setItem('qhb_pack_example', JSON.stringify(EXAMPLE_PACK));
+    const names = JSON.parse(localStorage.getItem('qhb_pack_names')||'[]');
+    if (!names.includes('example')) { names.push('example'); localStorage.setItem('qhb_pack_names', JSON.stringify(names)); }
+  }
+  renderSavedPacks();
+} catch {}
+
+// Check for saved game
+(function checkResume() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    if (!d.teams || !d.teams.length || !d.rounds || !d.rounds.length) return;
+    const scores = d.teams.map(t => `${t.name}: ${t.score}`).join(' · ');
+    const info = document.getElementById('resume-info');
+    info.textContent = `${d.teams.length} команд · раунд ${(d.ri||0)+1} из ${d.rounds.length}\n${scores}`;
+    info.style.whiteSpace = 'pre-line';
+    document.getElementById('resume-card').style.display = '';
+  } catch(e) {}
+})();
+document.getElementById('resume-btn').onclick = () => {
+  try {
+    const d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    if (!d) return;
+    S.ri = d.ri || 0; S.teams = d.teams; S.used = d.used || {};
+    S.rounds = d.rounds; S.tTot = d.tTot || 60; S.tSec = d.tTot || 60;
+    S.hintsUsed = d.hintsUsed || {}; S.wrongTeams = new Set(d.wrongTeams || []);
+    S.buzzed = null; S.curQ = null; S.tRun = false; S.log = d.log || [];
+    S.progressive = d.progressive || {}; S.kubyshka = d.kubyshka || {}; S.metaClosed = d.metaClosed || {};
+    S.modeHint = d.modeHint !== undefined ? d.modeHint : true;
+    S.modeAlliance = !!d.modeAlliance; S.modeProgressive = !!d.modeProgressive; S.modeKubyshka = !!d.modeKubyshka;
+    _chooserBag = d.chooserBag || []; _lastChooser = d.lastChooser !== undefined ? d.lastChooser : -1;
+    buildBoard(); renderScores(); updateRoundLbl(); checkDone(); showScreen('screen-board');
+    const el = document.getElementById('chooser-lbl');
+    if (el && _lastChooser >= 0 && S.teams[_lastChooser])
+      el.innerHTML = `Выбирает: <strong style="color:#fff">${S.teams[_lastChooser].name}</strong>`;
+  } catch(e) {}
+};
+document.getElementById('resume-delete-btn').onclick = () => {
+  deleteSave();
+  document.getElementById('resume-card').style.display = 'none';
+};
+
+document.getElementById('add-round-btn').onclick = () => {
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json';
+  inp.onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try { const p = JSON.parse(await f.text()); sRounds.push({packName: p.name || f.name.replace(/\.json$/,''), pack: p}); renderRounds(); SFX.slide(); }
+    catch { alert('Ошибка чтения JSON'); }
+  };
+  inp.click();
+};
+
+async function importJsonFiles(files) {
+  let ok = 0, skip = 0;
+  const jsons = Array.from(files).filter(f => f.name.toLowerCase().endsWith('.json'));
+  for (const f of jsons) {
+    try {
+      const data = JSON.parse(await f.text());
+      if (!data || typeof data !== 'object' || (!data.name && !data.categories)) { skip++; continue; }
+      const rawName = data.name || f.name.replace(/\.json$/i, '');
+      const name = (rawName.replace(/[^\wа-яёА-ЯЁ\s\-]/gi, '_').trim()) || 'pack';
+      localStorage.setItem('qhb_pack_' + name, JSON.stringify(data));
+      const names = JSON.parse(localStorage.getItem('qhb_pack_names') || '[]');
+      if (!names.includes(name)) { names.push(name); localStorage.setItem('qhb_pack_names', JSON.stringify(names)); }
+      ok++;
+    } catch { skip++; }
+  }
+  renderSavedPacks();
+  const toast = document.getElementById('import-toast');
+  toast.textContent = `Импортировано: ${ok} паков${skip ? `, пропущено: ${skip}` : ''}`;
+  toast.style.display = 'block';
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { toast.style.display = 'none'; }, 4000);
+}
+document.getElementById('import-folder-btn').onclick = () => {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.webkitdirectory = true;
+  inp.onchange = e => importJsonFiles(e.target.files);
+  inp.click();
+};
+document.getElementById('import-files-btn').onclick = () => {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.json'; inp.multiple = true;
+  inp.onchange = e => importJsonFiles(e.target.files);
+  inp.click();
+};
+
+document.getElementById('team-minus').onclick = () => { if (sTeamCount > 1) { sTeamCount--; document.getElementById('team-count-display').textContent = sTeamCount; } };
+document.getElementById('team-plus').onclick  = () => { if (sTeamCount < 6) { sTeamCount++; document.getElementById('team-count-display').textContent = sTeamCount; } };
+
+document.getElementById('start-btn').onclick = () => {
+  if (!sRounds.length) { alert('Добавь хотя бы один раунд.'); return; }
+  document.getElementById('flappy-to-names').style.display = 'inline-flex';
+  document.getElementById('flappy-return-btn').style.display = 'none';
+  showScreen('screen-flappy');
+  launchFlappy(sTeamCount);
+  document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(() => {});
+};
+
+/* ═══════════════════════════════════════
+   FLAPPY BIRD
+═══════════════════════════════════════ */
+class FlappyGame {
+  constructor(canvas, idx) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.idx = idx;
+    this.w = 200; this.h = 400;
+    this.best = 0;
+    this._init();
+  }
+  _init() {
+    this.bird = { y: this.h / 2, vy: 0 };
+    this.pipes = [];
+    this.score = 0;
+    this.pipeTimer = 0;
+    this.state = 'waiting';
+  }
+  resize(w, h) {
+    this.w = w; this.h = h;
+    this.canvas.width = w;
+    this.canvas.height = h;
+    if (this.state !== 'running') this.bird.y = h / 2;
+  }
+  flap() {
+    if (this.state === 'waiting') {
+      this.state = 'running';
+      this.bird.vy = -7.2;
+    } else if (this.state === 'running') {
+      this.bird.vy = -7.2;
+    } else if (this.state === 'dead') {
+      this.best = Math.max(this.best, this.score);
+      this._init();
+      this.bird.y = this.h / 2;
+      this.state = 'running';
+      this.bird.vy = -7.2;
+    }
+  }
+  update() {
+    if (this.state !== 'running') return;
+    const G=0.28, BX=55, BR=14, PW=40, PG=210, PS=1.8;
+    this.bird.vy += G;
+    this.bird.y  += this.bird.vy;
+    this.pipeTimer++;
+    if (this.pipeTimer >= 175) {
+      this.pipeTimer = 0;
+      const gapY = 55 + Math.random() * (this.h - PG - 110);
+      this.pipes.push({ x: this.w, gapY, pass: false });
+    }
+    for (const p of this.pipes) {
+      p.x -= PS;
+      if (!p.pass && p.x + PW < BX) { p.pass = true; this.score++; }
+    }
+    this.pipes = this.pipes.filter(p => p.x + PW > 0);
+    if (this.bird.y - BR <= 0 || this.bird.y + BR >= this.h) { this.state = 'dead'; return; }
+    for (const p of this.pipes) {
+      if (BX + BR > p.x && BX - BR < p.x + PW) {
+        if (this.bird.y - BR < p.gapY || this.bird.y + BR > p.gapY + PG) { this.state = 'dead'; return; }
+      }
+    }
+  }
+  draw() {
+    const { ctx, w, h } = this;
+    const BX=55, BR=14, PW=40, PG=210;
+    const fs = s => Math.max(s * .65, Math.min(s, w * (s / 300)));
+
+    // Sky
+    ctx.fillStyle = '#060d18';
+    ctx.fillRect(0, 0, w, h);
+    // Ground
+    ctx.fillStyle = '#0c1a0c';
+    ctx.fillRect(0, h - 22, w, 22);
+    ctx.fillStyle = '#163016';
+    ctx.fillRect(0, h - 24, w, 2);
+
+    // Pipes
+    for (const p of this.pipes) {
+      ctx.fillStyle = '#165016';
+      ctx.fillRect(p.x, 0, PW, p.gapY);
+      ctx.fillStyle = '#1e6e1e';
+      ctx.fillRect(p.x - 5, p.gapY - 24, PW + 10, 24);
+      ctx.fillStyle = '#165016';
+      const bot = p.gapY + PG;
+      ctx.fillRect(p.x, bot, PW, h - bot);
+      ctx.fillStyle = '#1e6e1e';
+      ctx.fillRect(p.x - 5, bot, PW + 10, 24);
+    }
+
+    // Bird
+    const dead = this.state === 'dead';
+    ctx.fillStyle = dead ? '#c0392b' : '#ecf0f1';
+    ctx.beginPath(); ctx.arc(BX, this.bird.y, BR, 0, Math.PI * 2); ctx.fill();
+    if (!dead) {
+      ctx.fillStyle = '#222';
+      ctx.beginPath(); ctx.arc(BX + 5, this.bird.y - 4, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#e74c3c';
+      ctx.beginPath(); ctx.arc(BX + 5, this.bird.y - 4, 2, 0, Math.PI * 2); ctx.fill();
+    }
+
+    ctx.textAlign = 'center';
+    // Score (running)
+    if (this.state === 'running') {
+      ctx.fillStyle = 'rgba(255,255,255,.85)';
+      ctx.font = `bold ${fs(32)}px Segoe UI, system-ui`;
+      ctx.fillText(this.score, w / 2, 48);
+    }
+    // Waiting overlay
+    if (this.state === 'waiting') {
+      ctx.fillStyle = 'rgba(255,255,255,.18)';
+      ctx.font = `bold ${fs(26)}px Segoe UI, system-ui`;
+      ctx.fillText(this.score, w / 2, 48);
+      ctx.fillStyle = 'rgba(255,255,255,.6)';
+      ctx.font = `${fs(15)}px Segoe UI, system-ui`;
+      ctx.fillText(`Нажми кнопку ${this.idx + 1}`, w / 2, h / 2 + 46);
+    }
+    // Dead overlay
+    if (this.state === 'dead') {
+      ctx.fillStyle = 'rgba(0,0,0,.68)';
+      ctx.fillRect(0, h / 2 - 70, w, 130);
+      ctx.fillStyle = '#e74c3c';
+      ctx.font = `bold ${fs(20)}px Segoe UI, system-ui`;
+      ctx.fillText('ГОТОВО', w / 2, h / 2 - 26);
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${fs(46)}px Segoe UI, system-ui`;
+      ctx.fillText(this.score, w / 2, h / 2 + 28);
+      if (this.best > this.score) {
+        ctx.fillStyle = 'rgba(255,255,255,.4)';
+        ctx.font = `${fs(12)}px Segoe UI, system-ui`;
+        ctx.fillText(`Рекорд: ${this.best}`, w / 2, h / 2 + 50);
+      }
+      ctx.fillStyle = 'rgba(255,255,255,.45)';
+      ctx.font = `${fs(12)}px Segoe UI, system-ui`;
+      ctx.fillText(`[${this.idx + 1}] — снова`, w / 2, h / 2 + 68);
+    }
+  }
+}
+
+let flappyGames = [];
+let flappyRAF = null;
+
+function flappyLoop() {
+  flappyGames.forEach(g => { g.update(); g.draw(); });
+  flappyRAF = requestAnimationFrame(flappyLoop);
+}
+function stopFlappy() {
+  if (flappyRAF) { cancelAnimationFrame(flappyRAF); flappyRAF = null; }
+}
+function resizeFlappy() {
+  flappyGames.forEach(g => {
+    const col = g.canvas.parentElement;
+    if (!col) return;
+    const r = col.getBoundingClientRect();
+    g.resize(Math.floor(r.width), Math.floor(r.height));
+  });
+}
+function launchFlappy(n) {
+  stopFlappy();
+  const cont = document.getElementById('flappy-columns');
+  cont.innerHTML = '';
+  flappyGames = [];
+  for (let i = 0; i < n; i++) {
+    const col = document.createElement('div'); col.className = 'flappy-col';
+    const canvas = document.createElement('canvas');
+    const lbl = document.createElement('div'); lbl.className = 'flappy-col-label';
+    lbl.textContent = (S.teams && S.teams[i]) ? S.teams[i].name : `кнопка ${i+1}`;
+    col.appendChild(canvas); col.appendChild(lbl);
+    cont.appendChild(col);
+    flappyGames.push(new FlappyGame(canvas, i));
+  }
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    resizeFlappy();
+    flappyRAF = requestAnimationFrame(flappyLoop);
+  }));
+}
+window.addEventListener('resize', () => { if (flappyRAF) resizeFlappy(); });
+
+/* flappy → team names */
+document.getElementById('flappy-to-names').onclick = () => {
+  const list = document.getElementById('team-name-inputs');
+  list.innerHTML = '';
+  for (let i = 0; i < sTeamCount; i++) {
+    const row = document.createElement('div'); row.className = 'tn-row';
+    row.innerHTML = `<span class="tn-num">${i+1}</span><input class="tn-input" type="text" value="Команда ${i+1}" placeholder="Команда ${i+1}">`;
+    list.appendChild(row);
+  }
+  document.getElementById('modal-team-names').style.display = 'flex';
+  // Focus first input
+  setTimeout(() => list.querySelector('.tn-input')?.focus(), 50);
+};
+document.getElementById('team-names-back').onclick = () => {
+  document.getElementById('modal-team-names').style.display = 'none';
+};
+document.getElementById('start-game-btn').onclick = () => {
+  const inputs = document.querySelectorAll('.tn-input');
+  const names = Array.from(inputs).map((inp, i) => inp.value.trim() || `Команда ${i+1}`);
+  S.teams = names.map(n => ({ name: n, score: 0 }));
+  S.rounds = sRounds.map(r => ({...r}));
+  S.ri = 0; S.used = {}; S.log = []; S.progressive = {}; S.kubyshka = {}; S.metaClosed = {};
+  S.modeHint       = document.getElementById('mode-hint').checked;
+  S.modeAlliance   = document.getElementById('mode-alliance').checked;
+  S.modeProgressive= document.getElementById('mode-progressive').checked;
+  S.modeKubyshka   = document.getElementById('mode-kubyshka').checked;
+  deleteSave(); document.getElementById('resume-card').style.display = 'none';
+  document.getElementById('modal-team-names').style.display = 'none';
+  stopFlappy();
+  resetChooser();
+  startRound(0);
+};
+
+/* ═══════════════════════════════════════
+   CATEGORY INTRO
+═══════════════════════════════════════ */
+let _introCancelled = false;
+function startRound(idx) {
+  S.hintsUsed = {};
+  S.ri = idx;
+  _introCancelled = false;
+  const pack = S.rounds[idx].pack;
+  document.getElementById('intro-round-label').textContent = `Раунд ${idx+1} — ${pack.name}`;
+  showScreen('screen-intro');
+  runCatIntro((pack.categories || []).map(c => c.name), 0, () => {
+    if (_introCancelled) return;
+    buildBoard(); renderScores(); updateRoundLbl(); checkDone(); showScreen('screen-board'); nextChooser(); saveGame();
+  });
+}
+function runCatIntro(cats, i, done) {
+  if (_introCancelled) return;
+  const el = document.getElementById('intro-cat-name');
+  if (i >= cats.length) { done(); return; }
+  el.textContent = cats[i]; el.classList.remove('visible');
+  SFX.catShow();
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    el.classList.add('visible');
+    setTimeout(() => { el.classList.remove('visible'); setTimeout(() => runCatIntro(cats, i+1, done), 350); }, 1100);
+  }));
+}
+document.getElementById('intro-skip').onclick = () => {
+  _introCancelled = true;
+  buildBoard(); renderScores(); updateRoundLbl(); checkDone(); showScreen('screen-board'); nextChooser(); saveGame();
+};
+
+/* ═══════════════════════════════════════
+   BOARD
+═══════════════════════════════════════ */
+function updateRoundLbl() {
+  document.getElementById('round-lbl').textContent = `Раунд ${S.ri+1}/${S.rounds.length}: ${S.rounds[S.ri].packName}`;
+}
+function buildBoard() {
+  const pack = S.rounds[S.ri].pack, grid = document.getElementById('board-grid');
+  const cats = pack.categories || [];
+  if (!cats.length) { grid.innerHTML = '<p>Нет категорий.</p>'; return; }
+  const maxQ = Math.max(...cats.map(c => c.questions.length));
+  grid.style.gridTemplateColumns = `minmax(160px, 24%) repeat(${maxQ}, 1fr)`;
+  grid.style.gridTemplateRows = `repeat(${cats.length}, 1fr)`;
+  grid.innerHTML = '';
+  cats.forEach((cat, ci) => {
+    const h = document.createElement('div'); h.className = 'cat-head'; h.textContent = cat.short_name || cat.name; grid.appendChild(h);
+    const nonMetaClosed = S.metaClosed[`${S.ri}-${ci}`] || 0;
+    for (let qi = 0; qi < maxQ; qi++) {
+      const q = cat.questions[qi], cell = document.createElement('div');
+      const k = `${S.ri}-${ci}-${qi}`;
+      if (!q || S.used[k]) {
+        cell.className = 'q-cell used';
+      } else {
+        const isMeta = q.meta_after !== undefined && q.meta_after !== null;
+        const isLocked = isMeta && nonMetaClosed < q.meta_after;
+        if (isLocked) {
+          cell.className = 'q-cell meta-locked';
+          cell.textContent = '🔒';
+        } else {
+          const bonus = (S.progressive[k] || 0) + (S.kubyshka[k] || 0);
+          if (q.random_value) {
+            cell.textContent = '???';
+          } else {
+            const total = (q.value || 0) + bonus;
+            if (bonus > 0) {
+              cell.innerHTML = total + '<span style="font-size:.42em;vertical-align:super;opacity:.7"> ↑</span>';
+            } else {
+              cell.textContent = total;
+            }
+          }
+          cell.className = 'q-cell';
+          cell.onclick = () => openQ(ci, qi);
+        }
+      }
+      grid.appendChild(cell);
+    }
+  });
+}
+function renderScores() {
+  document.getElementById('scores-bar').innerHTML = S.teams.map((t, i) =>
+    `<div class="score-chip"><span class="chip-name">${t.name}</span><span class="chip-score" id="sc-${i}">${t.score}</span></div>`
+  ).join('');
+}
+function updScores() {
+  S.teams.forEach((t, i) => { const e = document.getElementById(`sc-${i}`); if (e) e.textContent = t.score; });
+}
+function checkDone() {
+  const pack = S.rounds[S.ri].pack;
+  const done = (pack.categories || []).every((cat, ci) => cat.questions.every((_, qi) => S.used[`${S.ri}-${ci}-${qi}`]));
+  const hasNext = S.ri + 1 < S.rounds.length;
+  document.getElementById('next-round-btn').style.display = (done && hasNext) ? 'inline-flex' : 'none';
+  document.getElementById('end-btn').style.display = (done && !hasNext) ? 'inline-flex' : 'none';
+}
+
+document.getElementById('adj-btn').onclick = openScoreModal;
+document.getElementById('modal-close').onclick = () => { document.getElementById('modal-scores').style.display = 'none'; };
+function openScoreModal() {
+  document.getElementById('modal-list').innerHTML = S.teams.map((t, i) => `
+    <div class="adj-row">
+      <span class="adj-lbl">${t.name}</span>
+      <span class="adj-score" id="ms-${i}">${t.score}</span>
+      <input class="adj-inp" type="number" value="100" id="mi-${i}">
+      <button class="adj-plus"  onclick="adjScore(${i},1)">+</button>
+      <button class="adj-minus" onclick="adjScore(${i},-1)">−</button>
+    </div>`).join('');
+  document.getElementById('modal-scores').style.display = 'flex';
+}
+function adjScore(idx, sign) {
+  const v = parseInt(document.getElementById(`mi-${idx}`).value) || 0;
+  S.teams[idx].score += sign * v;
+  document.getElementById(`ms-${idx}`).textContent = S.teams[idx].score;
+  updScores(); saveGame();
+}
+document.getElementById('next-round-btn').onclick = () => startRound(S.ri+1);
+document.getElementById('back-setup-btn').onclick = openSettingsModal;
+document.getElementById('end-btn').onclick = showCredits;
+document.getElementById('pause-btn').onclick = () => {
+  document.getElementById('flappy-to-names').style.display = 'none';
+  document.getElementById('flappy-return-btn').style.display = 'inline-flex';
+  launchFlappy(S.teams.length);
+  showScreen('screen-flappy');
+};
+document.getElementById('flappy-return-btn').onclick = () => {
+  stopFlappy();
+  document.getElementById('flappy-return-btn').style.display = 'none';
+  document.getElementById('flappy-to-names').style.display = 'inline-flex';
+  showScreen('screen-board');
+};
+
+/* ═══════════════════════════════════════
+   SETTINGS MODAL
+═══════════════════════════════════════ */
+function openSettingsModal() {
+  const modal = document.getElementById('modal-settings');
+  const cur = S.rounds[S.ri];
+  document.getElementById('ms-current-round').textContent =
+    `Текущий раунд (${S.ri+1}/${S.rounds.length}): ${cur ? cur.packName : ''}`;
+  renderSettingsRounds();
+  document.getElementById('ms-saved-popup').style.display = 'none';
+  modal.style.display = 'flex';
+}
+
+function renderSettingsRounds() {
+  const list = document.getElementById('ms-rounds-list');
+  const future = S.rounds.slice(S.ri + 1);
+  if (!future.length) {
+    list.innerHTML = '<div style="font-size:.82rem;color:var(--text-muted);padding:.3rem 0">Больше раундов нет</div>';
+    return;
+  }
+  list.innerHTML = '';
+  future.forEach((r, fi) => {
+    const idx = S.ri + 1 + fi;
+    const row = document.createElement('div');
+    row.className = 'round-item';
+    row.innerHTML = `<span style="color:var(--text-muted);font-size:.78rem">R${idx+1}</span><span class="round-name">${r.packName}</span><button class="del-btn" title="Удалить раунд">✕</button>`;
+    row.querySelector('.del-btn').onclick = () => {
+      S.rounds.splice(idx, 1);
+      saveGame();
+      renderSettingsRounds();
+      updateRoundLbl();
+      checkDone();
+    };
+    list.appendChild(row);
+  });
+}
+
+document.getElementById('ms-resume-btn').onclick = () => {
+  document.getElementById('modal-settings').style.display = 'none';
+};
+document.getElementById('ms-quit-btn').onclick = () => {
+  if (!confirm('Завершить игру? Прогресс будет удалён.')) return;
+  document.getElementById('modal-settings').style.display = 'none';
+  deleteSave();
+  stopFlappy();
+  showScreen('screen-setup');
+};
+document.getElementById('ms-add-json-btn').onclick = () => {
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json';
+  inp.onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      const p = JSON.parse(await f.text());
+      S.rounds.push({packName: p.name || f.name.replace(/\.json$/, ''), pack: p});
+      saveGame(); renderSettingsRounds(); updateRoundLbl(); checkDone(); SFX.slide();
+    } catch { alert('Ошибка чтения JSON'); }
+  };
+  inp.click();
+};
+document.getElementById('ms-add-saved-btn').onclick = () => {
+  const popup = document.getElementById('ms-saved-popup');
+  const list = document.getElementById('ms-saved-list');
+  try {
+    const names = JSON.parse(localStorage.getItem('qhb_pack_names') || '[]');
+    if (!names.length) { alert('Нет сохранённых паков.'); return; }
+    list.innerHTML = '';
+    names.forEach(name => {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-secondary btn-sm';
+      btn.textContent = name;
+      btn.onclick = () => {
+        try {
+          const data = JSON.parse(localStorage.getItem('qhb_pack_' + name));
+          if (!data) return;
+          S.rounds.push({packName: data.name || name, pack: data});
+          saveGame(); renderSettingsRounds(); updateRoundLbl(); checkDone();
+          popup.style.display = 'none'; SFX.slide();
+        } catch { alert('Ошибка чтения пака: ' + name); }
+      };
+      list.appendChild(btn);
+    });
+    popup.style.display = '';
+  } catch { alert('Ошибка чтения сохранённых паков.'); }
+};
+
+/* ═══════════════════════════════════════
+   QUESTION
+═══════════════════════════════════════ */
+function openQ(ci, qi) {
+  const k = `${S.ri}-${ci}-${qi}`; if (S.used[k]) return;
+  const cat = S.rounds[S.ri].pack.categories[ci], q = cat.questions[qi];
+  const isMeta = q.meta_after !== undefined && q.meta_after !== null;
+  if (isMeta && (S.metaClosed[`${S.ri}-${ci}`] || 0) < q.meta_after) return;
+  const bonus = q.random_value ? 0 : ((S.progressive[k] || 0) + (S.kubyshka[k] || 0));
+  const qValue = q.random_value
+    ? (() => { const mn=q.value_min||100, mx=Math.max(mn,q.value_max||500); return Math.floor(Math.random()*(mx-mn+1))+mn; })()
+    : ((q.value || 0) + bonus);
+  S.curQ = {ci, qi, k, q, catName: cat.name, buzzMode: cat.buzz_mode || 'unlimited', currentValue: qValue, hintBuzzed: false, lastCorrectTeam: null, blitzAnyCorrect: false,
+    allianceUsed: false, allianceWaiting: false, allianceWaitSec: 0, allianceWaitInt: null, allianceActive: false, allianceTeams: null, allianceBlockedTeams: null};
+  if (q.type === 'blitz') {
+    S.curQ.subs = q.sub_questions || [];
+    S.curQ.subIdx = 0;
+    S.curQ.subPts = S.curQ.subs.length > 0 ? Math.floor(qValue / S.curQ.subs.length) : qValue;
+    S.curQ.currentValue = S.curQ.subPts;
+  }
+  if (q.type === 'reveal') {
+    const N = q.reveal_grid || 3;
+    const order = []; for (let i = 0; i < N * N; i++) order.push(i); _shuffle(order);
+    S.curQ.revealN = N; S.curQ.revealTotal = N * N; S.curQ.revealOrder = order;
+    S.curQ.revealOpened = 0; S.curQ.revealInt = null;
+    S.curQ.revealOrigValue = qValue;
+    S.curQ.revealFrozen = false;
+  }
+  if (q.type === 'traffic' || q.type === 'traffic_blitz') {
+    S.curQ.trafficPool = trafficPool(q);
+    S.curQ.trafficPhase = 0;
+    S.curQ.trafficInt = null;
+    S.curQ.trafficFontPx = 0;
+  }
+  if (q.type === 'traffic_blitz') {
+    S.curQ.trafficRounds = q.traffic_rounds || 5;
+    S.curQ.subIdx = 0;
+    S.curQ.subPts = S.curQ.trafficRounds > 0 ? Math.floor(qValue / S.curQ.trafficRounds) : qValue;
+    S.curQ.currentValue = S.curQ.subPts;
+  }
+  if (q.type === 'danetka') {
+    S.curQ.danYes = new Array(S.teams.length).fill(0);
+    S.curQ.danNo  = new Array(S.teams.length).fill(0);
+  }
+  S.buzzed = null; S.wrongTeams = new Set();
+  if (q.type === 'bag') { openBagModal(q); return; }
+  resetTimer(); fillQ(q, cat);
+  document.getElementById('buzz-pill').style.display = 'none';
+  showJudge(false);
+  document.getElementById('ans-overlay').style.display = 'none';
+  SFX.slide(); showScreen('screen-question');
+  requestAnimationFrame(fitQText);
+}
+
+/* Bag */
+let _bagTeamIdx = 0;
+function openBagModal(q) {
+  _bagTeamIdx = 0;
+  document.getElementById('bag-teams-list').innerHTML = S.teams.map((t, i) =>
+    `<button class="bag-team-btn${i===0?' selected':''}" data-i="${i}">${t.name}</button>`).join('');
+  document.getElementById('bag-value-input').value = S.curQ.currentValue || q.value || 100;
+  document.getElementById('modal-bag').style.display = 'flex';
+  document.querySelectorAll('.bag-team-btn').forEach(btn => {
+    btn.onclick = () => {
+      _bagTeamIdx = parseInt(btn.dataset.i);
+      document.querySelectorAll('.bag-team-btn').forEach(b => b.classList.toggle('selected', b === btn));
+    };
+  });
+}
+document.getElementById('bag-confirm-btn').onclick = () => {
+  S.curQ.bagTeam = _bagTeamIdx;
+  S.curQ.bagValue = parseInt(document.getElementById('bag-value-input').value) || 100;
+  S.curQ.currentValue = S.curQ.bagValue;
+  document.getElementById('modal-bag').style.display = 'none';
+  resetTimer(); fillQ(S.curQ.q, S.rounds[S.ri].pack.categories[S.curQ.ci]);
+  document.getElementById('buzz-pill').style.display = 'none';
+  showJudge(false);
+  document.getElementById('ans-overlay').style.display = 'none';
+  SFX.slide(); showScreen('screen-question');
+  requestAnimationFrame(fitQText);
+};
+document.getElementById('bag-cancel-btn').onclick = () => {
+  document.getElementById('modal-bag').style.display = 'none'; S.curQ = null;
+};
+
+/* Auction */
+function openAuctionModal() {
+  document.getElementById('auction-rows').innerHTML = S.teams.map((t, i) => `
+    <div class="auc-row">
+      <span class="auc-name">${t.name}</span>
+      <input class="auc-inp" type="number" value="0" min="0" step="50" id="auc-val-${i}">
+      <button class="auc-res-btn" data-team="${i}" data-res="correct">✓</button>
+      <button class="auc-res-btn" data-team="${i}" data-res="wrong">✗</button>
+    </div>`).join('');
+  document.querySelectorAll('.auc-res-btn').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll(`.auc-res-btn[data-team="${btn.dataset.team}"]`).forEach(b => b.classList.remove('correct','wrong'));
+      btn.classList.add(btn.dataset.res);
+    };
+  });
+  document.getElementById('modal-auction').style.display = 'flex';
+}
+document.getElementById('auction-apply').onclick = () => {
+  S.teams.forEach((t, i) => {
+    const bid = parseInt(document.getElementById(`auc-val-${i}`).value) || 0; if (bid <= 0) return;
+    const btn = document.querySelector(`.auc-res-btn[data-team="${i}"].correct, .auc-res-btn[data-team="${i}"].wrong`); if (!btn) return;
+    const isCorrect = btn.classList.contains('correct');
+    if (isCorrect) { t.score += bid; SFX.correct(); } else { t.score -= bid; SFX.wrong(); }
+    S.log.push({ ts: Date.now(), teamIdx: i, teamName: t.name, catName: S.curQ.catName,
+      qType: 'auction', value: isCorrect ? bid : -bid, correct: isCorrect, buzzAtSec: null });
+  });
+  updScores();
+  document.getElementById('modal-auction').style.display = 'none';
+  closeQ();
+};
+document.getElementById('auction-annul-btn').onclick = () => {
+  document.getElementById('modal-auction').style.display = 'none'; closeQ(true);
+};
+
+function fitQText() {
+  const el = document.getElementById('q-text');
+  if (!el) return;
+  const body = el.closest('.q-body');
+  if (!body || body.clientHeight === 0) return;
+  const txt = el.textContent.trim();
+  if (!txt) return;
+  // Subtract space used by visible siblings (images, banners, reveal)
+  let sibH = 0;
+  for (const ch of body.children) {
+    if (ch !== el) sibH += ch.offsetHeight;
+  }
+  const availH = body.clientHeight - sibH - 24;
+  if (availH < 20) return;
+  // Binary search: largest px font size that fits vertically
+  let lo = 12, hi = 600, best = 20;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    el.style.fontSize = mid + 'px';
+    if (el.scrollHeight <= availH) { best = mid; lo = mid + 1; }
+    else hi = mid - 1;
+  }
+  el.style.fontSize = best + 'px';
+}
+window.addEventListener('resize', () => {
+  if (document.getElementById('screen-question').classList.contains('active')) fitQText();
+});
+
+function fillQ(q, cat) {
+  const isBag = S.curQ.q.type === 'bag';
+  const isBlitz = q.type === 'blitz';
+  const isTraffic = q.type === 'traffic' || q.type === 'traffic_blitz';
+  const qtEl = document.getElementById('q-text');
+  qtEl.classList.remove('traffic-cycling','traffic-selected');
+  document.getElementById('danetka-panel').style.display = 'none';
+  if (isBlitz) {
+    document.getElementById('q-cat').textContent = `⚡ Блиц — ${cat.name}`;
+    setMedia('q-img','q-aud','q-vid','q-vwrap', {});
+  } else if (isTraffic) {
+    const lbl = q.type === 'traffic_blitz' ? '🚦 Музыкальный блиц' : '🚦 Музыкальный светофор';
+    document.getElementById('q-cat').textContent = `${lbl} — ${cat.name}`;
+    setMedia('q-img','q-aud','q-vid','q-vwrap', {});
+    document.getElementById('reveal-container').style.display = 'none';
+    qtEl.textContent = q.question || '🚦';
+    if (q.type === 'traffic_blitz')
+      document.getElementById('q-val').textContent = `${S.curQ.subPts} баллов (раунд ${S.curQ.subIdx + 1}/${S.curQ.trafficRounds})`;
+    else
+      document.getElementById('q-val').textContent = S.curQ.currentValue + ' баллов';
+  } else {
+    document.getElementById('q-val').textContent = (isBag ? S.curQ.bagValue : S.curQ.currentValue) + ' баллов';
+    const catLabel = isBag ? `Играет: ${S.teams[S.curQ.bagTeam].name}`
+      : (q.type === 'jeopardy' ? `↩ ${cat.name}`
+      : (q.type === 'danetka'  ? `🔵 ${cat.name}`
+      : cat.name));
+    document.getElementById('q-cat').textContent = catLabel;
+    const txt = q.question || '';
+    qtEl.textContent = txt;
+    const rc = document.getElementById('reveal-container');
+    if (q.type === 'reveal') {
+      setMedia('q-img','q-aud','q-vid','q-vwrap', {});
+      rc.style.display = 'flex';
+      buildRevealGrid();
+    } else if (q.type === 'danetka') {
+      rc.style.display = 'none';
+      setMedia('q-img','q-aud','q-vid','q-vwrap', q);
+      document.getElementById('danetka-panel').style.display = '';
+      buildDanPanel();
+    } else {
+      rc.style.display = 'none';
+      setMedia('q-img','q-aud','q-vid','q-vwrap', q);
+    }
+  }
+  if (isBlitz) fillBlitzSub();
+  document.getElementById('last-banner').style.display = 'none';
+  document.getElementById('q-last-end').style.display = q.type === 'last' ? 'inline-flex' : 'none';
+  const startBtn = document.getElementById('q-start');
+  startBtn.style.display = 'inline-flex';
+  startBtn.textContent = isTraffic ? '🚦 Старт [Пробел]' : '▶ Старт';
+  document.getElementById('q-annul').style.display = 'inline-flex';
+  document.getElementById('q-blitz-skip').style.display =
+    ((q.type === 'blitz' && !q.blitz_auto_skip) || q.type === 'traffic_blitz') ? 'inline-flex' : 'none';
+}
+function fillBlitzSub() {
+  const sub = S.curQ.subs[S.curQ.subIdx];
+  const el = document.getElementById('q-text');
+  const txt = sub ? (sub.question || '') : '';
+  el.textContent = txt;
+  requestAnimationFrame(fitQText);
+  document.getElementById('q-val').textContent =
+    `${S.curQ.subPts} баллов (${S.curQ.subIdx + 1}/${S.curQ.subs.length})`;
+}
+/* ═══════════════════════════════════════
+   МУЗЫКАЛЬНЫЙ СВЕТОФОР / БЛИЦ
+═══════════════════════════════════════ */
+function doStart() {
+  if (!S.curQ) return;
+  const t = S.curQ.q.type;
+  if (t === 'traffic' || t === 'traffic_blitz') { trafficAdvance(); return; }
+  if (!S.tRun) {
+    startTimer();
+    if (t === 'reveal') { openRevealTile(); startRevealInterval(); }
+  }
+}
+function trafficAdvance() {
+  const ph = S.curQ.trafficPhase || 0;
+  if (ph === 0) startTrafficCycle();
+  else if (ph === 1) stopTrafficCycle();
+}
+function startTrafficCycle() {
+  const pool = S.curQ.trafficPool || [];
+  if (!pool.length) { stopTrafficCycle(); return; }
+  S.curQ.trafficPhase = 1;
+  const el = document.getElementById('q-text');
+  el.classList.remove('traffic-selected');
+  el.classList.add('traffic-cycling');
+  // Lock font size to fit the longest item once, so cycling stays smooth
+  let longest = pool[0];
+  for (const w of pool) if (String(w).length > String(longest).length) longest = w;
+  el.textContent = longest;
+  fitQText();
+  S.curQ.trafficFontPx = el.style.fontSize;
+  el.textContent = pool[Math.floor(Math.random() * pool.length)];
+  const startBtn = document.getElementById('q-start');
+  startBtn.textContent = '⏹ Стоп [Пробел]';
+  S.curQ.trafficInt = setInterval(() => {
+    el.textContent = pool[Math.floor(Math.random() * pool.length)];
+  }, 75);
+}
+function stopTrafficCycle() {
+  if (S.curQ.trafficInt) { clearInterval(S.curQ.trafficInt); S.curQ.trafficInt = null; }
+  S.curQ.trafficPhase = 2;
+  const pool = S.curQ.trafficPool || [];
+  const item = pool.length ? pool[Math.floor(Math.random() * pool.length)] : '—';
+  const el = document.getElementById('q-text');
+  el.classList.remove('traffic-cycling');
+  el.textContent = item;
+  el.classList.add('traffic-selected');
+  if (S.curQ.trafficFontPx) el.style.fontSize = S.curQ.trafficFontPx;
+  S.curQ.trafficWord = item;
+  document.getElementById('q-start').style.display = 'none';
+  SFX.reveal();
+  startTimer();
+  saveGame();
+}
+function trafficNextRound() {
+  S.curQ.subIdx++;
+  if (S.curQ.subIdx >= S.curQ.trafficRounds) { closeQ(!S.curQ.blitzAnyCorrect); return; }
+  S.wrongTeams = new Set(); S.buzzed = null;
+  S.curQ.trafficPhase = 0;
+  document.getElementById('buzz-pill').style.display = 'none';
+  showJudge(false);
+  const el = document.getElementById('q-text');
+  el.classList.remove('traffic-cycling','traffic-selected');
+  el.style.fontSize = '';
+  el.textContent = S.curQ.q.question || '🚦';
+  document.getElementById('q-val').textContent =
+    `${S.curQ.subPts} баллов (раунд ${S.curQ.subIdx + 1}/${S.curQ.trafficRounds})`;
+  const startBtn = document.getElementById('q-start');
+  startBtn.style.display = 'inline-flex';
+  startBtn.textContent = '🚦 Старт [Пробел]';
+  resetTimer();
+  requestAnimationFrame(fitQText);
+  saveGame();
+}
+
+function setMedia(imgId, audId, vidId, vidWId, src) {
+  const img = document.getElementById(imgId);
+  if (src.image) { img.src = src.image; img.style.display = 'block'; } else img.style.display = 'none';
+  const aud = document.getElementById(audId);
+  if (src.audio) { aud.src = src.audio; aud.style.display = 'block'; } else aud.style.display = 'none';
+  const vw = document.getElementById(vidWId), vid = document.getElementById(vidId);
+  if (src.video) { vid.src = src.video; vw.style.display = 'block'; } else vw.style.display = 'none';
+}
+
+/* ═══════════════════════════════════════
+   TIMER
+═══════════════════════════════════════ */
+function resetTimer() {
+  const tot = (S.curQ?.q?.timer) || 60;
+  S.tTot = tot;
+  clearInterval(S.tInt); S.tRun = false; S.tSec = tot;
+  const arc = document.getElementById('t-arc'); arc.style.strokeDashoffset = '0'; arc.style.stroke = '';
+  const num = document.getElementById('t-num'); num.textContent = tot; num.style.color = '#fff';
+  const wrap = document.getElementById('timer-wrap'); wrap.classList.remove('active','flash-start');
+}
+function startTimer() {
+  if (S.tRun) return; S.tRun = true;
+  const wrap = document.getElementById('timer-wrap');
+  const arc = document.getElementById('t-arc');
+  wrap.classList.add('active');
+  arc.style.stroke = '#fff'; arc.style.transition = 'none';
+  wrap.classList.remove('flash-start');
+  requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('flash-start')));
+  setTimeout(() => { wrap.classList.remove('flash-start'); arc.style.stroke = ''; arc.style.transition = ''; }, 1500);
+  S.tInt = setInterval(() => {
+    S.tSec--; updTimer(S.tSec, S.tTot);
+    if (S.tSec <= 5 && S.tSec > 0) SFX.tick();
+    if (S.tSec <= 0) { clearInterval(S.tInt); S.tRun = false; onTimerEnd(); }
+  }, 1000);
+}
+function pauseTimer()  { clearInterval(S.tInt); S.tRun = false; }
+function resumeTimer() { if (S.tSec > 0) startTimer(); }
+function updTimer(s, tot) {
+  document.getElementById('t-num').textContent = s;
+  const arc = document.getElementById('t-arc');
+  arc.style.strokeDashoffset = TARC_VAL * (1 - s / tot);
+  if (!document.getElementById('timer-wrap').classList.contains('flash-start')) {
+    if (s <= 5)       { arc.style.stroke = '#e74c3c'; document.getElementById('t-num').style.color = '#e74c3c'; }
+    else if (s <= 15) { arc.style.stroke = '#e67e22'; document.getElementById('t-num').style.color = '#e67e22'; }
+    else              { arc.style.stroke = '';         document.getElementById('t-num').style.color = '#fff'; }
+  }
+}
+function onTimerEnd() {
+  if (S.curQ && S.curQ.allianceActive) { allianceWrong(); return; }
+  if (S.curQ && S.curQ.q.type === 'auction') { openAuctionModal(); return; }
+  if (S.curQ && S.curQ.q.type === 'last')    { awardLastCorrect(); return; }
+  if (S.curQ && S.curQ.q.type === 'reveal')  { openAllRevealTiles(); }
+  SFX.timerEnd();
+  flash('rgba(255,255,255,.5)');
+  S.buzzed = null;
+  document.getElementById('buzz-pill').style.display = 'none';
+  showJudge(false);
+  document.getElementById('q-start').style.display = 'none';
+}
+function awardLastCorrect() {
+  pauseTimer();
+  if (S.curQ.lastCorrectTeam !== null) {
+    const t = S.teams[S.curQ.lastCorrectTeam];
+    const pts = S.curQ.currentValue;
+    t.score += pts; updScores(); SFX.correct(); flash('rgba(46,204,113,.45)');
+    showPopup(pts, t.name);
+    S.log.push({ ts: Date.now(), teamIdx: S.curQ.lastCorrectTeam, teamName: t.name,
+      catName: S.curQ.catName, qType: 'last-award', value: pts, correct: true, buzzAtSec: null });
+    closeQ();
+  } else {
+    SFX.timerEnd(); flash('rgba(255,255,255,.4)');
+    closeQ(true);
+  }
+}
+document.getElementById('q-last-end').onclick = () => {
+  if (S.curQ && S.curQ.q.type === 'last') awardLastCorrect();
+};
+
+/* ═══════════════════════════════════════
+   BUZZ & JUDGE
+═══════════════════════════════════════ */
+function onBuzz(idx) {
+  if (!S.teams[idx]) return;
+  if (!S.curQ) return;
+
+  // Alliance waiting takes priority — join regardless of timer state
+  if (S.curQ.allianceWaiting) {
+    joinAlliance(idx);
+    return;
+  }
+
+  if (!S.tRun && S.tSec === S.tTot) return;
+  if (S.curQ.q.type === 'auction') return;
+  if (S.curQ.q.type === 'bag' && idx !== S.curQ.bagTeam) return;
+
+  if (S.buzzed !== null) return;
+  if (S.curQ.buzzMode === 'one_chance' && S.wrongTeams.has(idx)) return;
+  if (S.curQ.allianceBlockedTeams && S.curQ.allianceBlockedTeams.has(idx)) return;
+
+  const bq = S.curQ.q;
+  const timerPauses = !(bq.type === 'blitz' || bq.type === 'last') || !!bq.buzz_pauses_timer;
+  if (timerPauses) pauseTimer();
+  if (bq.type === 'reveal') { clearInterval(S.curQ.revealInt); S.curQ.revealInt = null; S.curQ.revealFrozen = true; }
+  S.buzzed = idx; SFX.buzz();
+  S.curQ.lastBuzzAtSec = S.tTot - S.tSec;
+  if (S.curQ.q.type === 'danetka') updDanPanel();
+  saveGame();
+  showBuzzFlash(S.teams[idx].name);
+  const pill = document.getElementById('buzz-pill');
+  pill.textContent = S.teams[idx].name; pill.style.display = 'inline-block';
+  showJudge(true);
+  document.getElementById('q-start').style.display = 'none';
+}
+function showJudge(v) {
+  const q = S.curQ ? S.curQ.q : null;
+  const isJeopardy = q && q.type === 'jeopardy';
+  const isDanetka  = q && q.type === 'danetka';
+  document.getElementById('q-correct').style.display = (v && !isJeopardy && !isDanetka) ? 'inline-flex' : 'none';
+  document.getElementById('q-wrong').style.display   = (v && !isJeopardy && !isDanetka) ? 'inline-flex' : 'none';
+  const canHint = v && q && q.type === 'normal' && S.modeHint && S.buzzed !== null && !S.hintsUsed[S.buzzed] && !S.curQ.hintBuzzed && !S.curQ.allianceUsed && !S.curQ.allianceActive;
+  document.getElementById('q-hint').style.display = canHint ? 'inline-flex' : 'none';
+  const canAlliance = v && q && q.type === 'normal' && (q.alliance || S.modeAlliance) && S.curQ && !S.curQ.allianceUsed && !S.curQ.allianceWaiting && !S.curQ.allianceActive;
+  document.getElementById('q-alliance').style.display = canAlliance ? 'inline-flex' : 'none';
+  if (v && isJeopardy) buildJeopardyBtns();
+  else document.getElementById('jeopardy-btns').style.display = 'none';
+  if (v && isDanetka) buildDanJudgeBtns();
+  else document.getElementById('danetka-judge').style.display = 'none';
+}
+
+document.getElementById('q-correct').onclick = () => {
+  hideBuzzFlash();
+  if (S.curQ.allianceActive) {
+    const [a, b] = S.curQ.allianceTeams;
+    const pts = Math.ceil(S.curQ.currentValue / 2);
+    S.teams[a].score += pts; S.teams[b].score += pts;
+    updScores(); SFX.correct(); flash('rgba(46,204,113,.45)');
+    showPopup(pts, `${S.teams[a].name} + ${S.teams[b].name}`);
+    S.log.push({ ts: Date.now(), teamIdx: a, teamName: S.teams[a].name, catName: S.curQ.catName, qType: 'alliance', value: pts, correct: true, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+    S.log.push({ ts: Date.now(), teamIdx: b, teamName: S.teams[b].name, catName: S.curQ.catName, qType: 'alliance', value: pts, correct: true, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+    closeQ(); return;
+  }
+  const q = S.curQ.q, t = S.teams[S.buzzed];
+  if (q.type === 'blitz') {
+    const pts = S.curQ.subPts;
+    t.score += pts; updScores(); SFX.correct(); flash('rgba(46,204,113,.45)');
+    showPopup(pts, t.name);
+    S.log.push({ ts: Date.now(), teamIdx: S.buzzed, teamName: t.name, catName: S.curQ.catName,
+      qType: 'blitz', value: pts, correct: true, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+    S.curQ.blitzAnyCorrect = true;
+    S.curQ.subIdx++;
+    if (S.curQ.subIdx >= S.curQ.subs.length) { closeQ(); return; }
+    S.wrongTeams = new Set(); S.buzzed = null;
+    document.getElementById('buzz-pill').style.display = 'none';
+    showJudge(false); fillBlitzSub();
+    if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
+    saveGame(); return;
+  }
+  if (q.type === 'traffic_blitz') {
+    const pts = S.curQ.subPts;
+    t.score += pts; updScores(); SFX.correct(); flash('rgba(46,204,113,.45)');
+    showPopup(pts, t.name);
+    S.log.push({ ts: Date.now(), teamIdx: S.buzzed, teamName: t.name, catName: S.curQ.catName,
+      qType: 'traffic_blitz', value: pts, correct: true, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+    S.curQ.blitzAnyCorrect = true;
+    trafficNextRound();
+    return;
+  }
+  if (q.type === 'last') {
+    S.curQ.lastCorrectTeam = S.buzzed;
+    S.log.push({ ts: Date.now(), teamIdx: S.buzzed, teamName: t.name, catName: S.curQ.catName,
+      qType: 'last', value: 0, correct: true, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+    SFX.correct(); flash('rgba(46,204,113,.22)');
+    const banner = document.getElementById('last-banner');
+    banner.style.display = 'block';
+    banner.textContent = `Последний верный ответ: ${t.name}`;
+    S.wrongTeams = new Set();
+    S.buzzed = null;
+    document.getElementById('buzz-pill').style.display = 'none';
+    showJudge(false);
+    if (S.tSec > 0) startTimer();
+    return;
+  }
+  const pts = q.type === 'bag' ? S.curQ.bagValue : S.curQ.currentValue;
+  t.score += pts; updScores(); SFX.correct(); flash('rgba(46,204,113,.45)');
+  S.log.push({ ts: Date.now(), teamIdx: S.buzzed, teamName: t.name, catName: S.curQ.catName,
+    qType: q.type, value: pts, correct: true, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+  const rev = q.answer_reveal;
+  if (!rev || (!rev.text && !rev.image && !rev.audio && !rev.video)) showPopup(pts, t.name);
+  closeQ();
+};
+document.getElementById('q-wrong').onclick = () => {
+  hideBuzzFlash();
+  if (S.curQ.allianceActive) { allianceWrong(); return; }
+  const q = S.curQ.q, t = S.teams[S.buzzed];
+  let pen = 0;
+  if (q.type === 'bag') pen = S.curQ.bagValue;
+  else if (q.penalty === 'half') pen = Math.floor(S.curQ.currentValue / 2);
+  else if (q.penalty === 'full') pen = S.curQ.currentValue;
+  const rev = q.answer_reveal, hasReveal = rev && (rev.text || rev.image || rev.audio || rev.video);
+  if (pen) { t.score -= pen; if (!hasReveal) showPopup(-pen, t.name); }
+  updScores(); SFX.wrong(); flash('rgba(231,76,60,.45)');
+  S.log.push({ ts: Date.now(), teamIdx: S.buzzed, teamName: t.name, catName: S.curQ.catName,
+    qType: q.type, value: -pen, correct: false, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+  if (q.type === 'bag') { closeQ(); return; }
+  if (S.curQ.hintBuzzed) { clearHintTimer(); afterHintFail(); saveGame(); return; }
+  if (q.type === 'blitz') {
+    if (q.blitz_auto_skip) {
+      S.curQ.subIdx++;
+      if (S.curQ.subIdx >= S.curQ.subs.length) { closeQ(!S.curQ.blitzAnyCorrect); return; }
+      S.wrongTeams = new Set(); S.buzzed = null;
+      document.getElementById('buzz-pill').style.display = 'none';
+      showJudge(false); fillBlitzSub();
+      if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
+    } else {
+      S.wrongTeams.add(S.buzzed); S.buzzed = null;
+      document.getElementById('buzz-pill').style.display = 'none';
+      showJudge(false);
+      if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
+      resumeTimer();
+    }
+    saveGame(); return;
+  }
+  if (q.type === 'traffic_blitz') {
+    if (q.blitz_auto_skip) { trafficNextRound(); return; }
+    S.wrongTeams.add(S.buzzed); S.buzzed = null;
+    document.getElementById('buzz-pill').style.display = 'none';
+    showJudge(false);
+    if (S.curQ.buzzMode === 'one_chance' && S.teams.every((_, i) => S.wrongTeams.has(i))) { trafficNextRound(); return; }
+    resumeTimer(); saveGame(); return;
+  }
+  const isReveal = q.type === 'reveal';
+  const isTrafficSingle = q.type === 'traffic';
+  S.wrongTeams.add(S.buzzed); S.buzzed = null;
+  document.getElementById('buzz-pill').style.display = 'none';
+  showJudge(false);
+  if (!S.tRun && !isReveal && !isTrafficSingle) document.getElementById('q-start').style.display = 'inline-flex';
+  if (S.curQ.buzzMode === 'one_chance' && S.teams.every((_, i) => S.wrongTeams.has(i))) { closeQ(true); return; }
+  resumeTimer();
+  if (isReveal) { S.curQ.revealFrozen = false; startRevealInterval(); }
+  saveGame();
+};
+document.getElementById('q-annul').onclick = () => {
+  if (S.curQ && S.curQ.allianceWaiting) {
+    clearInterval(S.curQ.allianceWaitInt); S.curQ.allianceWaiting = false;
+    document.getElementById('alliance-wait').style.display = 'none';
+  }
+  if (S.curQ && S.curQ.q.type === 'auction') { pauseTimer(); openAuctionModal(); }
+  else closeQ(true);
+};
+document.getElementById('q-blitz-skip').onclick = () => {
+  if (!S.curQ) return;
+  if (S.curQ.q.type === 'traffic_blitz') {
+    pauseTimer();
+    if (S.curQ.trafficInt) { clearInterval(S.curQ.trafficInt); S.curQ.trafficInt = null; }
+    trafficNextRound();
+    return;
+  }
+  if (S.curQ.q.type !== 'blitz') return;
+  pauseTimer();
+  if (S.buzzed !== null) {
+    S.buzzed = null;
+    document.getElementById('buzz-pill').style.display = 'none';
+    showJudge(false);
+  }
+  S.curQ.subIdx++;
+  if (S.curQ.subIdx >= S.curQ.subs.length) { closeQ(!S.curQ.blitzAnyCorrect); return; }
+  S.wrongTeams = new Set();
+  fillBlitzSub();
+  if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
+};
+document.getElementById('q-back').onclick = () => { pauseTimer(); showScreen('screen-board'); };
+document.getElementById('q-start').onclick = doStart;
+document.getElementById('ans-close').onclick = () => {
+  document.getElementById('ans-overlay').style.display = 'none';
+  S.used[S.curQ.k] = true; buildBoard(); checkDone(); showScreen('screen-board'); nextChooser(); saveGame();
+};
+
+function startHintTimer() {
+  S.hintSec = 10;
+  const pill = document.getElementById('buzz-pill');
+  pill.textContent = `💡 ${S.teams[S.buzzed].name} — подсказка!`;
+  updHintTimer();
+  S.hintInt = setInterval(() => {
+    S.hintSec--;
+    updHintTimer();
+    if (S.hintSec <= 0) {
+      clearInterval(S.hintInt); S.hintInt = null;
+      afterHintFail();
+    }
+  }, 1000);
+}
+function afterHintFail() {
+  S.curQ.hintBuzzed = false;
+  S.buzzed = null;
+  document.getElementById('buzz-pill').style.display = 'none';
+  showJudge(false);
+  S.wrongTeams = new Set();
+  clearInterval(S.tInt); S.tRun = false; S.tSec = S.tTot;
+  const arc = document.getElementById('t-arc'); arc.style.strokeDashoffset = '0'; arc.style.stroke = '';
+  const num = document.getElementById('t-num'); num.textContent = S.tTot; num.style.color = '#fff';
+  document.getElementById('timer-wrap').classList.remove('active', 'flash-start');
+  document.getElementById('q-start').style.display = 'inline-flex';
+}
+function clearHintTimer() {
+  clearInterval(S.hintInt); S.hintInt = null; S.hintSec = 0;
+}
+function updHintTimer() {
+  const num = document.getElementById('t-num'), arc = document.getElementById('t-arc');
+  const wrap = document.getElementById('timer-wrap');
+  wrap.classList.add('active');
+  num.textContent = S.hintSec;
+  arc.style.strokeDashoffset = TARC_VAL * (1 - S.hintSec / 10);
+  arc.style.stroke = '#4f8ef7'; num.style.color = '#4f8ef7';
+}
+function useHint() {
+  if (S.buzzed === null || S.curQ.hintBuzzed || S.hintsUsed[S.buzzed]) return;
+  S.hintsUsed[S.buzzed] = true;
+  S.curQ.hintBuzzed = true;
+  S.curQ.currentValue = Math.floor(S.curQ.currentValue / 2);
+  document.getElementById('q-val').textContent = S.curQ.currentValue + ' баллов (½ подсказка)';
+  showJudge(true); // re-renders buttons; hint button hidden since hintBuzzed=true
+  startHintTimer();
+}
+document.getElementById('q-hint').onclick = useHint;
+
+function closeQ(failed = false) {
+  pauseTimer();
+  clearHintTimer();
+  if (S.curQ.revealInt) { clearInterval(S.curQ.revealInt); S.curQ.revealInt = null; }
+  if (S.curQ.trafficInt) { clearInterval(S.curQ.trafficInt); S.curQ.trafficInt = null; }
+  if (S.curQ.allianceWaitInt) { clearInterval(S.curQ.allianceWaitInt); }
+  const qtClose = document.getElementById('q-text');
+  qtClose.classList.remove('traffic-cycling','traffic-selected'); qtClose.style.fontSize = '';
+  document.getElementById('alliance-wait').style.display = 'none';
+  document.getElementById('reveal-container').style.display = 'none';
+  document.getElementById('jeopardy-btns').style.display = 'none';
+  document.getElementById('danetka-panel').style.display = 'none';
+  document.getElementById('danetka-judge').style.display = 'none';
+  document.getElementById('q-alliance').style.display = 'none';
+  const ci = S.curQ.ci, qi = S.curQ.qi, k = S.curQ.k;
+  if (failed) triggerKubyshka();
+  onQuestionClosed(ci, qi);
+  const rev = S.curQ.q.answer_reveal;
+  if (rev && (rev.text || rev.image || rev.audio || rev.video)) {
+    SFX.reveal();
+    document.getElementById('ans-text').textContent = rev.text || '';
+    const ai=document.getElementById('ans-img'); if(rev.image){ai.src=rev.image;ai.style.display='block';}else ai.style.display='none';
+    const aa=document.getElementById('ans-aud'); if(rev.audio){aa.src=rev.audio;aa.style.display='block';}else aa.style.display='none';
+    const av=document.getElementById('ans-vid'); if(rev.video){av.src=rev.video;av.style.display='block';}else av.style.display='none';
+    document.getElementById('ans-overlay').style.display = 'flex';
+    saveGame();
+  } else {
+    S.used[k] = true; buildBoard(); checkDone(); showScreen('screen-board'); nextChooser();
+    saveGame();
+  }
+}
+
+function onQuestionClosed(ci, qi) {
+  const cat = S.rounds[S.ri].pack.categories[ci];
+  const q = cat.questions[qi];
+  const isMeta = q.meta_after !== undefined && q.meta_after !== null;
+  if (!isMeta) {
+    const mk = `${S.ri}-${ci}`;
+    S.metaClosed[mk] = (S.metaClosed[mk] || 0) + 1;
+  }
+  if (cat.progressive || S.modeProgressive) {
+    if (S.modeProgressive) {
+      // Global mode: +10% на все открытые вопросы всей таблицы
+      S.rounds[S.ri].pack.categories.forEach((cc, cci) => {
+        cc.questions.forEach((qq, qqi) => {
+          if (cci === ci && qqi === qi) return;
+          const kk = `${S.ri}-${cci}-${qqi}`;
+          if (S.used[kk]) return;
+          if (qq.random_value) return;
+          S.progressive[kk] = (S.progressive[kk] || 0) + Math.ceil((qq.value || 0) * 0.10);
+        });
+      });
+    } else {
+      // Per-category mode: +10% только внутри той же категории
+      cat.questions.forEach((qq, qqi) => {
+        if (qqi === qi) return;
+        const kk = `${S.ri}-${ci}-${qqi}`;
+        if (S.used[kk]) return;
+        if (qq.random_value) return;
+        S.progressive[kk] = (S.progressive[kk] || 0) + Math.ceil((qq.value || 0) * 0.10);
+      });
+    }
+  }
+}
+
+function triggerKubyshka() {
+  if (!S.curQ) return;
+  const cat = S.rounds[S.ri].pack.categories[S.curQ.ci];
+  if (!cat.kubyshka && !S.modeKubyshka) return;
+  const q = S.curQ.q;
+  let amount;
+  if (q.random_value) {
+    amount = S.curQ.currentValue;
+  } else if (q.type === 'auction' || q.type === 'blitz') {
+    amount = q.value || 0;
+  } else {
+    amount = (q.value || 0) + (S.progressive[S.curQ.k] || 0) + (S.kubyshka[S.curQ.k] || 0);
+  }
+  if (amount <= 0) return;
+  const eligible = [];
+  S.rounds[S.ri].pack.categories[S.curQ.ci].questions.forEach((qq, qi) => {
+    if (qi === S.curQ.qi) return;
+    const kk = `${S.ri}-${S.curQ.ci}-${qi}`;
+    if (S.used[kk]) return;
+    if (qq.random_value) return;
+    eligible.push({ k: kk, val: (qq.value || 0) + (S.progressive[kk] || 0) + (S.kubyshka[kk] || 0) });
+  });
+  if (!eligible.length) return;
+  const N = eligible.length;
+  const base = Math.floor(amount / N);
+  const remainder = amount - base * N;
+  let richIdx = 0;
+  eligible.forEach((e, i) => { if (e.val > eligible[richIdx].val) richIdx = i; });
+  eligible.forEach((e, i) => {
+    S.kubyshka[e.k] = (S.kubyshka[e.k] || 0) + base + (i === richIdx ? remainder : 0);
+  });
+}
+
+/* ═══════════════════════════════════════
+   ALLIANCE
+═══════════════════════════════════════ */
+document.getElementById('q-alliance').onclick = () => {
+  if (!S.curQ || (!S.curQ.q.alliance && !S.modeAlliance) || S.curQ.allianceUsed) return;
+  const teamAIdx = S.buzzed;
+  S.curQ.allianceUsed = true;
+  S.curQ.allianceWaiting = true;
+  S.curQ.allianceTeams = [teamAIdx, null];
+  S.curQ.allianceWaitSec = 5;
+  showJudge(false);
+  document.getElementById('q-start').style.display = 'none';
+  document.getElementById('alliance-wait-text').textContent = `🤝 ${S.teams[teamAIdx].name} предлагает альянс`;
+  document.getElementById('alliance-wait-sec').textContent = '5';
+  // Build per-team join buttons
+  const btns = document.getElementById('alliance-team-btns');
+  btns.innerHTML = '';
+  S.teams.forEach((t, i) => {
+    if (i === teamAIdx) return;
+    if (S.curQ.buzzMode === 'one_chance' && S.wrongTeams.has(i)) return;
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-primary';
+    btn.style.cssText = 'font-size:1.4rem;padding:.7em 1.6em;font-weight:800;background:#9b59b6;border-color:#9b59b6;min-width:140px';
+    btn.textContent = t.name;
+    btn.onclick = () => joinAlliance(i);
+    btns.appendChild(btn);
+  });
+  document.getElementById('alliance-wait').style.display = 'flex';
+  S.curQ.allianceWaitInt = setInterval(() => {
+    S.curQ.allianceWaitSec--;
+    document.getElementById('alliance-wait-sec').textContent = S.curQ.allianceWaitSec;
+    if (S.curQ.allianceWaitSec <= 0) {
+      clearInterval(S.curQ.allianceWaitInt); S.curQ.allianceWaiting = false;
+      document.getElementById('alliance-wait').style.display = 'none';
+      showJudge(true);
+    }
+  }, 1000);
+};
+
+function joinAlliance(idx) {
+  if (!S.curQ || !S.curQ.allianceWaiting) return;
+  if (idx === S.curQ.allianceTeams[0]) return;
+  if (S.curQ.buzzMode === 'one_chance' && S.wrongTeams.has(idx)) return;
+  clearInterval(S.curQ.allianceWaitInt); S.curQ.allianceWaiting = false;
+  S.curQ.allianceActive = true; S.curQ.allianceTeams[1] = idx;
+  document.getElementById('alliance-wait').style.display = 'none';
+  const pill = document.getElementById('buzz-pill');
+  pill.textContent = `🤝 ${S.teams[S.curQ.allianceTeams[0]].name} + ${S.teams[idx].name}`;
+  pill.style.display = 'inline-block';
+  S.curQ.allianceSavedTTot = S.tTot; S.curQ.allianceSavedTSec = S.tSec;
+  S.tTot = 20; S.tSec = 20; updTimer(20, 20);
+  const arc = document.getElementById('t-arc'), num = document.getElementById('t-num');
+  arc.style.stroke = '#9b59b6'; num.style.color = '#9b59b6';
+  document.getElementById('timer-wrap').classList.add('active');
+  startTimer();
+  showJudge(true);
+  saveGame();
+}
+
+function allianceWrong() {
+  pauseTimer();
+  const [a, b] = S.curQ.allianceTeams;
+  const q = S.curQ.q;
+  let pen = 0;
+  if (q.penalty === 'half') pen = Math.floor(S.curQ.currentValue / 2);
+  else if (q.penalty === 'full') pen = S.curQ.currentValue;
+  if (pen) { S.teams[a].score -= pen; S.teams[b].score -= pen; if (!q.answer_reveal?.text && !q.answer_reveal?.image) showPopup(-pen, `${S.teams[a].name} + ${S.teams[b].name}`); }
+  updScores(); SFX.wrong(); flash('rgba(231,76,60,.45)');
+  S.log.push({ ts: Date.now(), teamIdx: a, teamName: S.teams[a].name, catName: S.curQ.catName, qType: 'alliance', value: -pen, correct: false, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+  S.log.push({ ts: Date.now(), teamIdx: b, teamName: S.teams[b].name, catName: S.curQ.catName, qType: 'alliance', value: -pen, correct: false, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+  S.curQ.allianceActive = false;
+  if (!S.curQ.allianceBlockedTeams) S.curQ.allianceBlockedTeams = new Set();
+  S.curQ.allianceBlockedTeams.add(a); S.curQ.allianceBlockedTeams.add(b);
+  if (S.curQ.buzzMode === 'one_chance') { S.wrongTeams.add(a); S.wrongTeams.add(b); }
+  S.buzzed = null;
+  document.getElementById('buzz-pill').style.display = 'none';
+  showJudge(false);
+  if (S.curQ.buzzMode === 'one_chance' && S.teams.every((_, i) => S.wrongTeams.has(i))) { closeQ(true); return; }
+  S.tTot = S.curQ.allianceSavedTTot || S.tTot;
+  S.tSec = S.curQ.allianceSavedTSec || 0;
+  updTimer(S.tSec, S.tTot);
+  const arc = document.getElementById('t-arc'), num = document.getElementById('t-num');
+  arc.style.stroke = ''; num.style.color = '#fff';
+  if (S.tSec > 0) resumeTimer();
+  else document.getElementById('q-start').style.display = 'inline-flex';
+  saveGame();
+}
+
+/* ═══════════════════════════════════════
+   JEOPARDY
+═══════════════════════════════════════ */
+function buildJeopardyBtns() {
+  const panel = document.getElementById('jeopardy-btns');
+  panel.innerHTML = '';
+  panel.style.display = 'flex';
+  const mults = [
+    { label: '2×', val: 2 }, { label: '1×', val: 1 }, { label: '¾', val: 0.75 },
+    { label: '½', val: 0.5 }, { label: '¼', val: 0.25 }, { label: '⅛', val: 0.125 },
+    { label: '✗ Неверно', val: 0, wrong: true }
+  ];
+  mults.forEach(m => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-sm ' + (m.wrong ? 'btn-danger' : 'btn-success');
+    btn.style.cssText = 'font-size:1.1rem;padding:.5em 1em;font-weight:700';
+    btn.textContent = m.label;
+    btn.onclick = () => applyJeopardyMult(m.val, !!m.wrong);
+    panel.appendChild(btn);
+  });
+}
+function applyJeopardyMult(mult, isWrong) {
+  hideBuzzFlash();
+  document.getElementById('jeopardy-btns').style.display = 'none';
+  const q = S.curQ.q, t = S.teams[S.buzzed];
+  if (isWrong) {
+    let pen = 0;
+    if (q.penalty === 'half') pen = Math.floor(S.curQ.currentValue / 2);
+    else if (q.penalty === 'full') pen = S.curQ.currentValue;
+    if (pen) { t.score -= pen; showPopup(-pen, t.name); }
+    updScores(); SFX.wrong(); flash('rgba(231,76,60,.45)');
+    S.log.push({ ts: Date.now(), teamIdx: S.buzzed, teamName: t.name, catName: S.curQ.catName, qType: 'jeopardy', value: -pen, correct: false, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+    S.wrongTeams.add(S.buzzed); S.buzzed = null;
+    document.getElementById('buzz-pill').style.display = 'none';
+    showJudge(false);
+    if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
+    if (S.curQ.buzzMode === 'one_chance' && S.teams.every((_, i) => S.wrongTeams.has(i))) { closeQ(true); return; }
+    resumeTimer(); saveGame();
+  } else {
+    const pts = Math.ceil(S.curQ.currentValue * mult);
+    t.score += pts; updScores(); SFX.correct(); flash('rgba(46,204,113,.45)');
+    S.log.push({ ts: Date.now(), teamIdx: S.buzzed, teamName: t.name, catName: S.curQ.catName, qType: 'jeopardy', value: pts, correct: true, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+    const rev = q.answer_reveal;
+    if (!rev || (!rev.text && !rev.image && !rev.audio && !rev.video)) showPopup(pts, t.name);
+    closeQ();
+  }
+}
+
+/* ═══════════════════════════════════════
+   ДАНЕТКА
+═══════════════════════════════════════ */
+function buildDanPanel() {
+  const tbody = document.getElementById('danetka-tbody');
+  tbody.innerHTML = '';
+  S.teams.forEach((t, i) => {
+    const tr = document.createElement('tr');
+    tr.id = `dan-row-${i}`;
+    tr.innerHTML = `<td class="dan-name">${t.name}</td>
+      <td class="dan-cnt dan-cnt-yes"><span class="dan-yes-v">${S.curQ.danYes[i]}</span></td>
+      <td class="dan-cnt dan-cnt-no"><span class="dan-no-v">${S.curQ.danNo[i]}</span></td>`;
+    tbody.appendChild(tr);
+  });
+}
+function updDanPanel() {
+  if (!S.curQ) return;
+  S.teams.forEach((t, i) => {
+    const row = document.getElementById(`dan-row-${i}`);
+    if (!row) return;
+    row.querySelector('.dan-yes-v').textContent = S.curQ.danYes[i];
+    row.querySelector('.dan-no-v').textContent  = S.curQ.danNo[i];
+    row.classList.toggle('dan-buzzed', S.buzzed === i);
+  });
+}
+function buildDanJudgeBtns() {
+  const panel = document.getElementById('danetka-judge');
+  panel.innerHTML = '';
+  panel.style.display = 'flex';
+  const actions = [
+    { label: '✓ Да [Пробел]',          cls: 'btn-success',   result: 'yes' },
+    { label: '✗ Нет [Z]',              cls: 'btn-danger',    result: 'no' },
+    { label: '~ Возможно [X]',         cls: 'btn-secondary', result: 'maybe' },
+    { label: '🎯 Правильный ответ [Enter]', cls: 'btn-primary', result: 'correct' },
+  ];
+  actions.forEach(a => {
+    const btn = document.createElement('button');
+    btn.className = `btn btn-sm ${a.cls}`;
+    btn.style.cssText = 'font-size:1.05rem;padding:.5em 1.1em;font-weight:700';
+    btn.textContent = a.label;
+    btn.onclick = () => danAnswer(a.result);
+    panel.appendChild(btn);
+  });
+}
+function danAnswer(result) {
+  hideBuzzFlash();
+  document.getElementById('danetka-judge').style.display = 'none';
+  const teamIdx = S.buzzed;
+  const t = S.teams[teamIdx];
+  const val = S.curQ.currentValue;
+  if (result === 'yes') {
+    S.curQ.danYes[teamIdx]++;
+    updDanPanel();
+    S.log.push({ ts: Date.now(), teamIdx, teamName: t.name, catName: S.curQ.catName, qType: 'danetka', value: 0, correct: true, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+    SFX.correct(); flash('rgba(46,204,113,.18)');
+    S.wrongTeams = new Set(); S.buzzed = null;
+    document.getElementById('buzz-pill').style.display = 'none';
+    showJudge(false);
+    if (S.tSec > 0) resumeTimer(); else document.getElementById('q-start').style.display = 'inline-flex';
+  } else if (result === 'no') {
+    S.curQ.danNo[teamIdx]++;
+    updDanPanel();
+    S.log.push({ ts: Date.now(), teamIdx, teamName: t.name, catName: S.curQ.catName, qType: 'danetka', value: 0, correct: false, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+    SFX.wrong(); flash('rgba(231,76,60,.18)');
+    S.wrongTeams = new Set(); S.buzzed = null;
+    document.getElementById('buzz-pill').style.display = 'none';
+    showJudge(false);
+    if (S.tSec > 0) resumeTimer(); else document.getElementById('q-start').style.display = 'inline-flex';
+  } else if (result === 'maybe') {
+    S.wrongTeams = new Set(); S.buzzed = null;
+    document.getElementById('buzz-pill').style.display = 'none';
+    showJudge(false);
+    if (S.tSec > 0) resumeTimer(); else document.getElementById('q-start').style.display = 'inline-flex';
+  } else if (result === 'correct') {
+    t.score += val;
+    S.log.push({ ts: Date.now(), teamIdx, teamName: t.name, catName: S.curQ.catName, qType: 'danetka', value: val, correct: true, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+    S.teams.forEach((team, i) => {
+      const yesBonus = Math.floor(S.curQ.danYes[i] * val / 10);
+      const noPen   = Math.floor(S.curQ.danNo[i]  * val / 10);
+      if (yesBonus) { team.score += yesBonus; S.log.push({ ts: Date.now(), teamIdx: i, teamName: team.name, catName: S.curQ.catName, qType: 'danetka', value: yesBonus, correct: true, buzzAtSec: null }); }
+      if (noPen)    { team.score -= noPen;    S.log.push({ ts: Date.now(), teamIdx: i, teamName: team.name, catName: S.curQ.catName, qType: 'danetka', value: -noPen,   correct: false, buzzAtSec: null }); }
+    });
+    updScores(); SFX.correct(); flash('rgba(46,204,113,.45)');
+    showPopup(val, t.name);
+    closeQ();
+  }
+  saveGame();
+}
+
+/* ═══════════════════════════════════════
+   REVEAL
+═══════════════════════════════════════ */
+function buildRevealGrid() {
+  const q = S.curQ.q, N = S.curQ.revealN;
+  document.getElementById('reveal-img-el').src = q.image || '';
+  const grid = document.getElementById('reveal-grid-el');
+  grid.style.gridTemplateColumns = `repeat(${N}, 1fr)`;
+  grid.style.gridTemplateRows = `repeat(${N}, 1fr)`;
+  grid.innerHTML = '';
+  for (let i = 0; i < N * N; i++) {
+    const tile = document.createElement('div');
+    tile.className = 'reveal-tile'; tile.id = `rtile-${i}`; grid.appendChild(tile);
+  }
+  // First tile opens on Start, not here
+}
+function openRevealTile() {
+  const idx = S.curQ.revealOpened;
+  if (idx >= S.curQ.revealTotal) return;
+  const tileIdx = S.curQ.revealOrder[idx];
+  const tile = document.getElementById(`rtile-${tileIdx}`);
+  if (tile) tile.classList.add('open');
+  S.curQ.revealOpened++;
+  if (idx > 0) {
+    S.curQ.currentValue = Math.max(1, Math.round(S.curQ.revealOrigValue * (S.curQ.revealTotal - idx) / S.curQ.revealTotal));
+    document.getElementById('q-val').textContent = S.curQ.currentValue + ' баллов';
+  }
+}
+function openAllRevealTiles() {
+  if (!S.curQ || S.curQ.q.type !== 'reveal') return;
+  clearInterval(S.curQ.revealInt); S.curQ.revealInt = null;
+  while (S.curQ.revealOpened < S.curQ.revealTotal) {
+    const tileIdx = S.curQ.revealOrder[S.curQ.revealOpened];
+    const tile = document.getElementById(`rtile-${tileIdx}`);
+    if (tile) tile.classList.add('open');
+    S.curQ.revealOpened++;
+  }
+}
+function startRevealInterval() {
+  if (!S.curQ || S.curQ.q.type !== 'reveal') return;
+  const N = S.curQ.revealN;
+  if (N <= 1) return;
+  const intervalMs = Math.floor(((S.curQ.q.timer || 60) * 1000) / (S.curQ.revealTotal - 1));
+  S.curQ.revealInt = setInterval(() => {
+    if (S.curQ.revealFrozen) { clearInterval(S.curQ.revealInt); S.curQ.revealInt = null; return; }
+    openRevealTile();
+    if (S.curQ.revealOpened >= S.curQ.revealTotal) { clearInterval(S.curQ.revealInt); S.curQ.revealInt = null; }
+  }, intervalMs);
+}
+
+/* ═══════════════════════════════════════
+   CREDITS
+═══════════════════════════════════════ */
+/* ═══ BUZZ FLASH ═══ */
+let _buzzFlashTimer = null;
+function showBuzzFlash(name) {
+  clearTimeout(_buzzFlashTimer);
+  const el = document.getElementById('buzz-flash');
+  const nameEl = document.getElementById('buzz-flash-name');
+  nameEl.textContent = name;
+  nameEl.style.animation = 'none';
+  void nameEl.offsetWidth; // reflow to restart animation
+  nameEl.style.animation = 'buzzFlashIn .2s cubic-bezier(.34,1.56,.64,1) forwards';
+  el.style.transition = 'none';
+  el.style.opacity = '1';
+  el.style.display = 'flex';
+  _buzzFlashTimer = setTimeout(() => {
+    el.style.transition = 'opacity .25s';
+    el.style.opacity = '0';
+    _buzzFlashTimer = setTimeout(() => { el.style.display = 'none'; }, 260);
+  }, 800);
+}
+function hideBuzzFlash() {
+  clearTimeout(_buzzFlashTimer);
+  const el = document.getElementById('buzz-flash');
+  el.style.transition = 'none';
+  el.style.display = 'none';
+  el.style.opacity = '1';
+}
+
+let _rickAudio = null;
+function stopRick() {
+  if (_rickAudio) { try { _rickAudio.pause(); _rickAudio.currentTime = 0; } catch {} _rickAudio = null; }
+}
+
+let _fwRunning = false;
+function startFireworks() {
+  if (_fwRunning) return;
+  const canvas = document.getElementById('fireworks-canvas');
+  canvas.width = canvas.offsetWidth || window.innerWidth;
+  canvas.height = canvas.offsetHeight || window.innerHeight;
+  const ctx = canvas.getContext('2d');
+  const particles = [];
+  _fwRunning = true;
+
+  const COLORS = ['#ff4455','#ff8c00','#ffee00','#44ff88','#44aaff','#dd44ff','#ffffff','#aaffee'];
+
+  function burst() {
+    if (!_fwRunning) return;
+    const x = canvas.width * (0.15 + Math.random() * 0.7);
+    const y = canvas.height * (0.1 + Math.random() * 0.55);
+    const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    const count = 80 + Math.floor(Math.random() * 50);
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 * i) / count + (Math.random() - .5) * 0.4;
+      const speed = 2.5 + Math.random() * 6;
+      particles.push({
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 1.5,
+        life: 1,
+        decay: 0.009 + Math.random() * 0.014,
+        size: 2 + Math.random() * 3.5,
+        color
+      });
+    }
+    setTimeout(burst, 350 + Math.random() * 800);
+  }
+
+  function tick() {
+    if (!_fwRunning) { ctx.clearRect(0, 0, canvas.width, canvas.height); return; }
+    ctx.fillStyle = 'rgba(0,0,0,0.16)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx; p.y += p.vy;
+      p.vy += 0.11; p.vx *= 0.97; p.vy *= 0.97;
+      p.life -= p.decay;
+      if (p.life <= 0) { particles.splice(i, 1); continue; }
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(tick);
+  }
+
+  burst();
+  setTimeout(burst, 180);
+  requestAnimationFrame(tick);
+}
+function stopFireworks() {
+  _fwRunning = false;
+}
+
+function showCredits() {
+  deleteSave();
+  const logSnap = S.log.slice(); // snapshot for download even after S.log might change
+  const sorted = [...S.teams].sort((a, b) => b.score - a.score);
+  const inner = document.getElementById('credits-inner');
+  inner.innerHTML = '<div class="credits-title">— итоги —</div>';
+  sorted.forEach((t, i) => {
+    const row = document.createElement('div');
+    row.className = 'credit-row' + (i === 0 ? ' first-place' : '');
+    row.innerHTML = `<span class="credit-place">${i+1}.</span><span class="credit-name">${t.name}</span><span class="credit-score">${t.score}</span>`;
+    inner.appendChild(row);
+  });
+  playSound('slide_on');
+  showScreen('screen-credits');
+  startFireworks();
+  const rows = inner.querySelectorAll('.credit-row');
+  const n = rows.length;
+  rows.forEach((row, i) => setTimeout(() => row.classList.add('entered'), 500 + (n - 1 - i) * 1000));
+  const lastRowMs = 500 + (n - 1) * 1000;
+  setTimeout(() => {
+    try { _rickAudio = new Audio('sounds/rick.mp3'); _rickAudio.play().catch(() => {}); } catch {}
+  }, lastRowMs + 200);
+  // Stats block — fade in 2 sec after last row
+  setTimeout(() => {
+    const statsBlock = document.createElement('div');
+    statsBlock.className = 'stats-block';
+    const title = document.createElement('div');
+    title.className = 'stats-title'; title.textContent = '— статистика —';
+    statsBlock.appendChild(title);
+    S.teams.forEach((t, ti) => {
+      const entries = logSnap.filter(e => e.teamIdx === ti && e.qType !== 'last-award');
+      const correct = entries.filter(e => e.correct).length;
+      const wrong   = entries.filter(e => !e.correct).length;
+      const speedSamples = entries.filter(e => e.correct && e.buzzAtSec != null).map(e => e.buzzAtSec);
+      const avgSpeed = speedSamples.length
+        ? (speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(1)
+        : null;
+      const row = document.createElement('div');
+      row.className = 'stat-row';
+      row.innerHTML = `<span class="stat-name">${t.name}</span>`
+        + `<span class="stat-detail">✓ ${correct} верных&nbsp;&nbsp;✗ ${wrong} неверных`
+        + ` &nbsp;·&nbsp; ср. скорость: ${avgSpeed !== null ? avgSpeed + ' сек' : '—'}</span>`;
+      statsBlock.appendChild(row);
+    });
+    inner.appendChild(statsBlock);
+    requestAnimationFrame(() => requestAnimationFrame(() => { statsBlock.style.opacity = '1'; }));
+  }, lastRowMs + 2000);
+
+  document.getElementById('credits-download').onclick = () => {
+    const dt = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const fname = `vittorina-log-${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}-${pad(dt.getHours())}${pad(dt.getMinutes())}.json`;
+    const payload = { date: dt.toISOString(), teams: S.teams, log: logSnap };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fname; a.click();
+  };
+}
+document.getElementById('credits-back').onclick = () => { stopRick(); stopFireworks(); stopFlappy(); showScreen('screen-setup'); };
+
+/* ═══════════════════════════════════════
+   KEYBOARD
+═══════════════════════════════════════ */
+document.addEventListener('keydown', e => {
+  const sc = document.querySelector('.screen.active'); if (!sc) return;
+
+  if (sc.id === 'screen-flappy') {
+    if (e.repeat) return;
+    if (document.getElementById('modal-team-names').style.display !== 'none') return;
+    const k = {'1':0,'2':1,'3':2,'4':3,'5':4,'6':5}[e.key];
+    if (k !== undefined && flappyGames[k]) flappyGames[k].flap();
+    return;
+  }
+
+  if (sc.id === 'screen-question') {
+    // Если открыт оверлей ответа — Space/Enter/Escape закрывают его, остальное игнорируем
+    if (document.getElementById('ans-overlay').style.display !== 'none') {
+      if (e.code === 'Space' || e.code === 'Enter' || e.code === 'Escape') {
+        e.preventDefault();
+        document.getElementById('ans-close').click();
+      }
+      return;
+    }
+    // Не реагируем на авто-повтор зажатых клавиш
+    if (e.repeat && (e.code === 'Space' || e.code === 'KeyZ' || e.code === 'KeyX' || e.code === 'Enter' || e.code === 'KeyA')) return;
+    // Данетка: горячие клавиши вердикта, пока команда отвечает
+    if (S.curQ && S.curQ.q.type === 'danetka' && S.buzzed !== null &&
+        document.getElementById('danetka-judge').style.display !== 'none') {
+      if (e.code === 'Space')      { e.preventDefault(); danAnswer('yes');     return; }
+      if (e.code === 'KeyZ')       { e.preventDefault(); danAnswer('no');      return; }
+      if (e.code === 'KeyX')       { e.preventDefault(); danAnswer('maybe');   return; }
+      if (e.code === 'Enter')      { e.preventDefault(); danAnswer('correct'); return; }
+    }
+    if (e.code === 'Space') {
+      e.preventDefault();
+      if (S.buzzed !== null) {
+        const btn = document.getElementById('q-correct');
+        if (btn.style.display !== 'none') btn.click();
+      } else {
+        doStart();
+      }
+    }
+    if (e.code === 'KeyZ') {
+      const btn = document.getElementById('q-wrong');
+      if (btn.style.display !== 'none') btn.click();
+    }
+    if (e.code === 'KeyA') {
+      const btn = document.getElementById('q-alliance');
+      if (btn.style.display !== 'none') btn.click();
+    }
+    const k = {'1':0,'2':1,'3':2,'4':3,'5':4,'6':5}[e.key];
+    if (k !== undefined) { if (e.repeat) return; onBuzz(k); }
+  }
+  if (sc.id === 'screen-intro' && e.code === 'Escape') document.getElementById('intro-skip').click();
+});
+
+/* INIT */
+renderRounds();
+</script>
+<div id="buzz-flash"><div class="buzz-flash-name" id="buzz-flash-name"></div></div>
+</body>
+</html>

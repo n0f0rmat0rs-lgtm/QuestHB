@@ -1,0 +1,157 @@
+{
+  "name": "Тест механик",
+  "categories": [
+    {
+      "name": "Прогрессив + Мета", "short_name": "Прогрессив",
+      "buzz_mode": "one_chance",
+      "progressive": true,
+      "questions": [
+        {
+          "value": 100, "timer": 30,
+          "question": "Q1 (100 — обычный). Ответьте верно: прогрессив накапливается на остальных. При провале — кубышки нет в этой категории.",
+          "answer": "Ответ 1", "type": "normal", "penalty": "none",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 200, "timer": 30,
+          "question": "Q2 (200 — обычный). После закрытия Q1 должен стоить 220 (200+10%). После закрытия Q2 — META откроется.",
+          "answer": "Ответ 2", "type": "normal", "penalty": "none",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 300, "timer": 30,
+          "question": "Q3 (300 — обычный). После двух закрытий стоит 360.",
+          "answer": "Ответ 3", "type": "normal", "penalty": "none",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 400, "timer": 30, "meta_after": 2,
+          "question": "Q4 META (400, meta_after:2). Открывается только после 2 закрытых не-META вопросов в этой категории. С прогрессивом тоже растёт пока заблокирован.",
+          "answer": "Мета-ответ", "type": "normal", "penalty": "none",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 500, "timer": 30,
+          "question": "Q5 (500 — обычный). После двух закрытий стоит 600.",
+          "answer": "Ответ 5", "type": "normal", "penalty": "none",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        }
+      ]
+    },
+    {
+      "name": "Кубышка",
+      "buzz_mode": "one_chance",
+      "kubyshka": true,
+      "questions": [
+        {
+          "value": 100, "timer": 30,
+          "question": "QA (100, one_chance). Ошибитесь все команды — 100 баллов раздастся остальным четырём (по 25 каждому, остаток к самому дорогому).",
+          "answer": "Ответ A", "type": "normal", "penalty": "none",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 200, "timer": 30,
+          "question": "QB (200). После кубышки QA сюда +25.",
+          "answer": "Ответ B", "type": "normal", "penalty": "none",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 300, "timer": 30,
+          "question": "QC (300). После кубышки QA сюда +25.",
+          "answer": "Ответ C", "type": "normal", "penalty": "none",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 400, "timer": 30,
+          "question": "QD (400). После кубышки QA — самый дорогой, получает base+remainder.",
+          "answer": "Ответ D", "type": "normal", "penalty": "none",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 500, "timer": 30,
+          "question": "QE (500) — АННУЛИРУЙТЕ ЭТОТ ВОПРОС. 500 баллов разлетится на QB/QC/QD (QA — если не закрыт).",
+          "answer": "Ответ E", "type": "normal", "penalty": "none",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        }
+      ]
+    },
+    {
+      "name": "Альянс + Jeopardy", "short_name": "Альянс",
+      "buzz_mode": "one_chance",
+      "questions": [
+        {
+          "value": 200, "timer": 30,
+          "question": "АЛЬЯНС (200). После баззера нажмите [A] — 5 сек для второй команды. При верном — 100 каждой. Штраф при неверном: half.",
+          "answer": "Ответ А1", "type": "normal", "alliance": true, "penalty": "half",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 300, "timer": 30,
+          "question": "АЛЬЯНС (300). Если вторая команда не присоединится за 5 сек — кнопка альянса блокируется, вопрос продолжается обычно.",
+          "answer": "Ответ А2", "type": "normal", "alliance": true, "penalty": "full",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 400, "timer": 30,
+          "question": "JEOPARDY: «Это государство расположено на Пиренейском полуострове» — назовите вопрос в форме «Что такое...?»",
+          "answer": "Что такое Испания (или Португалия)?", "type": "jeopardy", "penalty": "half",
+          "image": null, "audio": null, "video": null, "answer_reveal": {"text": "Испания и Португалия расположены на Пиренейском полуострове.", "image": null, "audio": null, "video": null}
+        }
+      ]
+    },
+    {
+      "name": "Раскрывающаяся картинка", "short_name": "Картинка",
+      "buzz_mode": "unlimited",
+      "questions": [
+        {
+          "value": 300, "timer": 30, "type": "reveal", "reveal_grid": 3,
+          "question": "Что изображено на картинке?",
+          "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/PNG_transparency_demonstration_1.png/280px-PNG_transparency_demonstration_1.png",
+          "answer": "Шашечный узор (пример)", "penalty": "none",
+          "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 400, "timer": 30, "type": "reveal", "reveal_grid": 4,
+          "question": "Назовите то, что скрыто за плитками. Стоимость падает с каждой открытой плиткой.",
+          "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Bikesgray.jpg/320px-Bikesgray.jpg",
+          "answer": "Велосипеды (пример)", "penalty": "half",
+          "audio": null, "video": null, "answer_reveal": {"text": "Два велосипеда, припаркованных у стены.", "image": null, "audio": null, "video": null}
+        }
+      ]
+    },
+    {
+      "name": "Данетка",
+      "buzz_mode": "unlimited",
+      "questions": [
+        {
+          "value": 400, "timer": 90, "type": "danetka",
+          "question": "Данетка (400). Задайте вопросы «Да/Нет». За каждый балл «Да» +40 баллов, за «Нет» −40. Кто угадает — получает 400 + бонусы от пометок.",
+          "answer": "Загадка ведущего", "penalty": "none",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        }
+      ]
+    },
+    {
+      "name": "Музыкальный светофор", "short_name": "Светофор",
+      "buzz_mode": "one_chance",
+      "questions": [
+        {
+          "value": 200, "timer": 30, "type": "traffic", "traffic_mode": "words",
+          "question": "Спойте песню, в которой есть это слово",
+          "words": ["любовь", "дорога", "ночь", "сердце", "солнце", "город", "мама", "звезда"],
+          "penalty": "half", "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 200, "timer": 30, "type": "traffic", "traffic_mode": "letters", "letters_set": "vowels",
+          "question": "Спойте песню, начинающуюся на эту букву",
+          "penalty": "none", "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 500, "timer": 20, "type": "traffic_blitz", "traffic_mode": "letters", "letters_set": "consonants", "traffic_rounds": 5,
+          "question": "Песня на эту букву — 5 раундов подряд",
+          "penalty": "none", "image": null, "audio": null, "video": null, "answer_reveal": null
+        }
+      ]
+    }
+  ]
+}

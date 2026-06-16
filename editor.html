@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Редактор паков — Квиз</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a1a; --surface: #12122a; --surface2: #1e1e3a; --border: #2a2a4a;
+  --accent: #4f8ef7; --green: #27ae60; --red: #e74c3c;
+  --text: #e8e8f0; --text-muted: #888aaa; --gold: #f1c40f; --radius: 12px;
+}
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+.btn { display: inline-flex; align-items: center; justify-content: center; padding: .55em 1.2em; border: none; border-radius: var(--radius); cursor: pointer; font-size: 1rem; font-weight: 600; transition: opacity .15s; text-decoration: none; white-space: nowrap; font-family: inherit; }
+.btn:hover { opacity: .85; }
+.btn-primary  { background: var(--accent); color: #fff; }
+.btn-secondary{ background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-ghost    { background: transparent; color: var(--text-muted); }
+.btn-sm       { font-size: .85rem; padding: .35em .8em; }
+.btn-danger   { background: var(--red); color: #fff; }
+
+.editor-layout { display: flex; min-height: 100vh; }
+.sidebar { width: 240px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 1rem; gap: .5rem; }
+.sidebar h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted); margin-bottom: .25rem; }
+.sidebar-hint { font-size: .75rem; color: var(--text-muted); line-height: 1.5; }
+.editor-main { flex: 1; padding: 1.5rem; overflow-y: auto; }
+.editor-main > p { color: var(--text-muted); margin-top: 3rem; text-align: center; }
+
+input[type="text"], input[type="number"], textarea, select {
+  background: var(--surface2); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; padding: .5em .8em; font-size: .95rem; width: 100%; font-family: inherit;
+}
+input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
+.editor-toolbar { position: sticky; top: 0; z-index: 30; background: var(--bg); padding: 1rem 1.5rem; margin: -1.5rem -1.5rem 1.25rem -1.5rem; border-bottom: 1px solid var(--border); display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
+.pack-name-input { font-size: 1.1rem; flex: 1; min-width: 200px; }
+
+.category-block { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 1.5rem; overflow: hidden; }
+.cat-header { display: flex; align-items: center; gap: .6rem; padding: .75rem 1rem; background: var(--surface2); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.cat-header input { font-weight: 600; font-size: 1rem; }
+.cat-body { padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
+.cat-footer { padding: .5rem 1rem 1rem; }
+
+/* Collapse + reorder controls */
+.category-block.collapsed .cat-body,
+.category-block.collapsed .cat-footer,
+.category-block.collapsed .cat-flags { display: none; }
+.cat-collapse-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: .1em .3em; flex-shrink: 0; line-height: 1; transition: color .12s; }
+.cat-collapse-btn:hover { color: var(--text); }
+.cat-count { font-size: .72rem; color: var(--text-muted); background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: .12em .6em; font-weight: 700; flex-shrink: 0; }
+.cat-ctrl, .q-ctrl { display: flex; gap: .1rem; align-items: center; flex-shrink: 0; margin-left: auto; }
+.icon-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: .9rem; padding: .25em .4em; border-radius: 6px; line-height: 1; transition: color .12s, background .12s; }
+.icon-btn:hover { color: var(--text); background: var(--surface2); }
+.icon-btn:disabled { opacity: .25; cursor: default; }
+.icon-btn:disabled:hover { color: var(--text-muted); background: none; }
+.icon-btn.danger:hover { color: var(--red); }
+
+.q-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; display: flex; flex-direction: column; gap: .75rem; }
+.q-card-top { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+.q-card-top label { font-size: .82rem; color: var(--text-muted); white-space: nowrap; }
+
+.penalty-toggle { display: flex; gap: .4rem; }
+.penalty-btn { padding: .3em .65em; border-radius: 6px; font-size: .8rem; font-weight: 600; border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted); cursor: pointer; font-family: inherit; }
+.penalty-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.type-toggle { display: flex; gap: .4rem; }
+.type-btn { padding: .3em .65em; border-radius: 6px; font-size: .8rem; font-weight: 600; border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted); cursor: pointer; font-family: inherit; }
+.type-btn.active-normal  { background: var(--accent); color: #fff; border-color: var(--accent); }
+.type-btn.active-bag     { background: #9b59b6; color: #fff; border-color: #9b59b6; }
+.type-btn.active-auction  { background: var(--gold); color: #000; border-color: var(--gold); }
+.type-btn.active-last     { background: #2ecc71; color: #000; border-color: #2ecc71; }
+.type-btn.active-blitz    { background: #f39c12; color: #000; border-color: #f39c12; }
+.type-btn.active-jeopardy { background: #1abc9c; color: #000; border-color: #1abc9c; }
+.type-btn.active-reveal   { background: #2980b9; color: #fff; border-color: #2980b9; }
+.type-btn.active-traffic       { background: #27ae60; color: #fff; border-color: #27ae60; }
+.type-btn.active-traffic_blitz { background: #c0392b; color: #fff; border-color: #c0392b; }
+.type-btn.active-danetka       { background: #16a085; color: #fff; border-color: #16a085; }
+.cat-flags { display:flex; gap:.5rem; flex-wrap:wrap; padding:.6rem 1rem .2rem; }
+.cat-flag-lbl { display:flex; align-items:center; gap:.45rem; font-size:.85rem; font-weight:600; cursor:pointer; white-space:nowrap; padding:.4em .85em; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--text-muted); transition:border-color .12s, color .12s, background .12s; user-select:none; }
+.cat-flag-lbl:hover { border-color:var(--accent); }
+.cat-flag-lbl:has(input:checked) { background:rgba(79,142,247,.15); border-color:var(--accent); color:var(--text); }
+.cat-flag-lbl input[type=checkbox] { width:16px; height:16px; cursor:pointer; accent-color:var(--accent); flex-shrink:0; }
+.q-extra-row { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; padding:.35rem 0 0; font-size:.82rem; border-top:1px solid var(--border); margin-top:.25rem; }
+.q-extra-lbl { display:flex; align-items:center; gap:.3rem; cursor:pointer; }
+.blitz-section { border-top:1px solid var(--border); padding-top:.75rem; margin-top:.25rem; display:flex; flex-direction:column; gap:.4rem; }
+.blitz-list { display:flex; flex-direction:column; gap:.5rem; }
+.blitz-sub-row { display:flex; align-items:flex-start; gap:.4rem; }
+.blitz-sub-num { font-size:.85rem; color:var(--text-muted); font-weight:700; min-width:1.5rem; padding-top:.55rem; flex-shrink:0; }
+.blitz-sub-q { flex:2; min-width:0; font-family:inherit; }
+.blitz-sub-a { flex:1; min-width:0; }
+
+/* Media picker */
+.media-picker { display: flex; flex-direction: column; gap: .4rem; }
+.media-picker-row { display: flex; align-items: center; gap: .5rem; }
+.media-picker-row label { font-size: .8rem; color: var(--text-muted); min-width: 60px; }
+.pick-btn { background: var(--surface2); border: 1px dashed var(--border); color: var(--text-muted); border-radius: 6px; padding: .3em .8em; cursor: pointer; font-size: .82rem; font-family: inherit; flex-shrink: 0; }
+.pick-btn:hover { border-color: var(--accent); color: var(--accent); }
+.media-filename { font-size: .78rem; color: var(--accent); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.media-clear { background: none; border: none; color: var(--red); cursor: pointer; font-size: 1rem; flex-shrink: 0; }
+.media-preview-img { max-height: 80px; border-radius: 4px; display: block; margin-top: .3rem; }
+
+.reveal-block { border-top: 1px solid var(--border); padding-top: .75rem; margin-top: .25rem; display: flex; flex-direction: column; gap: .75rem; }
+.reveal-toggle { background: none; border: 1px dashed var(--border); color: var(--text-muted); border-radius: 6px; padding: .3em .8em; cursor: pointer; font-size: .82rem; font-family: inherit; width: fit-content; }
+.reveal-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+.buzz-toggle { display: flex; gap: .3rem; margin-left: auto; }
+.buzz-btn { padding: .25em .6em; border-radius: 6px; font-size: .78rem; font-weight: 600; border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted); cursor: pointer; font-family: inherit; }
+.buzz-btn.active-unlimited { background: #27ae60; color: #fff; border-color: #27ae60; }
+.buzz-btn.active-one_chance { background: #e67e22; color: #fff; border-color: #e67e22; }
+
+.info-banner { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: .85rem 1rem; margin-bottom: 1.5rem; font-size: .85rem; color: var(--text-muted); line-height: 1.6; }
+.info-banner strong { color: var(--text); }
+
+.converter-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.88); z-index:200; overflow-y:auto; padding:2rem 1rem; }
+.converter-modal.open { display:flex; align-items:flex-start; justify-content:center; }
+.converter-box { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); max-width:740px; width:100%; padding:1.5rem; display:flex; flex-direction:column; gap:1rem; margin:auto; }
+.converter-box h3 { font-size:1.1rem; }
+.converter-result { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:1rem; font-size:.78rem; color:var(--text-muted); max-height:280px; overflow-y:auto; white-space:pre; font-family:'Consolas','Courier New',monospace; line-height:1.5; }
+</style>
+</head>
+<body>
+<div class="editor-layout">
+  <aside class="sidebar">
+    <h2>Редактор паков</h2>
+    <button class="btn btn-secondary" id="new-pack-btn">+ Создать пак</button>
+    <button class="btn btn-ghost" id="load-pack-btn">Открыть JSON…</button>
+    <hr style="border-color:var(--border);margin:.25rem 0">
+    <p class="sidebar-hint">Медиафайлы (фото, аудио, видео) встраиваются прямо в JSON — никаких отдельных папок не нужно.</p>
+    <p class="sidebar-hint" style="margin-top:.5rem">⚠️ Большие видеофайлы сильно увеличат размер JSON.</p>
+    <hr style="border-color:var(--border);margin:.25rem 0">
+    <button class="btn btn-ghost btn-sm" id="converter-btn">🔄 Конвертер Ф.Е.Е.</button>
+    <hr style="border-color:var(--border);margin:.25rem 0">
+    <a href="index.html" class="btn btn-ghost btn-sm">← Назад в игру</a>
+  </aside>
+  <main class="editor-main" id="editor-main">
+    <p>Создай новый пак или открой существующий JSON</p>
+  </main>
+</div>
+
+<div class="converter-modal" id="converter-modal">
+  <div class="converter-box">
+    <div style="display:flex;align-items:center;gap:.75rem">
+      <h3>🔄 Конвертер старого Ф.Е.Е.</h3>
+      <button class="btn btn-ghost btn-sm" id="converter-close" style="margin-left:auto">✕</button>
+    </div>
+    <p style="font-size:.82rem;color:var(--text-muted);line-height:1.5">Вставьте текст старого формата или загрузите .txt файл. «КОТ В МЕШКЕ» и «ВОПРОС-АУКЦИОН» определяются автоматически. Стоимость — 100, 200, 300… по порядку.</p>
+    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+      <label style="font-size:.82rem;color:var(--text-muted);white-space:nowrap">Название пака:</label>
+      <input type="text" id="conv-pack-name" placeholder="Конвертированный пак" style="flex:1;min-width:160px">
+      <button class="btn btn-secondary btn-sm" id="conv-load-txt">📄 Загрузить .txt</button>
+    </div>
+    <textarea id="conv-input" rows="9" placeholder="Формат:&#10;CATEGORY 1: Название;|&#10;QUESTION 1.1: Текст вопроса;| (Ответ)&#10;QUESTION 1.2: КОТ В МЕШКЕ ;|&#10;QUESTION 1.3: ВОПРОС-АУКЦИОН ;| (Вопрос аукциона)&#10;..."></textarea>
+    <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-primary" id="conv-parse-btn">Конвертировать</button>
+      <span id="conv-status" style="font-size:.82rem;color:var(--text-muted)"></span>
+    </div>
+    <div id="conv-result-wrap" style="display:none">
+      <div class="converter-result" id="conv-result"></div>
+      <div style="display:flex;gap:.5rem;margin-top:.75rem;flex-wrap:wrap">
+        <button class="btn btn-primary" id="conv-to-editor">📥 Загрузить в редактор</button>
+        <button class="btn btn-secondary" id="conv-dl">⬇ Скачать JSON</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let pack = null;
+const collapsedCats = new WeakSet();   // UI state: which categories are collapsed (keyed by object, survives reorder)
+let _syncCollapseAllLabel = () => {};  // set by renderEditor, keeps the toolbar toggle label in sync
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+document.getElementById("new-pack-btn").onclick = () => {
+  pack = { name: "Новый пак", categories: [] };
+  renderEditor();
+};
+
+document.getElementById("load-pack-btn").onclick = () => {
+  pickFile(".json", async file => {
+    try { pack = JSON.parse(await file.text()); renderEditor(); }
+    catch { alert("Не удалось прочитать JSON."); }
+  });
+};
+
+/* ── File helpers ── */
+function pickFile(accept, cb) {
+  const inp = document.createElement("input");
+  inp.type = "file"; inp.accept = accept;
+  inp.onchange = e => { if (e.target.files[0]) cb(e.target.files[0]); };
+  inp.click();
+}
+
+function fileToDataURL(file) {
+  return new Promise(res => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.readAsDataURL(file);
+  });
+}
+
+function mimeToAccept(field) {
+  if (field === "image") return "image/*";
+  if (field === "audio") return "audio/*";
+  if (field === "video") return "video/*";
+  return "*";
+}
+
+/* ── Editor render ── */
+function renderEditor() {
+  const main = document.getElementById("editor-main");
+  main.innerHTML = "";
+
+  const catContainer = document.createElement("div");
+  catContainer.id = "cat-container";
+
+  // Sticky toolbar — always reachable while scrolling
+  const toolbar = document.createElement("div");
+  toolbar.className = "editor-toolbar";
+  toolbar.innerHTML = `
+    <input class="pack-name-input" type="text" value="${esc(pack.name)}" placeholder="Название пака">
+    <button class="btn btn-secondary btn-sm" id="add-cat-top">+ Категория</button>
+    <button class="btn btn-ghost btn-sm" id="collapse-all-btn"></button>
+    <button class="btn btn-primary btn-sm" id="dl-btn">⬇ Скачать JSON</button>
+    <button class="btn btn-secondary btn-sm" id="print-btn">🖨 Печать</button>
+  `;
+  toolbar.querySelector(".pack-name-input").oninput = e => { pack.name = e.target.value; };
+  toolbar.querySelector("#dl-btn").onclick = downloadPack;
+  toolbar.querySelector("#print-btn").onclick = printPack;
+  toolbar.querySelector("#add-cat-top").onclick = () => addCategory(catContainer);
+  const collapseAllBtn = toolbar.querySelector("#collapse-all-btn");
+  _syncCollapseAllLabel = () => {
+    const anyExpanded = pack.categories.length && pack.categories.some(c => !collapsedCats.has(c));
+    collapseAllBtn.textContent = anyExpanded ? "⊟ Свернуть всё" : "⊞ Развернуть всё";
+    collapseAllBtn.style.display = pack.categories.length ? "" : "none";
+  };
+  collapseAllBtn.onclick = () => {
+    const anyExpanded = pack.categories.some(c => !collapsedCats.has(c));
+    pack.categories.forEach(c => { if (anyExpanded) collapsedCats.add(c); else collapsedCats.delete(c); });
+    renderCategories(catContainer);
+  };
+  _syncCollapseAllLabel();
+  main.appendChild(toolbar);
+
+  const banner = document.createElement("div");
+  banner.className = "info-banner";
+  banner.innerHTML = `<strong>Типы вопросов:</strong> обычный | <span style="color:#9b59b6">🎁 Кот в мешке</span> — категория скрыта | <span style="color:var(--gold)">🔨 Аукцион</span> — ставки | <span style="color:#2ecc71">🏁 Назови последним</span> — баллы у последнего верного | <span style="color:#f39c12">⚡ Блиц</span> — серия подвопросов, баллы = стоимость ÷ кол-во<br><strong>Баззер:</strong> <span style="color:#27ae60">∞ спам</span> — команды жмут сколько угодно | <span style="color:#e67e22">1 шанс</span> — каждая один раз`;
+  main.appendChild(banner);
+
+  main.appendChild(catContainer);
+  renderCategories(catContainer);
+
+  const addBtn = document.createElement("button");
+  addBtn.className = "btn btn-secondary";
+  addBtn.textContent = "+ Добавить категорию";
+  addBtn.onclick = () => addCategory(catContainer);
+  main.appendChild(addBtn);
+}
+
+function addCategory(container) {
+  pack.categories.push({ name: "Новая категория", buzz_mode: "unlimited", questions: [] });
+  renderCategories(container);
+  const blocks = container.querySelectorAll(".category-block");
+  const last = blocks[blocks.length - 1];
+  if (last) {
+    last.scrollIntoView({ behavior: "smooth", block: "center" });
+    const inp = last.querySelector(".cat-name-input");
+    if (inp) { inp.focus(); inp.select(); }
+  }
+}
+
+function renderCategories(container) {
+  container.innerHTML = "";
+  pack.categories.forEach(cat => container.appendChild(buildCategoryBlock(cat, container)));
+  _syncCollapseAllLabel();
+}
+
+function buildCategoryBlock(cat, container) {
+  const block = document.createElement("div");
+  block.className = "category-block";
+  const collapsed = collapsedCats.has(cat);
+  if (collapsed) block.classList.add("collapsed");
+  const idx = pack.categories.indexOf(cat);
+  const bm = cat.buzz_mode || "unlimited";
+  block.innerHTML = `
+    <div class="cat-header">
+      <button class="cat-collapse-btn" title="Свернуть / развернуть">${collapsed ? "▸" : "▾"}</button>
+      <input type="text" class="cat-name-input" value="${esc(cat.name)}" placeholder="Полное название категории" style="flex:2;min-width:140px">
+      <input type="text" class="cat-short-input" value="${esc(cat.short_name||'')}" placeholder="Кратко (для таблицы)" style="flex:1;min-width:100px" title="Сокращённое название — показывается в игровой таблице выбора. Полное — при анонсе категорий.">
+      <span class="cat-count" title="Вопросов в категории">${cat.questions.length}</span>
+      <div class="buzz-toggle" title="Режим баззера для этой категории">
+        <button class="buzz-btn ${bm==="unlimited"?"active-unlimited":""}" data-bm="unlimited">∞ спам</button>
+        <button class="buzz-btn ${bm==="one_chance"?"active-one_chance":""}" data-bm="one_chance">1 шанс</button>
+      </div>
+      <div class="cat-ctrl">
+        <button class="icon-btn cat-up"   title="Категорию выше" ${idx===0?"disabled":""}>▲</button>
+        <button class="icon-btn cat-down" title="Категорию ниже" ${idx===pack.categories.length-1?"disabled":""}>▼</button>
+        <button class="icon-btn cat-dup"  title="Дублировать категорию">⧉</button>
+        <button class="icon-btn danger cat-del" title="Удалить категорию">✕</button>
+      </div>
+    </div>
+    <div class="cat-flags">
+      <label class="cat-flag-lbl"><input type="checkbox" class="cflag-prog" ${cat.progressive?"checked":""}> 📈 Прогрессив</label>
+      <label class="cat-flag-lbl"><input type="checkbox" class="cflag-kub"  ${cat.kubyshka?"checked":""}> 🏦 Кубышка</label>
+    </div>
+    <div class="cat-body"></div>
+    <div class="cat-footer"><button class="btn btn-secondary btn-sm aq-btn">+ Вопрос</button></div>
+  `;
+  const body = block.querySelector(".cat-body");
+  const countBadge = block.querySelector(".cat-count");
+  function renderQuestions() {
+    body.innerHTML = "";
+    cat.questions.forEach(q => body.appendChild(buildQuestionCard(q, cat, renderQuestions)));
+    countBadge.textContent = cat.questions.length;
+  }
+
+  const collapseBtn = block.querySelector(".cat-collapse-btn");
+  collapseBtn.onclick = () => {
+    const isCol = block.classList.toggle("collapsed");
+    if (isCol) collapsedCats.add(cat); else collapsedCats.delete(cat);
+    collapseBtn.textContent = isCol ? "▸" : "▾";
+    _syncCollapseAllLabel();
+  };
+  block.querySelector(".cat-name-input").oninput = e => { cat.name = e.target.value; };
+  block.querySelector(".cat-short-input").oninput = e => {
+    const v = e.target.value.trim();
+    if (v) cat.short_name = e.target.value; else delete cat.short_name;
+  };
+  block.querySelectorAll(".buzz-btn").forEach(b => {
+    b.onclick = () => {
+      cat.buzz_mode = b.dataset.bm;
+      block.querySelectorAll(".buzz-btn").forEach(x => {
+        x.className = "buzz-btn" + (x === b ? " active-" + b.dataset.bm : "");
+      });
+    };
+  });
+  block.querySelector(".cflag-prog").onchange = e => { if (e.target.checked) cat.progressive = true; else delete cat.progressive; };
+  block.querySelector(".cflag-kub").onchange  = e => { if (e.target.checked) cat.kubyshka   = true; else delete cat.kubyshka;   };
+  block.querySelector(".cat-up").onclick = () => {
+    const i = pack.categories.indexOf(cat);
+    if (i > 0) { [pack.categories[i-1], pack.categories[i]] = [pack.categories[i], pack.categories[i-1]]; renderCategories(container); }
+  };
+  block.querySelector(".cat-down").onclick = () => {
+    const i = pack.categories.indexOf(cat);
+    if (i < pack.categories.length - 1) { [pack.categories[i], pack.categories[i+1]] = [pack.categories[i+1], pack.categories[i]]; renderCategories(container); }
+  };
+  block.querySelector(".cat-dup").onclick = () => {
+    const i = pack.categories.indexOf(cat);
+    const copy = clone(cat);
+    copy.name = (cat.name || "Категория") + " (копия)";
+    pack.categories.splice(i + 1, 0, copy);
+    renderCategories(container);
+  };
+  block.querySelector(".cat-del").onclick = () => {
+    if (!confirm("Удалить категорию со всеми вопросами?")) return;
+    const i = pack.categories.indexOf(cat);
+    pack.categories.splice(i, 1); renderCategories(container);
+  };
+  block.querySelector(".aq-btn").onclick = () => {
+    cat.questions.push({value:100,timer:60,question:"",type:"normal",penalty:"none",image:null,audio:null,video:null,answer_reveal:null});
+    renderQuestions();
+  };
+  renderQuestions();
+  return block;
+}
+
+function buildQuestionCard(q, cat, refresh) {
+  const card = document.createElement("div");
+  card.className = "q-card";
+  const idx = cat.questions.indexOf(q);
+
+  // Top row
+  const top = document.createElement("div");
+  top.className = "q-card-top";
+  top.innerHTML = `
+    <label>Стоимость</label>
+    <input class="qv-input" type="number" value="${q.value||100}" min="0" step="50" style="width:85px${q.random_value?';display:none':''}">
+    <label style="display:flex;align-items:center;gap:.3rem;cursor:pointer;font-size:.82rem;white-space:nowrap"><input class="qrv-cb" type="checkbox" ${q.random_value?'checked':''}> Случайная</label>
+    <span class="qrr-box" style="display:${q.random_value?'flex':'none'};align-items:center;gap:.25rem;font-size:.8rem;white-space:nowrap">от <input class="qrmin" type="number" value="${q.value_min||100}" min="0" step="50" style="width:65px"> до <input class="qrmax" type="number" value="${q.value_max||500}" min="0" step="50" style="width:65px"></span>
+    <label>Таймер&nbsp;(сек)</label>
+    <input class="qtmr" type="number" value="${q.timer||60}" min="10" max="300" step="5" style="width:75px">
+    <label>Штраф</label>
+    <div class="penalty-toggle">
+      <button class="penalty-btn ${(q.penalty||"none")==="none"?"active":""}" data-p="none">Нет</button>
+      <button class="penalty-btn ${(q.penalty||"none")==="half"?"active":""}" data-p="half">−½</button>
+      <button class="penalty-btn ${(q.penalty||"none")==="full"?"active":""}" data-p="full">−всё</button>
+    </div>
+    <label>Тип</label>
+    <div class="type-toggle">
+      <button class="type-btn ${!q.type||q.type==="normal"?"active-normal":""}" data-t="normal">Обычный</button>
+      <button class="type-btn ${q.type==="bag"?"active-bag":""}" data-t="bag">🎁 Кот в мешке</button>
+      <button class="type-btn ${q.type==="auction"?"active-auction":""}" data-t="auction">🔨 Аукцион</button>
+      <button class="type-btn ${q.type==="last"?"active-last":""}" data-t="last">🏁 Назови последним</button>
+      <button class="type-btn ${q.type==="blitz"?"active-blitz":""}" data-t="blitz">⚡ Блиц</button>
+      <button class="type-btn ${q.type==="jeopardy"?"active-jeopardy":""}" data-t="jeopardy">↩ Jeopardy</button>
+      <button class="type-btn ${q.type==="reveal"?"active-reveal":""}" data-t="reveal">🖼 Картинка</button>
+      <button class="type-btn ${q.type==="traffic"?"active-traffic":""}" data-t="traffic">🚦 Светофор</button>
+      <button class="type-btn ${q.type==="traffic_blitz"?"active-traffic_blitz":""}" data-t="traffic_blitz">🚦 Муз. блиц</button>
+      <button class="type-btn ${q.type==="danetka"?"active-danetka":""}" data-t="danetka">🔵 Данетка</button>
+    </div>
+    <div class="q-ctrl">
+      <button class="icon-btn q-up"   title="Вопрос выше" ${idx===0?"disabled":""}>▲</button>
+      <button class="icon-btn q-down" title="Вопрос ниже" ${idx===cat.questions.length-1?"disabled":""}>▼</button>
+      <button class="icon-btn q-dup"  title="Дублировать вопрос">⧉</button>
+      <button class="icon-btn danger q-del" title="Удалить вопрос">✕</button>
+    </div>
+  `;
+  const valInp = top.querySelector(".qv-input");
+  valInp.oninput = e => { q.value=parseInt(e.target.value)||0; };
+  top.querySelector(".qtmr").oninput = e => { q.timer=parseInt(e.target.value)||60; };
+  const rvCb = top.querySelector(".qrv-cb");
+  const rvRange = top.querySelector(".qrr-box");
+  rvCb.onchange = () => {
+    q.random_value = rvCb.checked;
+    valInp.style.display = q.random_value ? 'none' : '';
+    rvRange.style.display = q.random_value ? 'flex' : 'none';
+  };
+  top.querySelector(".qrmin").oninput = e => { q.value_min=parseInt(e.target.value)||100; };
+  top.querySelector(".qrmax").oninput = e => { q.value_max=parseInt(e.target.value)||500; };
+  top.querySelectorAll(".penalty-btn").forEach(b => {
+    b.onclick = () => { q.penalty=b.dataset.p; top.querySelectorAll(".penalty-btn").forEach(x=>x.classList.toggle("active",x===b)); };
+  });
+  top.querySelector(".q-up").onclick = () => {
+    const i = cat.questions.indexOf(q);
+    if (i > 0) { [cat.questions[i-1], cat.questions[i]] = [cat.questions[i], cat.questions[i-1]]; refresh(); }
+  };
+  top.querySelector(".q-down").onclick = () => {
+    const i = cat.questions.indexOf(q);
+    if (i < cat.questions.length - 1) { [cat.questions[i], cat.questions[i+1]] = [cat.questions[i+1], cat.questions[i]]; refresh(); }
+  };
+  top.querySelector(".q-dup").onclick = () => {
+    const i = cat.questions.indexOf(q);
+    cat.questions.splice(i + 1, 0, clone(q));
+    refresh();
+  };
+  top.querySelector(".q-del").onclick = () => {
+    const i = cat.questions.indexOf(q);
+    cat.questions.splice(i, 1); refresh();
+  };
+  let blitzSection, timerSection, revealSection, trafficSection, allianceRow, answerRow;
+  top.querySelectorAll(".type-btn").forEach(b => {
+    b.onclick = () => {
+      q.type = b.dataset.t;
+      if (q.type === 'blitz' && !q.sub_questions) q.sub_questions = [];
+      if ((q.type === 'traffic' || q.type === 'traffic_blitz') && !q.traffic_mode) q.traffic_mode = 'words';
+      if (q.type === 'traffic_blitz' && !q.traffic_rounds) q.traffic_rounds = 5;
+      top.querySelectorAll(".type-btn").forEach(x => { x.className = "type-btn"; });
+      const cls = {bag:"active-bag",auction:"active-auction",last:"active-last",blitz:"active-blitz",jeopardy:"active-jeopardy",reveal:"active-reveal",traffic:"active-traffic",traffic_blitz:"active-traffic_blitz",danetka:"active-danetka"}[q.type] || "active-normal";
+      b.classList.add(cls);
+      const isTraffic = q.type === 'traffic' || q.type === 'traffic_blitz';
+      if (blitzSection)   blitzSection.style.display   = q.type === 'blitz'   ? '' : 'none';
+      if (timerSection)   timerSection.style.display   = (q.type === 'blitz' || q.type === 'last') ? '' : 'none';
+      if (revealSection)  revealSection.style.display  = q.type === 'reveal'  ? '' : 'none';
+      if (trafficSection) { trafficSection.style.display = isTraffic ? '' : 'none'; trafficSection._roundsBox.style.display = q.type === 'traffic_blitz' ? '' : 'none'; }
+      if (allianceRow)    allianceRow.style.display     = q.type === 'normal'  ? '' : 'none';
+      if (answerRow)      answerRow.style.display       = (q.type === 'blitz' || isTraffic) ? 'none' : '';
+    };
+  });
+  card.appendChild(top);
+
+  // Question text
+  const ta = document.createElement("textarea");
+  ta.rows=3; ta.placeholder="Текст вопроса (заголовок блица или текст обычного вопроса)"; ta.textContent=q.question||"";
+  ta.oninput = e => { q.question=e.target.value; };
+  card.appendChild(ta);
+
+  // Правильный ответ (для ведущего и печати) — не нужен для блица/светофора
+  const isTrafficInit = q.type === 'traffic' || q.type === 'traffic_blitz';
+  answerRow = document.createElement("div");
+  answerRow.style.cssText = "display:flex;flex-direction:column;gap:.3rem";
+  answerRow.style.display = (q.type === 'blitz' || isTrafficInit) ? 'none' : '';
+  const ansLbl = document.createElement("label");
+  ansLbl.style.cssText = "font-size:.82rem;color:var(--text-muted)";
+  ansLbl.textContent = "Правильный ответ (для ведущего и печати)";
+  const ansInp = document.createElement("input");
+  ansInp.type = "text"; ansInp.value = q.answer || ""; ansInp.placeholder = "Ответ";
+  ansInp.oninput = e => { const v = e.target.value; if (v) q.answer = v; else delete q.answer; };
+  answerRow.append(ansLbl, ansInp);
+  card.appendChild(answerRow);
+
+  // Blitz sub-questions section
+  blitzSection = buildBlitzSection(q);
+  blitzSection.style.display = q.type === 'blitz' ? '' : 'none';
+  card.appendChild(blitzSection);
+
+  // Timer-on-buzz section (blitz + last)
+  timerSection = document.createElement('div');
+  timerSection.className = 'blitz-section';
+  timerSection.style.display = (q.type === 'blitz' || q.type === 'last') ? '' : 'none';
+  const timerLabel = document.createElement('label');
+  timerLabel.style.cssText = 'display:flex;align-items:center;gap:.4rem;cursor:pointer;font-size:.82rem';
+  const timerCb = document.createElement('input');
+  timerCb.type = 'checkbox'; timerCb.checked = !!q.buzz_pauses_timer;
+  timerCb.onchange = () => { q.buzz_pauses_timer = timerCb.checked; };
+  timerLabel.appendChild(timerCb);
+  timerLabel.appendChild(document.createTextNode('Таймер останавливается при ответе команды'));
+  timerSection.appendChild(timerLabel);
+  card.appendChild(timerSection);
+
+  // Reveal grid section
+  revealSection = document.createElement('div');
+  revealSection.className = 'blitz-section';
+  revealSection.style.display = q.type === 'reveal' ? '' : 'none';
+  const revGridLbl = document.createElement('label');
+  revGridLbl.style.cssText = 'display:flex;align-items:center;gap:.5rem;font-size:.82rem';
+  revGridLbl.appendChild(document.createTextNode('Сетка плиток:'));
+  const revGridSel = document.createElement('select');
+  revGridSel.style.cssText = 'padding:.2em .4em;font-family:inherit;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px';
+  [3,4,5].forEach(n => {
+    const opt = document.createElement('option');
+    opt.value = n; opt.textContent = `${n}×${n} (${n*n} плиток)`;
+    if ((q.reveal_grid || 3) === n) opt.selected = true;
+    revGridSel.appendChild(opt);
+  });
+  revGridSel.onchange = () => { q.reveal_grid = parseInt(revGridSel.value); };
+  revGridLbl.appendChild(revGridSel);
+  revealSection.appendChild(revGridLbl);
+  card.appendChild(revealSection);
+
+  // Traffic-light section (светофор + муз. блиц)
+  trafficSection = buildTrafficSection(q);
+  const isTrafficType = q.type === 'traffic' || q.type === 'traffic_blitz';
+  trafficSection.style.display = isTrafficType ? '' : 'none';
+  trafficSection._roundsBox.style.display = q.type === 'traffic_blitz' ? '' : 'none';
+  card.appendChild(trafficSection);
+
+  // Extra options row: alliance + meta_after
+  const extraRow = document.createElement('div');
+  extraRow.className = 'q-extra-row';
+
+  allianceRow = document.createElement('label');
+  allianceRow.className = 'q-extra-lbl';
+  allianceRow.style.display = (!q.type || q.type === 'normal') ? '' : 'none';
+  const allianceCb = document.createElement('input');
+  allianceCb.type = 'checkbox'; allianceCb.checked = !!q.alliance;
+  allianceCb.onchange = () => { if (allianceCb.checked) q.alliance = true; else delete q.alliance; };
+  allianceRow.append(allianceCb, '🤝 Альянс');
+  extraRow.appendChild(allianceRow);
+
+  const metaWrap = document.createElement('label');
+  metaWrap.className = 'q-extra-lbl';
+  const metaCb = document.createElement('input');
+  metaCb.type = 'checkbox'; metaCb.checked = q.meta_after != null;
+  const metaInp = document.createElement('input');
+  metaInp.type = 'number'; metaInp.min = 1; metaInp.value = q.meta_after ?? 2;
+  metaInp.style.cssText = 'width:46px;' + (q.meta_after != null ? '' : 'display:none');
+  metaInp.oninput = () => { q.meta_after = parseInt(metaInp.value) || 1; };
+  metaCb.onchange = () => {
+    if (metaCb.checked) { q.meta_after = parseInt(metaInp.value) || 2; metaInp.style.display = ''; }
+    else { delete q.meta_after; metaInp.style.display = 'none'; }
+  };
+  metaWrap.append(metaCb, ' Мета: открыть после ', metaInp, ' вопросов');
+  extraRow.appendChild(metaWrap);
+  card.appendChild(extraRow);
+
+  // Media fields
+  card.appendChild(buildMediaSection(q, ["image","audio","video"]));
+
+  // Reveal toggle
+  const revToggle = document.createElement("button");
+  revToggle.className="reveal-toggle";
+  revToggle.textContent = q.answer_reveal ? "▲ Скрыть блок ответа" : "▼ Добавить ответ/пояснение";
+  card.appendChild(revToggle);
+
+  const revBlock = document.createElement("div");
+  revBlock.className="reveal-block";
+  revBlock.style.display = q.answer_reveal ? "" : "none";
+  if (!q.answer_reveal) q.answer_reveal=null;
+
+  const revTa = document.createElement("textarea");
+  revTa.rows=2; revTa.placeholder="Текст ответа/пояснения";
+  revTa.textContent=(q.answer_reveal||{}).text||"";
+  revTa.oninput=e=>{ if(!q.answer_reveal)q.answer_reveal={}; q.answer_reveal.text=e.target.value; };
+  const revLabel=document.createElement("strong");
+  revLabel.style.cssText="font-size:.82rem;color:var(--text-muted)";
+  revLabel.textContent="Ответ / пояснение (показывается после ответа или аннуляции)";
+  revBlock.appendChild(revLabel);
+  revBlock.appendChild(revTa);
+  if(!q.answer_reveal) q.answer_reveal={text:"",image:null,audio:null,video:null};
+  revBlock.appendChild(buildMediaSection(q.answer_reveal, ["image","audio","video"]));
+  card.appendChild(revBlock);
+
+  revToggle.onclick = () => {
+    const hidden = revBlock.style.display==="none";
+    revBlock.style.display = hidden?"":"none";
+    revToggle.textContent = hidden?"▲ Скрыть блок ответа":"▼ Добавить ответ/пояснение";
+    if(!hidden){ q.answer_reveal=null; }
+    else if(!q.answer_reveal){ q.answer_reveal={text:"",image:null,audio:null,video:null}; }
+  };
+
+  return card;
+}
+
+function buildMediaSection(obj, fields) {
+  const wrap = document.createElement("div");
+  wrap.className="media-picker";
+  const labels = {image:"Картинка",audio:"Аудио",video:"Видео"};
+  fields.forEach(field => {
+    const row = document.createElement("div");
+    row.className="media-picker-row";
+
+    const lbl = document.createElement("label");
+    lbl.textContent=labels[field];
+
+    const pickBtn = document.createElement("button");
+    pickBtn.className="pick-btn";
+    pickBtn.textContent = obj[field] ? "Заменить" : "Выбрать файл…";
+
+    const fname = document.createElement("span");
+    fname.className="media-filename";
+    fname.textContent = obj[field] ? "✓ файл загружен" : "";
+
+    const clearBtn = document.createElement("button");
+    clearBtn.className="media-clear"; clearBtn.textContent="✕";
+    clearBtn.style.display = obj[field]?"inline":"none";
+    clearBtn.title="Удалить файл";
+
+    row.appendChild(lbl); row.appendChild(pickBtn); row.appendChild(fname); row.appendChild(clearBtn);
+    wrap.appendChild(row);
+
+    // Preview for images
+    let previewEl = null;
+    if(field==="image" && obj[field]){
+      previewEl = document.createElement("img");
+      previewEl.className="media-preview-img"; previewEl.src=obj[field];
+      wrap.appendChild(previewEl);
+    }
+
+    pickBtn.onclick = () => {
+      pickFile(mimeToAccept(field), async file => {
+        const dataUrl = await fileToDataURL(file);
+        obj[field] = dataUrl;
+        fname.textContent = "✓ "+file.name;
+        pickBtn.textContent = "Заменить";
+        clearBtn.style.display="inline";
+        if(field==="image"){
+          if(!previewEl){ previewEl=document.createElement("img"); previewEl.className="media-preview-img"; wrap.appendChild(previewEl); }
+          previewEl.src=dataUrl;
+        }
+      });
+    };
+
+    clearBtn.onclick = () => {
+      obj[field]=null; fname.textContent=""; pickBtn.textContent="Выбрать файл…"; clearBtn.style.display="none";
+      if(previewEl){ previewEl.remove(); previewEl=null; }
+    };
+  });
+  return wrap;
+}
+
+function buildTrafficSection(q) {
+  const wrap = document.createElement('div');
+  wrap.className = 'blitz-section';
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'font-size:.82rem;color:var(--text-muted);font-weight:600';
+  hdr.textContent = '🚦 Музыкальный светофор:';
+  wrap.appendChild(hdr);
+
+  // Mode toggle: words / letters
+  const modeRow = document.createElement('div');
+  modeRow.style.cssText = 'display:flex;align-items:center;gap:.4rem;font-size:.82rem;margin:.3rem 0';
+  modeRow.appendChild(document.createTextNode('Режим:'));
+  const modeWords = document.createElement('button');
+  const modeLetters = document.createElement('button');
+  modeWords.type = 'button'; modeLetters.type = 'button';
+  modeWords.className = 'penalty-btn'; modeLetters.className = 'penalty-btn';
+  modeWords.textContent = 'Слова'; modeLetters.textContent = 'Буквы';
+  modeRow.appendChild(modeWords); modeRow.appendChild(modeLetters);
+  wrap.appendChild(modeRow);
+
+  // Words box
+  const wordsBox = document.createElement('div');
+  const wordsTa = document.createElement('textarea');
+  wordsTa.rows = 4;
+  wordsTa.placeholder = 'Слова — в столбик или через пробел/запятую';
+  wordsTa.style.cssText = 'width:100%';
+  wordsTa.value = (q.words || []).join('\n');
+  wordsTa.oninput = () => { q.words = wordsTa.value.split(/[\s,;]+/).map(s => s.trim()).filter(Boolean); };
+  wordsBox.appendChild(wordsTa);
+  wrap.appendChild(wordsBox);
+
+  // Letters box
+  const lettersBox = document.createElement('div');
+  lettersBox.style.cssText = 'display:flex;align-items:center;gap:.5rem;font-size:.82rem;flex-wrap:wrap';
+  lettersBox.appendChild(document.createTextNode('Набор букв:'));
+  const lsel = document.createElement('select');
+  lsel.style.cssText = 'padding:.2em .4em;font-family:inherit;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px';
+  [['all','Все буквы'],['vowels','Гласные'],['consonants','Согласные']].forEach(([v, lab]) => {
+    const o = document.createElement('option'); o.value = v; o.textContent = lab;
+    if ((q.letters_set || 'all') === v) o.selected = true;
+    lsel.appendChild(o);
+  });
+  lsel.onchange = () => { q.letters_set = lsel.value; };
+  lettersBox.appendChild(lsel);
+  const lhint = document.createElement('span');
+  lhint.style.cssText = 'color:var(--text-muted)';
+  lhint.textContent = '(без Ё, Й, Ь, Ъ, Ы)';
+  lettersBox.appendChild(lhint);
+  wrap.appendChild(lettersBox);
+
+  // Rounds (traffic_blitz only)
+  const roundsBox = document.createElement('div');
+  roundsBox.style.cssText = 'display:flex;align-items:center;gap:.5rem;font-size:.82rem;margin-top:.4rem';
+  roundsBox.appendChild(document.createTextNode('Количество раундов:'));
+  const rinp = document.createElement('input');
+  rinp.type = 'number'; rinp.min = 1; rinp.max = 20; rinp.value = q.traffic_rounds || 5;
+  rinp.style.width = '60px';
+  rinp.oninput = () => { q.traffic_rounds = parseInt(rinp.value) || 1; };
+  roundsBox.appendChild(rinp);
+  wrap.appendChild(roundsBox);
+  wrap._roundsBox = roundsBox;
+
+  function setMode() {
+    const m = q.traffic_mode || 'words';
+    modeWords.classList.toggle('active', m === 'words');
+    modeLetters.classList.toggle('active', m === 'letters');
+    wordsBox.style.display = m === 'words' ? '' : 'none';
+    lettersBox.style.display = m === 'letters' ? '' : 'none';
+  }
+  modeWords.onclick = () => { q.traffic_mode = 'words'; setMode(); };
+  modeLetters.onclick = () => { q.traffic_mode = 'letters'; setMode(); };
+  setMode();
+  return wrap;
+}
+
+function buildBlitzSection(q) {
+  if (!q.sub_questions) q.sub_questions = [];
+  const wrap = document.createElement('div');
+  wrap.className = 'blitz-section';
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'font-size:.82rem;color:var(--text-muted);font-weight:600';
+  hdr.textContent = '⚡ Подвопросы блица:';
+  wrap.appendChild(hdr);
+  const autoSkipLabel = document.createElement('label');
+  autoSkipLabel.style.cssText = 'display:flex;align-items:center;gap:.4rem;cursor:pointer;font-size:.82rem;margin:.2rem 0 .4rem';
+  const autoSkipCb = document.createElement('input');
+  autoSkipCb.type = 'checkbox'; autoSkipCb.checked = !!q.blitz_auto_skip;
+  autoSkipCb.onchange = () => { q.blitz_auto_skip = autoSkipCb.checked; };
+  autoSkipLabel.appendChild(autoSkipCb);
+  autoSkipLabel.appendChild(document.createTextNode('Автопропуск при неверном ответе'));
+  wrap.appendChild(autoSkipLabel);
+  const list = document.createElement('div');
+  list.className = 'blitz-list';
+  wrap.appendChild(list);
+  function renderSubs() {
+    list.innerHTML = '';
+    q.sub_questions.forEach((sub, si) => {
+      const row = document.createElement('div');
+      row.className = 'blitz-sub-row';
+      const num = document.createElement('span');
+      num.className = 'blitz-sub-num'; num.textContent = (si+1)+'.';
+      const qta = document.createElement('textarea');
+      qta.className = 'blitz-sub-q'; qta.rows=2; qta.placeholder='Текст подвопроса';
+      qta.value = sub.question||''; qta.oninput = e => { sub.question=e.target.value; };
+      const ans = document.createElement('input');
+      ans.type='text'; ans.className='blitz-sub-a'; ans.placeholder='Ответ (для ведущего)';
+      ans.value=sub.answer||''; ans.oninput=e=>{ sub.answer=e.target.value; };
+      const del = document.createElement('button');
+      del.className='media-clear'; del.textContent='✕'; del.title='Удалить';
+      del.onclick=()=>{ q.sub_questions.splice(si,1); renderSubs(); };
+      row.appendChild(num); row.appendChild(qta); row.appendChild(ans); row.appendChild(del);
+      list.appendChild(row);
+    });
+  }
+  renderSubs();
+  const addBtn = document.createElement('button');
+  addBtn.className='btn btn-ghost btn-sm'; addBtn.style.marginTop='.3rem';
+  addBtn.textContent='+ Подвопрос';
+  addBtn.onclick=()=>{ q.sub_questions.push({question:'',answer:''}); renderSubs(); };
+  wrap.appendChild(addBtn);
+  return wrap;
+}
+
+function downloadPack() {
+  if (!pack) return;
+  const name = (pack.name||'pack').replace(/[^\wа-яёА-ЯЁ\s\-]/gi,'_');
+  const blob = new Blob([JSON.stringify(pack,null,2)],{type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name+'.json'; a.click();
+  try {
+    localStorage.setItem('qhb_pack_'+name, JSON.stringify(pack));
+    const names = JSON.parse(localStorage.getItem('qhb_pack_names')||'[]');
+    if (!names.includes(name)) { names.push(name); localStorage.setItem('qhb_pack_names', JSON.stringify(names)); }
+  } catch {}
+}
+
+function printPack() {
+  if (!pack) return;
+  const e = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  function penaltyLabel(p) {
+    if (p === 'half') return '<span class="pen">Штраф: ½</span>';
+    if (p === 'full') return '<span class="pen">Штраф: полный</span>';
+    return '';
+  }
+  function typeLabel(t) {
+    if (t === 'bag')     return '<span class="qtype">🎁 Кот в мешке</span>';
+    if (t === 'auction') return '<span class="qtype">🔨 Аукцион</span>';
+    if (t === 'blitz')   return '<span class="qtype">⚡ Блиц</span>';
+    if (t === 'last')    return '<span class="qtype">🏁 Последний верный</span>';
+    if (t === 'jeopardy') return '<span class="qtype">↩ Jeopardy</span>';
+    if (t === 'reveal')  return '<span class="qtype">🖼 Картинка</span>';
+    if (t === 'traffic') return '<span class="qtype">🚦 Светофор</span>';
+    if (t === 'traffic_blitz') return '<span class="qtype">🚦 Муз. блиц</span>';
+    if (t === 'danetka') return '<span class="qtype">🔵 Данетка</span>';
+    return '';
+  }
+  function valueLabel(q) {
+    if (q.random_value) return `случайно: ${q.value_min ?? 100}–${q.value_max ?? 500}`;
+    return q.value ?? 0;
+  }
+
+  let body = '';
+  (pack.categories || []).forEach((cat, ci) => {
+    const modeNote = cat.buzz_mode === 'one_chance' ? ' <span class="mode">(один шанс)</span>' : '';
+    body += `<section${ci > 0 ? ' class="newpage"' : ''}>\n<h2>${e(cat.name)}${modeNote}</h2>\n<table>\n`;
+    const qs = [...(cat.questions || [])].sort((a, b) => (a.value ?? 0) - (b.value ?? 0));
+    qs.forEach(q => {
+      body += '<tr><td class="val">' + e(valueLabel(q)) + '</td><td class="content">';
+      const meta = [typeLabel(q.type), penaltyLabel(q.penalty)].filter(Boolean).join(' ');
+      if (meta) body += '<div class="meta">' + meta + '</div>';
+      body += '<div class="qtext">' + e(q.question || '') + '</div>';
+      if (q.type === 'blitz' && Array.isArray(q.sub_questions) && q.sub_questions.length) {
+        body += '<ol class="subs">';
+        q.sub_questions.forEach(sub => {
+          body += `<li>${e(sub.question || '')} <strong class="ans">→ ${e(sub.answer || '')}</strong></li>`;
+        });
+        body += '</ol>';
+      } else if (q.type === 'traffic' || q.type === 'traffic_blitz') {
+        const roundsNote = q.type === 'traffic_blitz' ? ` · раундов: ${q.traffic_rounds || 5}` : '';
+        if (q.traffic_mode === 'letters') {
+          const setLabel = {vowels:'гласные', consonants:'согласные', all:'все буквы'}[q.letters_set || 'all'];
+          body += `<div class="ans">Буквы: <strong>${e(setLabel)}</strong>${roundsNote}</div>`;
+        } else {
+          body += `<div class="ans">Слова${roundsNote}: <strong>${e((q.words || []).join(', '))}</strong></div>`;
+        }
+      } else {
+        body += '<div class="ans"><strong>' + e(q.answer || '') + '</strong></div>';
+      }
+      if (q.answer_reveal && q.answer_reveal.text) {
+        body += '<div class="comment">Комментарий: ' + e(q.answer_reveal.text) + '</div>';
+      }
+      body += '</td></tr>\n';
+    });
+    body += '</table>\n</section>\n';
+  });
+
+  const html = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>${e(pack.name || 'Пак вопросов')}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Georgia, serif; font-size: 13pt; color: #000; background: #fff; padding: 1.2cm 1.5cm; }
+  h1 { font-size: 18pt; margin-bottom: .6cm; border-bottom: 2px solid #000; padding-bottom: .3cm; }
+  h2 { font-size: 14pt; margin: .4cm 0 .3cm; }
+  .mode { font-size: 10pt; font-weight: normal; color: #444; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: .3cm; }
+  td { vertical-align: top; padding: .18cm .2cm; border-bottom: 1px solid #ccc; }
+  td.val { width: 2.4cm; font-weight: bold; font-size: 11pt; color: #333; white-space: nowrap; }
+  td.content { padding-left: .3cm; }
+  .meta { font-size: 10pt; color: #555; margin-bottom: .1cm; }
+  .qtype { margin-right: .3cm; }
+  .pen { font-style: italic; }
+  .qtext { margin-bottom: .15cm; }
+  .ans { margin-bottom: .1cm; }
+  .ans strong { font-size: 13pt; }
+  .subs { margin: .1cm 0 .1cm .8cm; font-size: 11pt; }
+  .subs li { margin-bottom: .1cm; }
+  .comment { font-style: italic; font-size: 10pt; color: #555; margin-top: .05cm; }
+  .newpage { page-break-before: always; padding-top: .5cm; }
+  .print-btn { position: fixed; top: .6cm; right: 1cm; padding: .4em 1.2em; font-size: 12pt;
+    background: #000; color: #fff; border: none; cursor: pointer; border-radius: 4px; }
+  @media print { .print-btn { display: none; } }
+</style>
+</head>
+<body>
+<button class="print-btn" onclick="window.print()">🖨 Печать</button>
+<h1>${e(pack.name || 'Пак вопросов')}</h1>
+${body}
+</body>
+</html>`;
+
+  const w = window.open('', '_blank');
+  if (!w) { alert('Разрешите всплывающие окна для этой страницы'); return; }
+  w.document.write(html);
+  w.document.close();
+}
+
+function esc(s){ return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+/* ── Конвертер старого Ф.Е.Е. ── */
+let _convPack = null;
+
+document.getElementById('converter-btn').onclick = () => {
+  document.getElementById('converter-modal').classList.add('open');
+};
+document.getElementById('converter-close').onclick = () => {
+  document.getElementById('converter-modal').classList.remove('open');
+};
+document.getElementById('conv-load-txt').onclick = () => {
+  pickFile('.txt,text/plain', async file => {
+    document.getElementById('conv-input').value = await file.text();
+    document.getElementById('conv-status').textContent = 'Файл: ' + file.name;
+    document.getElementById('conv-result-wrap').style.display = 'none';
+  });
+};
+document.getElementById('conv-parse-btn').onclick = () => {
+  const text = document.getElementById('conv-input').value.trim();
+  const packName = document.getElementById('conv-pack-name').value.trim() || 'Конвертированный пак';
+  if (!text) { document.getElementById('conv-status').textContent = '⚠ Вставьте текст или загрузите файл'; return; }
+  _convPack = parseOldFormat(text, packName);
+  const cats = _convPack.categories;
+  const total = cats.reduce((s, c) => s + c.questions.length, 0);
+  let preview = `Пак: «${_convPack.name}» — ${cats.length} кат., ${total} вопр.\n${'─'.repeat(48)}\n`;
+  cats.forEach(cat => {
+    preview += `\n📂 ${cat.name} (${cat.questions.length})\n`;
+    cat.questions.forEach((q, qi) => {
+      const mark = q.type !== 'normal' ? `[${q.type}] ` : '';
+      const ans = q.answer ? ` → ${q.answer.slice(0, 38)}${q.answer.length > 38 ? '…' : ''}` : '';
+      const qt = (q.question || '—').slice(0, 52) + ((q.question || '').length > 52 ? '…' : '');
+      preview += `  ${qi + 1}. (${q.value}) ${mark}${qt}${ans}\n`;
+    });
+  });
+  document.getElementById('conv-result').textContent = preview;
+  document.getElementById('conv-result-wrap').style.display = '';
+  document.getElementById('conv-status').textContent = `✓ ${cats.length} категорий, ${total} вопросов`;
+};
+document.getElementById('conv-to-editor').onclick = () => {
+  if (!_convPack) return;
+  pack = _convPack;
+  renderEditor();
+  document.getElementById('converter-modal').classList.remove('open');
+};
+document.getElementById('conv-dl').onclick = () => {
+  if (!_convPack) return;
+  const name = (_convPack.name || 'pack').replace(/[^\wа-яёА-ЯЁ\s\-]/gi, '_');
+  const blob = new Blob([JSON.stringify(_convPack, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name + '.json'; a.click();
+};
+
+function parseOldFormat(text, packName) {
+  const lines = text.split(/\r?\n/);
+  const categories = [];
+  let currentCat = null;
+  let pendingLines = [];
+  let skipToRecognized = false;
+  let awaitingRecognized = false;
+
+  function flushQuestion() {
+    if (!currentCat || !pendingLines.length) { pendingLines = []; return; }
+    const raw = pendingLines.join(' ').trim();
+    pendingLines = [];
+    if (!raw) return;
+
+    const m = raw.match(/^(.*?)\s*;[ \t]*\|\s*(?:\(([^)]*)\))?\s*$/);
+    let qText = m ? m[1].trim() : raw;
+    let answer = m ? (m[2] || '').trim() : '';
+
+    let type = 'normal';
+    if (/КОТ В МЕШКЕ/i.test(qText)) {
+      type = 'bag';
+      qText = qText.replace(/КОТ В МЕШКЕ/gi, '').trim();
+    } else if (/ВОПРОС[- ]АУКЦИОН/i.test(qText) || /^АУКЦИОН$/i.test(qText)) {
+      type = 'auction';
+      qText = qText.replace(/ВОПРОС[- ]АУКЦИОН/gi, '').trim();
+      if (!qText && answer) { qText = answer; answer = ''; }
+    }
+
+    currentCat.questions.push({
+      value: (currentCat.questions.length + 1) * 100,
+      timer: 60,
+      question: qText,
+      answer,
+      type,
+      penalty: 'none',
+      image: null, audio: null, video: null,
+      answer_reveal: answer ? { text: answer, image: null, audio: null, video: null } : null
+    });
+  }
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    const catMatch = trimmed.match(/^CATEGORY\s+\d+\s*:\s*(.*?)\s*;?\|?\s*$/);
+    if (catMatch) {
+      flushQuestion();
+      currentCat = { name: catMatch[1].trim(), buzz_mode: 'unlimited', questions: [] };
+      categories.push(currentCat);
+      skipToRecognized = false; awaitingRecognized = false;
+      continue;
+    }
+
+    const qMatch = trimmed.match(/^QUESTION\s+\d+\.\d+\s*:\s*(.*)$/);
+    if (qMatch) {
+      flushQuestion();
+      skipToRecognized = false; awaitingRecognized = false;
+      const rest = qMatch[1].trim();
+      if (/\[MBX:|ΔWIN\/|SCOPE_ERR::|!ERR::|#S#€|TR@SH/.test(rest)) {
+        skipToRecognized = true; continue;
+      }
+      if (rest) pendingLines.push(rest);
+      if (/;[ \t]*\|/.test(rest)) flushQuestion();
+      continue;
+    }
+
+    if (trimmed.startsWith('>> ') || /^>>\s*Вопрос распознан/i.test(trimmed)) {
+      skipToRecognized = false; awaitingRecognized = true; continue;
+    }
+
+    if (skipToRecognized) continue;
+
+    if (awaitingRecognized) {
+      awaitingRecognized = false;
+      pendingLines.push(trimmed);
+      if (/;[ \t]*\|/.test(trimmed)) flushQuestion();
+      continue;
+    }
+
+    if (pendingLines.length > 0) {
+      pendingLines.push(trimmed);
+      if (/;[ \t]*\|/.test(trimmed)) flushQuestion();
+    }
+  }
+
+  flushQuestion();
+  return { name: packName || 'Конвертированный пак', categories };
+}
+</script>
+
+</body>
+</html>
