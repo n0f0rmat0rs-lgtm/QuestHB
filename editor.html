@@ -61,8 +61,11 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); bo
 .type-btn.active-traffic       { background: #27ae60; color: #fff; border-color: #27ae60; }
 .type-btn.active-traffic_blitz { background: #c0392b; color: #fff; border-color: #c0392b; }
 .type-btn.active-danetka       { background: #16a085; color: #fff; border-color: #16a085; }
-.cat-flags { display:flex; gap:.6rem; flex-wrap:wrap; margin-top:.4rem; }
-.cat-flag-lbl { display:flex; align-items:center; gap:.3rem; font-size:.82rem; cursor:pointer; white-space:nowrap; }
+.cat-flags { display:flex; gap:.5rem; flex-wrap:wrap; padding:.6rem 1rem .2rem; }
+.cat-flag-lbl { display:flex; align-items:center; gap:.45rem; font-size:.85rem; font-weight:600; cursor:pointer; white-space:nowrap; padding:.4em .85em; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--text-muted); transition:border-color .12s, color .12s, background .12s; user-select:none; }
+.cat-flag-lbl:hover { border-color:var(--accent); }
+.cat-flag-lbl:has(input:checked) { background:rgba(79,142,247,.15); border-color:var(--accent); color:var(--text); }
+.cat-flag-lbl input[type=checkbox] { width:16px; height:16px; cursor:pointer; accent-color:var(--accent); flex-shrink:0; }
 .q-extra-row { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; padding:.35rem 0 0; font-size:.82rem; border-top:1px solid var(--border); margin-top:.25rem; }
 .q-extra-lbl { display:flex; align-items:center; gap:.3rem; cursor:pointer; }
 .blitz-section { border-top:1px solid var(--border); padding-top:.75rem; margin-top:.25rem; display:flex; flex-direction:column; gap:.4rem; }
@@ -237,7 +240,8 @@ function buildCategoryBlock(cat, ci, container) {
   const bm = cat.buzz_mode || "unlimited";
   block.innerHTML = `
     <div class="cat-header">
-      <input type="text" value="${esc(cat.name)}" placeholder="Название категории" style="flex:1">
+      <input type="text" class="cat-name-input" value="${esc(cat.name)}" placeholder="Полное название категории" style="flex:2;min-width:160px">
+      <input type="text" class="cat-short-input" value="${esc(cat.short_name||'')}" placeholder="Кратко (для таблицы)" style="flex:1;min-width:110px" title="Сокращённое название — показывается в игровой таблице выбора. Полное — при анонсе категорий.">
       <div class="buzz-toggle" title="Режим баззера для этой категории">
         <button class="buzz-btn ${bm==="unlimited"?"active-unlimited":""}" data-bm="unlimited">∞ спам</button>
         <button class="buzz-btn ${bm==="one_chance"?"active-one_chance":""}" data-bm="one_chance">1 шанс</button>
@@ -251,7 +255,11 @@ function buildCategoryBlock(cat, ci, container) {
     <div class="cat-body" id="cb-${ci}"></div>
     <div class="cat-footer"><button class="btn btn-secondary btn-sm aq-btn">+ Вопрос</button></div>
   `;
-  block.querySelector(".cat-header input").oninput = e => { cat.name = e.target.value; };
+  block.querySelector(".cat-name-input").oninput = e => { cat.name = e.target.value; };
+  block.querySelector(".cat-short-input").oninput = e => {
+    const v = e.target.value.trim();
+    if (v) cat.short_name = e.target.value; else delete cat.short_name;
+  };
   block.querySelectorAll(".buzz-btn").forEach(b => {
     b.onclick = () => {
       cat.buzz_mode = b.dataset.bm;

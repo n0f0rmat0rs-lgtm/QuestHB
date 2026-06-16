@@ -2,7 +2,7 @@
   "name": "Тест механик",
   "categories": [
     {
-      "name": "Прогрессив + Мета",
+      "name": "Прогрессив + Мета", "short_name": "Прогрессив",
       "buzz_mode": "one_chance",
       "progressive": true,
       "questions": [
@@ -76,7 +76,7 @@
       ]
     },
     {
-      "name": "Альянс + Jeopardy",
+      "name": "Альянс + Jeopardy", "short_name": "Альянс",
       "buzz_mode": "one_chance",
       "questions": [
         {
@@ -100,7 +100,7 @@
       ]
     },
     {
-      "name": "Раскрывающаяся картинка",
+      "name": "Раскрывающаяся картинка", "short_name": "Картинка",
       "buzz_mode": "unlimited",
       "questions": [
         {
@@ -132,7 +132,7 @@
       ]
     },
     {
-      "name": "Музыкальный светофор",
+      "name": "Музыкальный светофор", "short_name": "Светофор",
       "buzz_mode": "one_chance",
       "questions": [
         {

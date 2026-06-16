@@ -983,7 +983,7 @@ function buildBoard() {
   grid.style.gridTemplateRows = `repeat(${cats.length}, 1fr)`;
   grid.innerHTML = '';
   cats.forEach((cat, ci) => {
-    const h = document.createElement('div'); h.className = 'cat-head'; h.textContent = cat.name; grid.appendChild(h);
+    const h = document.createElement('div'); h.className = 'cat-head'; h.textContent = cat.short_name || cat.name; grid.appendChild(h);
     const nonMetaClosed = S.metaClosed[`${S.ri}-${ci}`] || 0;
     for (let qi = 0; qi < maxQ; qi++) {
       const q = cat.questions[qi], cell = document.createElement('div');
@@ -1940,10 +1940,10 @@ function buildDanJudgeBtns() {
   panel.innerHTML = '';
   panel.style.display = 'flex';
   const actions = [
-    { label: '✓ Да',              cls: 'btn-success',   result: 'yes' },
-    { label: '✗ Нет',             cls: 'btn-danger',    result: 'no' },
-    { label: '~ Возможно',        cls: 'btn-secondary', result: 'maybe' },
-    { label: '🎯 Правильный ответ', cls: 'btn-primary', result: 'correct' },
+    { label: '✓ Да [Пробел]',          cls: 'btn-success',   result: 'yes' },
+    { label: '✗ Нет [Z]',              cls: 'btn-danger',    result: 'no' },
+    { label: '~ Возможно [X]',         cls: 'btn-secondary', result: 'maybe' },
+    { label: '🎯 Правильный ответ [Enter]', cls: 'btn-primary', result: 'correct' },
   ];
   actions.forEach(a => {
     const btn = document.createElement('button');
@@ -2220,6 +2220,14 @@ document.addEventListener('keydown', e => {
   }
 
   if (sc.id === 'screen-question') {
+    // Данетка: горячие клавиши вердикта, пока команда отвечает
+    if (S.curQ && S.curQ.q.type === 'danetka' && S.buzzed !== null &&
+        document.getElementById('danetka-judge').style.display !== 'none') {
+      if (e.code === 'Space')      { e.preventDefault(); danAnswer('yes');     return; }
+      if (e.code === 'KeyZ')       { e.preventDefault(); danAnswer('no');      return; }
+      if (e.code === 'KeyX')       { e.preventDefault(); danAnswer('maybe');   return; }
+      if (e.code === 'Enter')      { e.preventDefault(); danAnswer('correct'); return; }
+    }
     if (e.code === 'Space') {
       e.preventDefault();
       if (S.buzzed !== null) {
