@@ -441,6 +441,30 @@ tr.dan-buzzed { background: rgba(79,142,247,.12); }
   </div>
 </div>
 
+<!-- settings modal -->
+<div id="modal-settings" class="modal-overlay" style="display:none">
+  <div class="modal" style="max-width:520px;width:94vw;max-height:90vh;overflow-y:auto">
+    <h2>⚙ Настройки игры</h2>
+    <div id="ms-current-round" style="font-size:.85rem;color:var(--text-muted);margin-top:-.3rem"></div>
+    <div style="border-top:1px solid var(--border);padding-top:.75rem;margin-top:.25rem">
+      <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:.5rem">Следующие раунды</div>
+      <div id="ms-rounds-list" style="display:flex;flex-direction:column;gap:.35rem"></div>
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.6rem">
+        <button class="btn btn-secondary btn-sm" id="ms-add-json-btn">+ JSON файл</button>
+        <button class="btn btn-secondary btn-sm" id="ms-add-saved-btn">📂 Из сохранённых</button>
+      </div>
+      <div id="ms-saved-popup" style="display:none;margin-top:.5rem;padding:.6rem;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">
+        <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:.4rem">Выберите сохранённый пак:</div>
+        <div id="ms-saved-list" style="display:flex;gap:.35rem;flex-wrap:wrap"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:.5rem;margin-top:1rem;flex-wrap:wrap">
+      <button class="btn btn-primary" id="ms-resume-btn" style="flex:1">▶ Продолжить игру</button>
+      <button class="btn btn-danger btn-sm" id="ms-quit-btn">Завершить игру</button>
+    </div>
+  </div>
+</div>
+
 <div id="alliance-wait" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.75);align-items:center;justify-content:center">
   <div style="background:#1a1230;border:3px solid #9b59b6;border-radius:20px;padding:2.5rem 3rem;max-width:640px;width:90%;text-align:center;box-shadow:0 8px 48px rgba(155,89,182,.55)">
     <div id="alliance-wait-text" style="font-size:1.6rem;color:#ccc;margin-bottom:.6rem;font-weight:600"></div>
@@ -1052,7 +1076,7 @@ function adjScore(idx, sign) {
   updScores(); saveGame();
 }
 document.getElementById('next-round-btn').onclick = () => startRound(S.ri+1);
-document.getElementById('back-setup-btn').onclick = () => { stopFlappy(); showScreen('screen-setup'); };
+document.getElementById('back-setup-btn').onclick = openSettingsModal;
 document.getElementById('end-btn').onclick = showCredits;
 document.getElementById('pause-btn').onclick = () => {
   document.getElementById('flappy-to-names').style.display = 'none';
@@ -1065,6 +1089,91 @@ document.getElementById('flappy-return-btn').onclick = () => {
   document.getElementById('flappy-return-btn').style.display = 'none';
   document.getElementById('flappy-to-names').style.display = 'inline-flex';
   showScreen('screen-board');
+};
+
+/* ═══════════════════════════════════════
+   SETTINGS MODAL
+═══════════════════════════════════════ */
+function openSettingsModal() {
+  const modal = document.getElementById('modal-settings');
+  const cur = S.rounds[S.ri];
+  document.getElementById('ms-current-round').textContent =
+    `Текущий раунд (${S.ri+1}/${S.rounds.length}): ${cur ? cur.packName : ''}`;
+  renderSettingsRounds();
+  document.getElementById('ms-saved-popup').style.display = 'none';
+  modal.style.display = 'flex';
+}
+
+function renderSettingsRounds() {
+  const list = document.getElementById('ms-rounds-list');
+  const future = S.rounds.slice(S.ri + 1);
+  if (!future.length) {
+    list.innerHTML = '<div style="font-size:.82rem;color:var(--text-muted);padding:.3rem 0">Больше раундов нет</div>';
+    return;
+  }
+  list.innerHTML = '';
+  future.forEach((r, fi) => {
+    const idx = S.ri + 1 + fi;
+    const row = document.createElement('div');
+    row.className = 'round-item';
+    row.innerHTML = `<span style="color:var(--text-muted);font-size:.78rem">R${idx+1}</span><span class="round-name">${r.packName}</span><button class="del-btn" title="Удалить раунд">✕</button>`;
+    row.querySelector('.del-btn').onclick = () => {
+      S.rounds.splice(idx, 1);
+      saveGame();
+      renderSettingsRounds();
+      updateRoundLbl();
+      checkDone();
+    };
+    list.appendChild(row);
+  });
+}
+
+document.getElementById('ms-resume-btn').onclick = () => {
+  document.getElementById('modal-settings').style.display = 'none';
+};
+document.getElementById('ms-quit-btn').onclick = () => {
+  if (!confirm('Завершить игру? Прогресс будет удалён.')) return;
+  document.getElementById('modal-settings').style.display = 'none';
+  deleteSave();
+  stopFlappy();
+  showScreen('screen-setup');
+};
+document.getElementById('ms-add-json-btn').onclick = () => {
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json';
+  inp.onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      const p = JSON.parse(await f.text());
+      S.rounds.push({packName: p.name || f.name.replace(/\.json$/, ''), pack: p});
+      saveGame(); renderSettingsRounds(); updateRoundLbl(); checkDone(); SFX.slide();
+    } catch { alert('Ошибка чтения JSON'); }
+  };
+  inp.click();
+};
+document.getElementById('ms-add-saved-btn').onclick = () => {
+  const popup = document.getElementById('ms-saved-popup');
+  const list = document.getElementById('ms-saved-list');
+  try {
+    const names = JSON.parse(localStorage.getItem('qhb_pack_names') || '[]');
+    if (!names.length) { alert('Нет сохранённых паков.'); return; }
+    list.innerHTML = '';
+    names.forEach(name => {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-secondary btn-sm';
+      btn.textContent = name;
+      btn.onclick = () => {
+        try {
+          const data = JSON.parse(localStorage.getItem('qhb_pack_' + name));
+          if (!data) return;
+          S.rounds.push({packName: data.name || name, pack: data});
+          saveGame(); renderSettingsRounds(); updateRoundLbl(); checkDone();
+          popup.style.display = 'none'; SFX.slide();
+        } catch { alert('Ошибка чтения пака: ' + name); }
+      };
+      list.appendChild(btn);
+    });
+    popup.style.display = '';
+  } catch { alert('Ошибка чтения сохранённых паков.'); }
 };
 
 /* ═══════════════════════════════════════
