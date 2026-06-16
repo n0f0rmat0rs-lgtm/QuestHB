@@ -188,13 +188,6 @@ function mimeToAccept(field) {
   return "*";
 }
 
-function shortName(dataUrl, origName) {
-  if (!dataUrl) return "";
-  if (origName) return origName;
-  const m = dataUrl.match(/^data:([^;]+)/);
-  return m ? m[1] : "файл";
-}
-
 /* ── Editor render ── */
 function renderEditor() {
   const main = document.getElementById("editor-main");
@@ -333,7 +326,7 @@ function buildQuestionCard(q, ci, qi, container) {
   top.querySelectorAll(".penalty-btn").forEach(b => {
     b.onclick = () => { q.penalty=b.dataset.p; top.querySelectorAll(".penalty-btn").forEach(x=>x.classList.toggle("active",x===b)); };
   });
-  let blitzSection, timerSection, revealSection, trafficSection, allianceRow, metaRow;
+  let blitzSection, timerSection, revealSection, trafficSection, allianceRow, answerRow;
   top.querySelectorAll(".type-btn").forEach(b => {
     b.onclick = () => {
       q.type = b.dataset.t;
@@ -349,6 +342,7 @@ function buildQuestionCard(q, ci, qi, container) {
       if (revealSection)  revealSection.style.display  = q.type === 'reveal'  ? '' : 'none';
       if (trafficSection) { trafficSection.style.display = isTraffic ? '' : 'none'; trafficSection._roundsBox.style.display = q.type === 'traffic_blitz' ? '' : 'none'; }
       if (allianceRow)    allianceRow.style.display     = q.type === 'normal'  ? '' : 'none';
+      if (answerRow)      answerRow.style.display       = (q.type === 'blitz' || isTraffic) ? 'none' : '';
     };
   });
   top.querySelector(".btn-ghost[style*=red]").onclick = () => { pack.categories[ci].questions.splice(qi,1); renderCategories(container); };
@@ -359,6 +353,20 @@ function buildQuestionCard(q, ci, qi, container) {
   ta.rows=3; ta.placeholder="Текст вопроса (заголовок блица или текст обычного вопроса)"; ta.textContent=q.question||"";
   ta.oninput = e => { q.question=e.target.value; };
   card.appendChild(ta);
+
+  // Правильный ответ (для ведущего и печати) — не нужен для блица/светофора
+  const isTrafficInit = q.type === 'traffic' || q.type === 'traffic_blitz';
+  answerRow = document.createElement("div");
+  answerRow.style.cssText = "display:flex;flex-direction:column;gap:.3rem";
+  answerRow.style.display = (q.type === 'blitz' || isTrafficInit) ? 'none' : '';
+  const ansLbl = document.createElement("label");
+  ansLbl.style.cssText = "font-size:.82rem;color:var(--text-muted)";
+  ansLbl.textContent = "Правильный ответ (для ведущего и печати)";
+  const ansInp = document.createElement("input");
+  ansInp.type = "text"; ansInp.value = q.answer || ""; ansInp.placeholder = "Ответ";
+  ansInp.oninput = e => { const v = e.target.value; if (v) q.answer = v; else delete q.answer; };
+  answerRow.append(ansLbl, ansInp);
+  card.appendChild(answerRow);
 
   // Blitz sub-questions section
   blitzSection = buildBlitzSection(q);
