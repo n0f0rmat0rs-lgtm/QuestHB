@@ -2329,6 +2329,16 @@ document.addEventListener('keydown', e => {
   }
 
   if (sc.id === 'screen-question') {
+    // Если открыт оверлей ответа — Space/Enter/Escape закрывают его, остальное игнорируем
+    if (document.getElementById('ans-overlay').style.display !== 'none') {
+      if (e.code === 'Space' || e.code === 'Enter' || e.code === 'Escape') {
+        e.preventDefault();
+        document.getElementById('ans-close').click();
+      }
+      return;
+    }
+    // Не реагируем на авто-повтор зажатых клавиш
+    if (e.repeat && (e.code === 'Space' || e.code === 'KeyZ' || e.code === 'KeyX' || e.code === 'Enter' || e.code === 'KeyA')) return;
     // Данетка: горячие клавиши вердикта, пока команда отвечает
     if (S.curQ && S.curQ.q.type === 'danetka' && S.buzzed !== null &&
         document.getElementById('danetka-judge').style.display !== 'none') {
@@ -2355,7 +2365,7 @@ document.addEventListener('keydown', e => {
       if (btn.style.display !== 'none') btn.click();
     }
     const k = {'1':0,'2':1,'3':2,'4':3,'5':4,'6':5}[e.key];
-    if (k !== undefined) onBuzz(k);
+    if (k !== undefined) { if (e.repeat) return; onBuzz(k); }
   }
   if (sc.id === 'screen-intro' && e.code === 'Escape') document.getElementById('intro-skip').click();
 });
