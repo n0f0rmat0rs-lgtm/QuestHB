@@ -118,6 +118,28 @@
           "audio": null, "video": null, "answer_reveal": {"text": "Два велосипеда, припаркованных у стены.", "image": null, "audio": null, "video": null}
         }
       ]
+    },
+    {
+      "name": "Музыкальный светофор",
+      "buzz_mode": "one_chance",
+      "questions": [
+        {
+          "value": 200, "timer": 30, "type": "traffic", "traffic_mode": "words",
+          "question": "Спойте песню, в которой есть это слово",
+          "words": ["любовь", "дорога", "ночь", "сердце", "солнце", "город", "мама", "звезда"],
+          "penalty": "half", "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 200, "timer": 30, "type": "traffic", "traffic_mode": "letters", "letters_set": "vowels",
+          "question": "Спойте песню, начинающуюся на эту букву",
+          "penalty": "none", "image": null, "audio": null, "video": null, "answer_reveal": null
+        },
+        {
+          "value": 500, "timer": 20, "type": "traffic_blitz", "traffic_mode": "letters", "letters_set": "consonants", "traffic_rounds": 5,
+          "question": "Песня на эту букву — 5 раундов подряд",
+          "penalty": "none", "image": null, "audio": null, "video": null, "answer_reveal": null
+        }
+      ]
     }
   ]
 }

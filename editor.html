@@ -58,6 +58,8 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); bo
 .type-btn.active-blitz    { background: #f39c12; color: #000; border-color: #f39c12; }
 .type-btn.active-jeopardy { background: #1abc9c; color: #000; border-color: #1abc9c; }
 .type-btn.active-reveal   { background: #2980b9; color: #fff; border-color: #2980b9; }
+.type-btn.active-traffic       { background: #27ae60; color: #fff; border-color: #27ae60; }
+.type-btn.active-traffic_blitz { background: #c0392b; color: #fff; border-color: #c0392b; }
 .cat-flags { display:flex; gap:.6rem; flex-wrap:wrap; margin-top:.4rem; }
 .cat-flag-lbl { display:flex; align-items:center; gap:.3rem; font-size:.82rem; cursor:pointer; white-space:nowrap; }
 .q-extra-row { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; padding:.35rem 0 0; font-size:.82rem; border-top:1px solid var(--border); margin-top:.25rem; }
@@ -301,6 +303,8 @@ function buildQuestionCard(q, ci, qi, container) {
       <button class="type-btn ${q.type==="blitz"?"active-blitz":""}" data-t="blitz">⚡ Блиц</button>
       <button class="type-btn ${q.type==="jeopardy"?"active-jeopardy":""}" data-t="jeopardy">↩ Jeopardy</button>
       <button class="type-btn ${q.type==="reveal"?"active-reveal":""}" data-t="reveal">🖼 Картинка</button>
+      <button class="type-btn ${q.type==="traffic"?"active-traffic":""}" data-t="traffic">🚦 Светофор</button>
+      <button class="type-btn ${q.type==="traffic_blitz"?"active-traffic_blitz":""}" data-t="traffic_blitz">🚦 Муз. блиц</button>
     </div>
     <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-left:auto">✕</button>
   `;
@@ -319,17 +323,21 @@ function buildQuestionCard(q, ci, qi, container) {
   top.querySelectorAll(".penalty-btn").forEach(b => {
     b.onclick = () => { q.penalty=b.dataset.p; top.querySelectorAll(".penalty-btn").forEach(x=>x.classList.toggle("active",x===b)); };
   });
-  let blitzSection, timerSection, revealSection, allianceRow, metaRow;
+  let blitzSection, timerSection, revealSection, trafficSection, allianceRow, metaRow;
   top.querySelectorAll(".type-btn").forEach(b => {
     b.onclick = () => {
       q.type = b.dataset.t;
       if (q.type === 'blitz' && !q.sub_questions) q.sub_questions = [];
+      if ((q.type === 'traffic' || q.type === 'traffic_blitz') && !q.traffic_mode) q.traffic_mode = 'words';
+      if (q.type === 'traffic_blitz' && !q.traffic_rounds) q.traffic_rounds = 5;
       top.querySelectorAll(".type-btn").forEach(x => { x.className = "type-btn"; });
-      const cls = {bag:"active-bag",auction:"active-auction",last:"active-last",blitz:"active-blitz",jeopardy:"active-jeopardy",reveal:"active-reveal"}[q.type] || "active-normal";
+      const cls = {bag:"active-bag",auction:"active-auction",last:"active-last",blitz:"active-blitz",jeopardy:"active-jeopardy",reveal:"active-reveal",traffic:"active-traffic",traffic_blitz:"active-traffic_blitz"}[q.type] || "active-normal";
       b.classList.add(cls);
+      const isTraffic = q.type === 'traffic' || q.type === 'traffic_blitz';
       if (blitzSection)   blitzSection.style.display   = q.type === 'blitz'   ? '' : 'none';
       if (timerSection)   timerSection.style.display   = (q.type === 'blitz' || q.type === 'last') ? '' : 'none';
       if (revealSection)  revealSection.style.display  = q.type === 'reveal'  ? '' : 'none';
+      if (trafficSection) { trafficSection.style.display = isTraffic ? '' : 'none'; trafficSection._roundsBox.style.display = q.type === 'traffic_blitz' ? '' : 'none'; }
       if (allianceRow)    allianceRow.style.display     = q.type === 'normal'  ? '' : 'none';
     };
   });
@@ -380,6 +388,13 @@ function buildQuestionCard(q, ci, qi, container) {
   revGridLbl.appendChild(revGridSel);
   revealSection.appendChild(revGridLbl);
   card.appendChild(revealSection);
+
+  // Traffic-light section (светофор + муз. блиц)
+  trafficSection = buildTrafficSection(q);
+  const isTrafficType = q.type === 'traffic' || q.type === 'traffic_blitz';
+  trafficSection.style.display = isTrafficType ? '' : 'none';
+  trafficSection._roundsBox.style.display = q.type === 'traffic_blitz' ? '' : 'none';
+  card.appendChild(trafficSection);
 
   // Extra options row: alliance + meta_after
   const extraRow = document.createElement('div');
@@ -505,6 +520,81 @@ function buildMediaSection(obj, fields) {
   return wrap;
 }
 
+function buildTrafficSection(q) {
+  const wrap = document.createElement('div');
+  wrap.className = 'blitz-section';
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'font-size:.82rem;color:var(--text-muted);font-weight:600';
+  hdr.textContent = '🚦 Музыкальный светофор:';
+  wrap.appendChild(hdr);
+
+  // Mode toggle: words / letters
+  const modeRow = document.createElement('div');
+  modeRow.style.cssText = 'display:flex;align-items:center;gap:.4rem;font-size:.82rem;margin:.3rem 0';
+  modeRow.appendChild(document.createTextNode('Режим:'));
+  const modeWords = document.createElement('button');
+  const modeLetters = document.createElement('button');
+  modeWords.type = 'button'; modeLetters.type = 'button';
+  modeWords.className = 'penalty-btn'; modeLetters.className = 'penalty-btn';
+  modeWords.textContent = 'Слова'; modeLetters.textContent = 'Буквы';
+  modeRow.appendChild(modeWords); modeRow.appendChild(modeLetters);
+  wrap.appendChild(modeRow);
+
+  // Words box
+  const wordsBox = document.createElement('div');
+  const wordsTa = document.createElement('textarea');
+  wordsTa.rows = 4;
+  wordsTa.placeholder = 'Слова — в столбик или через пробел/запятую';
+  wordsTa.style.cssText = 'width:100%';
+  wordsTa.value = (q.words || []).join('\n');
+  wordsTa.oninput = () => { q.words = wordsTa.value.split(/[\s,;]+/).map(s => s.trim()).filter(Boolean); };
+  wordsBox.appendChild(wordsTa);
+  wrap.appendChild(wordsBox);
+
+  // Letters box
+  const lettersBox = document.createElement('div');
+  lettersBox.style.cssText = 'display:flex;align-items:center;gap:.5rem;font-size:.82rem;flex-wrap:wrap';
+  lettersBox.appendChild(document.createTextNode('Набор букв:'));
+  const lsel = document.createElement('select');
+  lsel.style.cssText = 'padding:.2em .4em;font-family:inherit;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px';
+  [['all','Все буквы'],['vowels','Гласные'],['consonants','Согласные']].forEach(([v, lab]) => {
+    const o = document.createElement('option'); o.value = v; o.textContent = lab;
+    if ((q.letters_set || 'all') === v) o.selected = true;
+    lsel.appendChild(o);
+  });
+  lsel.onchange = () => { q.letters_set = lsel.value; };
+  lettersBox.appendChild(lsel);
+  const lhint = document.createElement('span');
+  lhint.style.cssText = 'color:var(--text-muted)';
+  lhint.textContent = '(без Ё, Й, Ь, Ъ, Ы)';
+  lettersBox.appendChild(lhint);
+  wrap.appendChild(lettersBox);
+
+  // Rounds (traffic_blitz only)
+  const roundsBox = document.createElement('div');
+  roundsBox.style.cssText = 'display:flex;align-items:center;gap:.5rem;font-size:.82rem;margin-top:.4rem';
+  roundsBox.appendChild(document.createTextNode('Количество раундов:'));
+  const rinp = document.createElement('input');
+  rinp.type = 'number'; rinp.min = 1; rinp.max = 20; rinp.value = q.traffic_rounds || 5;
+  rinp.style.width = '60px';
+  rinp.oninput = () => { q.traffic_rounds = parseInt(rinp.value) || 1; };
+  roundsBox.appendChild(rinp);
+  wrap.appendChild(roundsBox);
+  wrap._roundsBox = roundsBox;
+
+  function setMode() {
+    const m = q.traffic_mode || 'words';
+    modeWords.classList.toggle('active', m === 'words');
+    modeLetters.classList.toggle('active', m === 'letters');
+    wordsBox.style.display = m === 'words' ? '' : 'none';
+    lettersBox.style.display = m === 'letters' ? '' : 'none';
+  }
+  modeWords.onclick = () => { q.traffic_mode = 'words'; setMode(); };
+  modeLetters.onclick = () => { q.traffic_mode = 'letters'; setMode(); };
+  setMode();
+  return wrap;
+}
+
 function buildBlitzSection(q) {
   if (!q.sub_questions) q.sub_questions = [];
   const wrap = document.createElement('div');
@@ -579,6 +669,10 @@ function printPack() {
     if (t === 'auction') return '<span class="qtype">🔨 Аукцион</span>';
     if (t === 'blitz')   return '<span class="qtype">⚡ Блиц</span>';
     if (t === 'last')    return '<span class="qtype">🏁 Последний верный</span>';
+    if (t === 'jeopardy') return '<span class="qtype">↩ Jeopardy</span>';
+    if (t === 'reveal')  return '<span class="qtype">🖼 Картинка</span>';
+    if (t === 'traffic') return '<span class="qtype">🚦 Светофор</span>';
+    if (t === 'traffic_blitz') return '<span class="qtype">🚦 Муз. блиц</span>';
     return '';
   }
   function valueLabel(q) {
@@ -602,6 +696,14 @@ function printPack() {
           body += `<li>${e(sub.question || '')} <strong class="ans">→ ${e(sub.answer || '')}</strong></li>`;
         });
         body += '</ol>';
+      } else if (q.type === 'traffic' || q.type === 'traffic_blitz') {
+        const roundsNote = q.type === 'traffic_blitz' ? ` · раундов: ${q.traffic_rounds || 5}` : '';
+        if (q.traffic_mode === 'letters') {
+          const setLabel = {vowels:'гласные', consonants:'согласные', all:'все буквы'}[q.letters_set || 'all'];
+          body += `<div class="ans">Буквы: <strong>${e(setLabel)}</strong>${roundsNote}</div>`;
+        } else {
+          body += `<div class="ans">Слова${roundsNote}: <strong>${e((q.words || []).join(', '))}</strong></div>`;
+        }
       } else {
         body += '<div class="ans"><strong>' + e(q.answer || '') + '</strong></div>';
       }

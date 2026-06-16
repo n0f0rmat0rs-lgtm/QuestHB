@@ -105,6 +105,9 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 .q-cat-lbl { font-size: .85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; }
 .q-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: .8rem; min-height: 0; padding: 0 calc(1.5rem + 180px); }
 .q-text { font-weight: 700; line-height: 1.15; color: #fff; width: 100%; }
+.q-text.traffic-cycling { color: #7a7a7a; transition: none; }
+.q-text.traffic-selected { color: #ffe14d; text-shadow: 0 0 28px rgba(255,225,77,.85), 0 0 60px rgba(255,225,77,.55); animation: trafficPop .35s cubic-bezier(.34,1.56,.64,1); }
+@keyframes trafficPop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .q-media { max-width: 100%; max-height: 35vh; border-radius: 6px; }
 .buzz-wrap { flex-shrink: 0; text-align: center; min-height: 70px; display: flex; align-items: center; justify-content: center; }
 .buzz-pill { display: inline-block; padding: .5rem 2.5rem; border-radius: 40px; font-size: 2.2rem; font-weight: 900; color: #fff; background: #1c1c1c; border: 2px solid #fff; animation: buzzPop .25s cubic-bezier(.34,1.56,.64,1); }
@@ -504,6 +507,19 @@ function _shuffle(arr) {
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
+}
+
+/* Музыкальный светофор — наборы букв (без Ё, Й, Ь, Ъ, Ы) */
+const TRAFFIC_VOWELS = ['А','Е','И','О','У','Э','Ю','Я'];
+const TRAFFIC_CONSONANTS = ['Б','В','Г','Д','Ж','З','К','Л','М','Н','П','Р','С','Т','Ф','Х','Ц','Ч','Ш','Щ'];
+function trafficPool(q) {
+  if (q.traffic_mode === 'letters') {
+    const set = q.letters_set || 'all';
+    if (set === 'vowels') return [...TRAFFIC_VOWELS];
+    if (set === 'consonants') return [...TRAFFIC_CONSONANTS];
+    return [...TRAFFIC_VOWELS, ...TRAFFIC_CONSONANTS];
+  }
+  return (q.words || []).map(w => String(w).trim()).filter(Boolean);
 }
 
 function nextChooser() {
@@ -1059,6 +1075,18 @@ function openQ(ci, qi) {
     S.curQ.revealOrigValue = qValue;
     S.curQ.revealFrozen = false;
   }
+  if (q.type === 'traffic' || q.type === 'traffic_blitz') {
+    S.curQ.trafficPool = trafficPool(q);
+    S.curQ.trafficPhase = 0;
+    S.curQ.trafficInt = null;
+    S.curQ.trafficFontPx = 0;
+  }
+  if (q.type === 'traffic_blitz') {
+    S.curQ.trafficRounds = q.traffic_rounds || 5;
+    S.curQ.subIdx = 0;
+    S.curQ.subPts = S.curQ.trafficRounds > 0 ? Math.floor(qValue / S.curQ.trafficRounds) : qValue;
+    S.curQ.currentValue = S.curQ.subPts;
+  }
   S.buzzed = null; S.wrongTeams = new Set();
   if (q.type === 'bag') { openBagModal(q); return; }
   resetTimer(); fillQ(q, cat);
@@ -1165,15 +1193,28 @@ window.addEventListener('resize', () => {
 function fillQ(q, cat) {
   const isBag = S.curQ.q.type === 'bag';
   const isBlitz = q.type === 'blitz';
+  const isTraffic = q.type === 'traffic' || q.type === 'traffic_blitz';
+  const qtEl = document.getElementById('q-text');
+  qtEl.classList.remove('traffic-cycling','traffic-selected');
   if (isBlitz) {
     document.getElementById('q-cat').textContent = `⚡ Блиц — ${cat.name}`;
     setMedia('q-img','q-aud','q-vid','q-vwrap', {});
+  } else if (isTraffic) {
+    const lbl = q.type === 'traffic_blitz' ? '🚦 Музыкальный блиц' : '🚦 Музыкальный светофор';
+    document.getElementById('q-cat').textContent = `${lbl} — ${cat.name}`;
+    setMedia('q-img','q-aud','q-vid','q-vwrap', {});
+    document.getElementById('reveal-container').style.display = 'none';
+    qtEl.textContent = q.question || '🚦';
+    if (q.type === 'traffic_blitz')
+      document.getElementById('q-val').textContent = `${S.curQ.subPts} баллов (раунд ${S.curQ.subIdx + 1}/${S.curQ.trafficRounds})`;
+    else
+      document.getElementById('q-val').textContent = S.curQ.currentValue + ' баллов';
   } else {
     document.getElementById('q-val').textContent = (isBag ? S.curQ.bagValue : S.curQ.currentValue) + ' баллов';
     const catLabel = isBag ? `Играет: ${S.teams[S.curQ.bagTeam].name}` : (q.type === 'jeopardy' ? `↩ ${cat.name}` : cat.name);
     document.getElementById('q-cat').textContent = catLabel;
     const txt = q.question || '';
-    const el = document.getElementById('q-text'); el.textContent = txt;
+    qtEl.textContent = txt;
     const rc = document.getElementById('reveal-container');
     if (q.type === 'reveal') {
       setMedia('q-img','q-aud','q-vid','q-vwrap', {});
@@ -1187,9 +1228,12 @@ function fillQ(q, cat) {
   if (isBlitz) fillBlitzSub();
   document.getElementById('last-banner').style.display = 'none';
   document.getElementById('q-last-end').style.display = q.type === 'last' ? 'inline-flex' : 'none';
-  document.getElementById('q-start').style.display = 'inline-flex';
+  const startBtn = document.getElementById('q-start');
+  startBtn.style.display = 'inline-flex';
+  startBtn.textContent = isTraffic ? '🚦 Старт [Пробел]' : '▶ Старт';
   document.getElementById('q-annul').style.display = 'inline-flex';
-  document.getElementById('q-blitz-skip').style.display = (q.type === 'blitz' && !q.blitz_auto_skip) ? 'inline-flex' : 'none';
+  document.getElementById('q-blitz-skip').style.display =
+    ((q.type === 'blitz' && !q.blitz_auto_skip) || q.type === 'traffic_blitz') ? 'inline-flex' : 'none';
 }
 function fillBlitzSub() {
   const sub = S.curQ.subs[S.curQ.subIdx];
@@ -1200,6 +1244,80 @@ function fillBlitzSub() {
   document.getElementById('q-val').textContent =
     `${S.curQ.subPts} баллов (${S.curQ.subIdx + 1}/${S.curQ.subs.length})`;
 }
+/* ═══════════════════════════════════════
+   МУЗЫКАЛЬНЫЙ СВЕТОФОР / БЛИЦ
+═══════════════════════════════════════ */
+function doStart() {
+  if (!S.curQ) return;
+  const t = S.curQ.q.type;
+  if (t === 'traffic' || t === 'traffic_blitz') { trafficAdvance(); return; }
+  if (!S.tRun) {
+    startTimer();
+    if (t === 'reveal') { openRevealTile(); startRevealInterval(); }
+  }
+}
+function trafficAdvance() {
+  const ph = S.curQ.trafficPhase || 0;
+  if (ph === 0) startTrafficCycle();
+  else if (ph === 1) stopTrafficCycle();
+}
+function startTrafficCycle() {
+  const pool = S.curQ.trafficPool || [];
+  if (!pool.length) { stopTrafficCycle(); return; }
+  S.curQ.trafficPhase = 1;
+  const el = document.getElementById('q-text');
+  el.classList.remove('traffic-selected');
+  el.classList.add('traffic-cycling');
+  // Lock font size to fit the longest item once, so cycling stays smooth
+  let longest = pool[0];
+  for (const w of pool) if (String(w).length > String(longest).length) longest = w;
+  el.textContent = longest;
+  fitQText();
+  S.curQ.trafficFontPx = el.style.fontSize;
+  el.textContent = pool[Math.floor(Math.random() * pool.length)];
+  const startBtn = document.getElementById('q-start');
+  startBtn.textContent = '⏹ Стоп [Пробел]';
+  S.curQ.trafficInt = setInterval(() => {
+    el.textContent = pool[Math.floor(Math.random() * pool.length)];
+  }, 75);
+}
+function stopTrafficCycle() {
+  if (S.curQ.trafficInt) { clearInterval(S.curQ.trafficInt); S.curQ.trafficInt = null; }
+  S.curQ.trafficPhase = 2;
+  const pool = S.curQ.trafficPool || [];
+  const item = pool.length ? pool[Math.floor(Math.random() * pool.length)] : '—';
+  const el = document.getElementById('q-text');
+  el.classList.remove('traffic-cycling');
+  el.textContent = item;
+  el.classList.add('traffic-selected');
+  if (S.curQ.trafficFontPx) el.style.fontSize = S.curQ.trafficFontPx;
+  S.curQ.trafficWord = item;
+  document.getElementById('q-start').style.display = 'none';
+  SFX.reveal();
+  startTimer();
+  saveGame();
+}
+function trafficNextRound() {
+  S.curQ.subIdx++;
+  if (S.curQ.subIdx >= S.curQ.trafficRounds) { closeQ(!S.curQ.blitzAnyCorrect); return; }
+  S.wrongTeams = new Set(); S.buzzed = null;
+  S.curQ.trafficPhase = 0;
+  document.getElementById('buzz-pill').style.display = 'none';
+  showJudge(false);
+  const el = document.getElementById('q-text');
+  el.classList.remove('traffic-cycling','traffic-selected');
+  el.style.fontSize = '';
+  el.textContent = S.curQ.q.question || '🚦';
+  document.getElementById('q-val').textContent =
+    `${S.curQ.subPts} баллов (раунд ${S.curQ.subIdx + 1}/${S.curQ.trafficRounds})`;
+  const startBtn = document.getElementById('q-start');
+  startBtn.style.display = 'inline-flex';
+  startBtn.textContent = '🚦 Старт [Пробел]';
+  resetTimer();
+  requestAnimationFrame(fitQText);
+  saveGame();
+}
+
 function setMedia(imgId, audId, vidId, vidWId, src) {
   const img = document.getElementById(imgId);
   if (src.image) { img.src = src.image; img.style.display = 'block'; } else img.style.display = 'none';
@@ -1353,6 +1471,16 @@ document.getElementById('q-correct').onclick = () => {
     if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
     saveGame(); return;
   }
+  if (q.type === 'traffic_blitz') {
+    const pts = S.curQ.subPts;
+    t.score += pts; updScores(); SFX.correct(); flash('rgba(46,204,113,.45)');
+    showPopup(pts, t.name);
+    S.log.push({ ts: Date.now(), teamIdx: S.buzzed, teamName: t.name, catName: S.curQ.catName,
+      qType: 'traffic_blitz', value: pts, correct: true, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+    S.curQ.blitzAnyCorrect = true;
+    trafficNextRound();
+    return;
+  }
   if (q.type === 'last') {
     S.curQ.lastCorrectTeam = S.buzzed;
     S.log.push({ ts: Date.now(), teamIdx: S.buzzed, teamName: t.name, catName: S.curQ.catName,
@@ -1408,11 +1536,20 @@ document.getElementById('q-wrong').onclick = () => {
     }
     saveGame(); return;
   }
+  if (q.type === 'traffic_blitz') {
+    if (q.blitz_auto_skip) { trafficNextRound(); return; }
+    S.wrongTeams.add(S.buzzed); S.buzzed = null;
+    document.getElementById('buzz-pill').style.display = 'none';
+    showJudge(false);
+    if (S.curQ.buzzMode === 'one_chance' && S.teams.every((_, i) => S.wrongTeams.has(i))) { trafficNextRound(); return; }
+    resumeTimer(); saveGame(); return;
+  }
   const isReveal = q.type === 'reveal';
+  const isTrafficSingle = q.type === 'traffic';
   S.wrongTeams.add(S.buzzed); S.buzzed = null;
   document.getElementById('buzz-pill').style.display = 'none';
   showJudge(false);
-  if (!S.tRun && !isReveal) document.getElementById('q-start').style.display = 'inline-flex';
+  if (!S.tRun && !isReveal && !isTrafficSingle) document.getElementById('q-start').style.display = 'inline-flex';
   if (S.curQ.buzzMode === 'one_chance' && S.teams.every((_, i) => S.wrongTeams.has(i))) { closeQ(true); return; }
   resumeTimer();
   if (isReveal) { S.curQ.revealFrozen = false; startRevealInterval(); }
@@ -1427,7 +1564,14 @@ document.getElementById('q-annul').onclick = () => {
   else closeQ(true);
 };
 document.getElementById('q-blitz-skip').onclick = () => {
-  if (!S.curQ || S.curQ.q.type !== 'blitz') return;
+  if (!S.curQ) return;
+  if (S.curQ.q.type === 'traffic_blitz') {
+    pauseTimer();
+    if (S.curQ.trafficInt) { clearInterval(S.curQ.trafficInt); S.curQ.trafficInt = null; }
+    trafficNextRound();
+    return;
+  }
+  if (S.curQ.q.type !== 'blitz') return;
   pauseTimer();
   if (S.buzzed !== null) {
     S.buzzed = null;
@@ -1441,7 +1585,7 @@ document.getElementById('q-blitz-skip').onclick = () => {
   if (!S.tRun) document.getElementById('q-start').style.display = 'inline-flex';
 };
 document.getElementById('q-back').onclick = () => { pauseTimer(); showScreen('screen-board'); };
-document.getElementById('q-start').onclick = () => { if (!S.tRun) { startTimer(); if (S.curQ && S.curQ.q.type === 'reveal') { openRevealTile(); startRevealInterval(); } } };
+document.getElementById('q-start').onclick = doStart;
 document.getElementById('ans-close').onclick = () => {
   document.getElementById('ans-overlay').style.display = 'none';
   S.used[S.curQ.k] = true; buildBoard(); checkDone(); showScreen('screen-board'); nextChooser(); saveGame();
@@ -1499,7 +1643,10 @@ function closeQ(failed = false) {
   pauseTimer();
   clearHintTimer();
   if (S.curQ.revealInt) { clearInterval(S.curQ.revealInt); S.curQ.revealInt = null; }
+  if (S.curQ.trafficInt) { clearInterval(S.curQ.trafficInt); S.curQ.trafficInt = null; }
   if (S.curQ.allianceWaitInt) { clearInterval(S.curQ.allianceWaitInt); }
+  const qtClose = document.getElementById('q-text');
+  qtClose.classList.remove('traffic-cycling','traffic-selected'); qtClose.style.fontSize = '';
   document.getElementById('alliance-wait').style.display = 'none';
   document.getElementById('reveal-container').style.display = 'none';
   document.getElementById('jeopardy-btns').style.display = 'none';
@@ -1950,8 +2097,8 @@ document.addEventListener('keydown', e => {
       if (S.buzzed !== null) {
         const btn = document.getElementById('q-correct');
         if (btn.style.display !== 'none') btn.click();
-      } else if (!S.tRun) {
-        startTimer();
+      } else {
+        doStart();
       }
     }
     if (e.code === 'KeyZ') {
