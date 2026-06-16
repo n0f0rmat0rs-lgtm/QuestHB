@@ -120,6 +120,18 @@
       ]
     },
     {
+      "name": "Данетка",
+      "buzz_mode": "unlimited",
+      "questions": [
+        {
+          "value": 400, "timer": 90, "type": "danetka",
+          "question": "Данетка (400). Задайте вопросы «Да/Нет». За каждый балл «Да» +40 баллов, за «Нет» −40. Кто угадает — получает 400 + бонусы от пометок.",
+          "answer": "Загадка ведущего", "penalty": "none",
+          "image": null, "audio": null, "video": null, "answer_reveal": null
+        }
+      ]
+    },
+    {
       "name": "Музыкальный светофор",
       "buzz_mode": "one_chance",
       "questions": [

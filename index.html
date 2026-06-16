@@ -202,6 +202,15 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 .mode-desc { color:var(--text-muted); font-size:.78rem; font-weight:400; }
 .reveal-tile { background: #1a1a1a; transition: opacity .3s ease; }
 .reveal-tile.open { opacity: 0; pointer-events: none; }
+/* Данетка */
+.danetka-tbl { width: 100%; border-collapse: collapse; }
+.danetka-tbl th { padding: .35rem .7rem; color: var(--text-muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; border-bottom: 1px solid #2a2a2a; font-weight: 600; }
+.danetka-tbl td { padding: .45rem .7rem; border-bottom: 1px solid #1a1a1a; }
+.dan-name { text-align: left; font-weight: 600; font-size: .95rem; }
+.dan-cnt  { text-align: center; font-size: 1.4rem; font-weight: 800; }
+.dan-cnt-yes { color: #2ecc71; }
+.dan-cnt-no  { color: #e74c3c; }
+tr.dan-buzzed { background: rgba(79,142,247,.12); }
 </style>
 </head>
 <body>
@@ -334,6 +343,16 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
         <img id="reveal-img-el" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:6px">
         <div id="reveal-grid-el" style="position:absolute;inset:0;display:grid"></div>
       </div>
+      <div id="danetka-panel" style="display:none;width:100%;max-width:560px">
+        <table class="danetka-tbl">
+          <thead><tr>
+            <th style="text-align:left">Команда</th>
+            <th style="color:#2ecc71">ДА</th>
+            <th style="color:#e74c3c">НЕТ</th>
+          </tr></thead>
+          <tbody id="danetka-tbody"></tbody>
+        </table>
+      </div>
     </div>
     <div class="buzz-wrap">
       <div class="buzz-pill" id="buzz-pill" style="display:none"></div>
@@ -351,6 +370,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
       <button class="btn btn-hint    btn-sm" id="q-hint"    style="display:none">💡 Подсказка (½)</button>
       <button class="btn btn-alliance btn-sm" id="q-alliance" style="display:none">🤝 Альянс [A]</button>
       <div id="jeopardy-btns" style="display:none;gap:.5rem;flex-wrap:wrap;justify-content:center;align-items:center"></div>
+      <div id="danetka-judge" style="display:none;gap:.5rem;flex-wrap:wrap;justify-content:center;align-items:center"></div>
       <button class="btn btn-secondary btn-sm" id="q-start">▶ Старт</button>
       <button class="btn btn-secondary btn-sm" id="q-last-end" style="display:none">Больше правильных ответов нет</button>
       <button class="btn btn-ghost    btn-sm" id="q-annul">Аннулировать</button>
@@ -1087,6 +1107,10 @@ function openQ(ci, qi) {
     S.curQ.subPts = S.curQ.trafficRounds > 0 ? Math.floor(qValue / S.curQ.trafficRounds) : qValue;
     S.curQ.currentValue = S.curQ.subPts;
   }
+  if (q.type === 'danetka') {
+    S.curQ.danYes = new Array(S.teams.length).fill(0);
+    S.curQ.danNo  = new Array(S.teams.length).fill(0);
+  }
   S.buzzed = null; S.wrongTeams = new Set();
   if (q.type === 'bag') { openBagModal(q); return; }
   resetTimer(); fillQ(q, cat);
@@ -1196,6 +1220,7 @@ function fillQ(q, cat) {
   const isTraffic = q.type === 'traffic' || q.type === 'traffic_blitz';
   const qtEl = document.getElementById('q-text');
   qtEl.classList.remove('traffic-cycling','traffic-selected');
+  document.getElementById('danetka-panel').style.display = 'none';
   if (isBlitz) {
     document.getElementById('q-cat').textContent = `⚡ Блиц — ${cat.name}`;
     setMedia('q-img','q-aud','q-vid','q-vwrap', {});
@@ -1211,7 +1236,10 @@ function fillQ(q, cat) {
       document.getElementById('q-val').textContent = S.curQ.currentValue + ' баллов';
   } else {
     document.getElementById('q-val').textContent = (isBag ? S.curQ.bagValue : S.curQ.currentValue) + ' баллов';
-    const catLabel = isBag ? `Играет: ${S.teams[S.curQ.bagTeam].name}` : (q.type === 'jeopardy' ? `↩ ${cat.name}` : cat.name);
+    const catLabel = isBag ? `Играет: ${S.teams[S.curQ.bagTeam].name}`
+      : (q.type === 'jeopardy' ? `↩ ${cat.name}`
+      : (q.type === 'danetka'  ? `🔵 ${cat.name}`
+      : cat.name));
     document.getElementById('q-cat').textContent = catLabel;
     const txt = q.question || '';
     qtEl.textContent = txt;
@@ -1220,6 +1248,11 @@ function fillQ(q, cat) {
       setMedia('q-img','q-aud','q-vid','q-vwrap', {});
       rc.style.display = 'flex';
       buildRevealGrid();
+    } else if (q.type === 'danetka') {
+      rc.style.display = 'none';
+      setMedia('q-img','q-aud','q-vid','q-vwrap', q);
+      document.getElementById('danetka-panel').style.display = '';
+      buildDanPanel();
     } else {
       rc.style.display = 'none';
       setMedia('q-img','q-aud','q-vid','q-vwrap', q);
@@ -1423,6 +1456,7 @@ function onBuzz(idx) {
   if (bq.type === 'reveal') { clearInterval(S.curQ.revealInt); S.curQ.revealInt = null; S.curQ.revealFrozen = true; }
   S.buzzed = idx; SFX.buzz();
   S.curQ.lastBuzzAtSec = S.tTot - S.tSec;
+  if (S.curQ.q.type === 'danetka') updDanPanel();
   saveGame();
   showBuzzFlash(S.teams[idx].name);
   const pill = document.getElementById('buzz-pill');
@@ -1433,14 +1467,17 @@ function onBuzz(idx) {
 function showJudge(v) {
   const q = S.curQ ? S.curQ.q : null;
   const isJeopardy = q && q.type === 'jeopardy';
-  document.getElementById('q-correct').style.display = (v && !isJeopardy) ? 'inline-flex' : 'none';
-  document.getElementById('q-wrong').style.display   = (v && !isJeopardy) ? 'inline-flex' : 'none';
+  const isDanetka  = q && q.type === 'danetka';
+  document.getElementById('q-correct').style.display = (v && !isJeopardy && !isDanetka) ? 'inline-flex' : 'none';
+  document.getElementById('q-wrong').style.display   = (v && !isJeopardy && !isDanetka) ? 'inline-flex' : 'none';
   const canHint = v && q && q.type === 'normal' && S.modeHint && S.buzzed !== null && !S.hintsUsed[S.buzzed] && !S.curQ.hintBuzzed && !S.curQ.allianceUsed && !S.curQ.allianceActive;
   document.getElementById('q-hint').style.display = canHint ? 'inline-flex' : 'none';
   const canAlliance = v && q && q.type === 'normal' && (q.alliance || S.modeAlliance) && S.curQ && !S.curQ.allianceUsed && !S.curQ.allianceWaiting && !S.curQ.allianceActive;
   document.getElementById('q-alliance').style.display = canAlliance ? 'inline-flex' : 'none';
   if (v && isJeopardy) buildJeopardyBtns();
   else document.getElementById('jeopardy-btns').style.display = 'none';
+  if (v && isDanetka) buildDanJudgeBtns();
+  else document.getElementById('danetka-judge').style.display = 'none';
 }
 
 document.getElementById('q-correct').onclick = () => {
@@ -1650,6 +1687,8 @@ function closeQ(failed = false) {
   document.getElementById('alliance-wait').style.display = 'none';
   document.getElementById('reveal-container').style.display = 'none';
   document.getElementById('jeopardy-btns').style.display = 'none';
+  document.getElementById('danetka-panel').style.display = 'none';
+  document.getElementById('danetka-judge').style.display = 'none';
   document.getElementById('q-alliance').style.display = 'none';
   const ci = S.curQ.ci, qi = S.curQ.qi, k = S.curQ.k;
   if (failed) triggerKubyshka();
@@ -1869,6 +1908,95 @@ function applyJeopardyMult(mult, isWrong) {
     if (!rev || (!rev.text && !rev.image && !rev.audio && !rev.video)) showPopup(pts, t.name);
     closeQ();
   }
+}
+
+/* ═══════════════════════════════════════
+   ДАНЕТКА
+═══════════════════════════════════════ */
+function buildDanPanel() {
+  const tbody = document.getElementById('danetka-tbody');
+  tbody.innerHTML = '';
+  S.teams.forEach((t, i) => {
+    const tr = document.createElement('tr');
+    tr.id = `dan-row-${i}`;
+    tr.innerHTML = `<td class="dan-name">${t.name}</td>
+      <td class="dan-cnt dan-cnt-yes"><span class="dan-yes-v">${S.curQ.danYes[i]}</span></td>
+      <td class="dan-cnt dan-cnt-no"><span class="dan-no-v">${S.curQ.danNo[i]}</span></td>`;
+    tbody.appendChild(tr);
+  });
+}
+function updDanPanel() {
+  if (!S.curQ) return;
+  S.teams.forEach((t, i) => {
+    const row = document.getElementById(`dan-row-${i}`);
+    if (!row) return;
+    row.querySelector('.dan-yes-v').textContent = S.curQ.danYes[i];
+    row.querySelector('.dan-no-v').textContent  = S.curQ.danNo[i];
+    row.classList.toggle('dan-buzzed', S.buzzed === i);
+  });
+}
+function buildDanJudgeBtns() {
+  const panel = document.getElementById('danetka-judge');
+  panel.innerHTML = '';
+  panel.style.display = 'flex';
+  const actions = [
+    { label: '✓ Да',              cls: 'btn-success',   result: 'yes' },
+    { label: '✗ Нет',             cls: 'btn-danger',    result: 'no' },
+    { label: '~ Возможно',        cls: 'btn-secondary', result: 'maybe' },
+    { label: '🎯 Правильный ответ', cls: 'btn-primary', result: 'correct' },
+  ];
+  actions.forEach(a => {
+    const btn = document.createElement('button');
+    btn.className = `btn btn-sm ${a.cls}`;
+    btn.style.cssText = 'font-size:1.05rem;padding:.5em 1.1em;font-weight:700';
+    btn.textContent = a.label;
+    btn.onclick = () => danAnswer(a.result);
+    panel.appendChild(btn);
+  });
+}
+function danAnswer(result) {
+  hideBuzzFlash();
+  document.getElementById('danetka-judge').style.display = 'none';
+  const teamIdx = S.buzzed;
+  const t = S.teams[teamIdx];
+  const val = S.curQ.currentValue;
+  if (result === 'yes') {
+    S.curQ.danYes[teamIdx]++;
+    updDanPanel();
+    S.log.push({ ts: Date.now(), teamIdx, teamName: t.name, catName: S.curQ.catName, qType: 'danetka', value: 0, correct: true, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+    SFX.correct(); flash('rgba(46,204,113,.18)');
+    S.wrongTeams = new Set(); S.buzzed = null;
+    document.getElementById('buzz-pill').style.display = 'none';
+    showJudge(false);
+    if (S.tSec > 0) resumeTimer(); else document.getElementById('q-start').style.display = 'inline-flex';
+  } else if (result === 'no') {
+    S.curQ.danNo[teamIdx]++;
+    updDanPanel();
+    S.log.push({ ts: Date.now(), teamIdx, teamName: t.name, catName: S.curQ.catName, qType: 'danetka', value: 0, correct: false, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+    SFX.wrong(); flash('rgba(231,76,60,.18)');
+    S.wrongTeams = new Set(); S.buzzed = null;
+    document.getElementById('buzz-pill').style.display = 'none';
+    showJudge(false);
+    if (S.tSec > 0) resumeTimer(); else document.getElementById('q-start').style.display = 'inline-flex';
+  } else if (result === 'maybe') {
+    S.wrongTeams = new Set(); S.buzzed = null;
+    document.getElementById('buzz-pill').style.display = 'none';
+    showJudge(false);
+    if (S.tSec > 0) resumeTimer(); else document.getElementById('q-start').style.display = 'inline-flex';
+  } else if (result === 'correct') {
+    t.score += val;
+    S.log.push({ ts: Date.now(), teamIdx, teamName: t.name, catName: S.curQ.catName, qType: 'danetka', value: val, correct: true, buzzAtSec: S.curQ.lastBuzzAtSec ?? null });
+    S.teams.forEach((team, i) => {
+      const yesBonus = Math.floor(S.curQ.danYes[i] * val / 10);
+      const noPen   = Math.floor(S.curQ.danNo[i]  * val / 10);
+      if (yesBonus) { team.score += yesBonus; S.log.push({ ts: Date.now(), teamIdx: i, teamName: team.name, catName: S.curQ.catName, qType: 'danetka', value: yesBonus, correct: true, buzzAtSec: null }); }
+      if (noPen)    { team.score -= noPen;    S.log.push({ ts: Date.now(), teamIdx: i, teamName: team.name, catName: S.curQ.catName, qType: 'danetka', value: -noPen,   correct: false, buzzAtSec: null }); }
+    });
+    updScores(); SFX.correct(); flash('rgba(46,204,113,.45)');
+    showPopup(val, t.name);
+    closeQ();
+  }
+  saveGame();
 }
 
 /* ═══════════════════════════════════════

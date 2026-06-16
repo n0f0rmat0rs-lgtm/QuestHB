@@ -60,6 +60,7 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); bo
 .type-btn.active-reveal   { background: #2980b9; color: #fff; border-color: #2980b9; }
 .type-btn.active-traffic       { background: #27ae60; color: #fff; border-color: #27ae60; }
 .type-btn.active-traffic_blitz { background: #c0392b; color: #fff; border-color: #c0392b; }
+.type-btn.active-danetka       { background: #16a085; color: #fff; border-color: #16a085; }
 .cat-flags { display:flex; gap:.6rem; flex-wrap:wrap; margin-top:.4rem; }
 .cat-flag-lbl { display:flex; align-items:center; gap:.3rem; font-size:.82rem; cursor:pointer; white-space:nowrap; }
 .q-extra-row { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; padding:.35rem 0 0; font-size:.82rem; border-top:1px solid var(--border); margin-top:.25rem; }
@@ -305,6 +306,7 @@ function buildQuestionCard(q, ci, qi, container) {
       <button class="type-btn ${q.type==="reveal"?"active-reveal":""}" data-t="reveal">🖼 Картинка</button>
       <button class="type-btn ${q.type==="traffic"?"active-traffic":""}" data-t="traffic">🚦 Светофор</button>
       <button class="type-btn ${q.type==="traffic_blitz"?"active-traffic_blitz":""}" data-t="traffic_blitz">🚦 Муз. блиц</button>
+      <button class="type-btn ${q.type==="danetka"?"active-danetka":""}" data-t="danetka">🔵 Данетка</button>
     </div>
     <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-left:auto">✕</button>
   `;
@@ -331,7 +333,7 @@ function buildQuestionCard(q, ci, qi, container) {
       if ((q.type === 'traffic' || q.type === 'traffic_blitz') && !q.traffic_mode) q.traffic_mode = 'words';
       if (q.type === 'traffic_blitz' && !q.traffic_rounds) q.traffic_rounds = 5;
       top.querySelectorAll(".type-btn").forEach(x => { x.className = "type-btn"; });
-      const cls = {bag:"active-bag",auction:"active-auction",last:"active-last",blitz:"active-blitz",jeopardy:"active-jeopardy",reveal:"active-reveal",traffic:"active-traffic",traffic_blitz:"active-traffic_blitz"}[q.type] || "active-normal";
+      const cls = {bag:"active-bag",auction:"active-auction",last:"active-last",blitz:"active-blitz",jeopardy:"active-jeopardy",reveal:"active-reveal",traffic:"active-traffic",traffic_blitz:"active-traffic_blitz",danetka:"active-danetka"}[q.type] || "active-normal";
       b.classList.add(cls);
       const isTraffic = q.type === 'traffic' || q.type === 'traffic_blitz';
       if (blitzSection)   blitzSection.style.display   = q.type === 'blitz'   ? '' : 'none';
@@ -673,6 +675,7 @@ function printPack() {
     if (t === 'reveal')  return '<span class="qtype">🖼 Картинка</span>';
     if (t === 'traffic') return '<span class="qtype">🚦 Светофор</span>';
     if (t === 'traffic_blitz') return '<span class="qtype">🚦 Муз. блиц</span>';
+    if (t === 'danetka') return '<span class="qtype">🔵 Данетка</span>';
     return '';
   }
   function valueLabel(q) {
